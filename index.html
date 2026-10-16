@@ -85,7 +85,7 @@
     </div>
 
     <div id="marketplace-list" class="card-list">
-      <div class="empty-box">Loading available businesses...</div>
+      <div class="empty-box">Connecting to BOOK.NOW...</div>
     </div>
   </div>
 
@@ -109,8 +109,6 @@
   </div>
 
   <script>
-document.getElementById('marketplace-list').textContent =
-  'BOOK.NOW JavaScript is running!';
     const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
     const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
     
@@ -121,7 +119,7 @@ document.getElementById('marketplace-list').textContent =
     try {
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     } catch (e) {
-      document.getElementById('marketplace-list').innerHTML = `<div class="empty-box">Init Error: ${e.message}</div>`;
+      console.error("Init error:", e);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -137,84 +135,65 @@ document.getElementById('marketplace-list').textContent =
       loadMarketplace();
     });
 
-    
-async function loadMarketplace() {
-  const container = document.getElementById('marketplace-list');
+    async function loadMarketplace() {
+      const container = document.getElementById('marketplace-list');
 
-  container.innerHTML =
-    '<div class="empty-box">Connecting to BOOK.NOW...</div>';
+      container.innerHTML = '<div class="empty-box">Connecting to BOOK.NOW...</div>';
 
-  if (!window.supabase) {
-    container.innerHTML =
-      '<div class="empty-box">Supabase failed to load. Check your internet connection and refresh.</div>';
-    return;
-  }
+      if (!window.supabase) {
+        container.textContent = 'Supabase library failed to load. Check your internet connection.';
+        return;
+      }
 
-  if (!supabase) {
-    container.innerHTML =
-      '<div class="empty-box">Database client was not initialized.</div>';
-    return;
-  }
+      if (!supabase) {
+        container.textContent = 'Supabase client failed to initialize. Please check the configuration.';
+        return;
+      }
 
-  try {
-    const request = supabase
-      .from('vendors')
-      .select('id, name, category')
-      .order('created_at', { ascending: false });
+      try {
+        const { data: vendors, error } = await supabase
+          .from('vendors')
+          .select('id, name, category, created_at')
+          .order('created_at', { ascending: false });
 
-    const timeout = new Promise((_, reject) =>
-      setTimeout(
-        () => reject(new Error('Database request timed out. Check your connection and Supabase status.')),
-        12000
-      )
-    );
+        if (error) throw error;
 
-    const { data: vendors, error } = await Promise.race([
-      request,
-      timeout
-    ]);
+        if (!vendors || vendors.length === 0) {
+          allVendors = [];
+          container.innerHTML = '<div class="empty-box">No businesses found.</div>';
+          return;
+        }
 
-    if (error) throw error;
+        const results = await Promise.all(
+          vendors.map(async vendor => {
+            const { data: services, error: serviceError } =
+              await supabase
+                .from('service_items')
+                .select('id, vendor_id, title, price')
+                .eq('vendor_id', vendor.id);
 
-    allVendors = vendors || [];
+            if (serviceError) throw serviceError;
 
-    if (allVendors.length === 0) {
-      container.innerHTML =
-        '<div class="empty-box">No businesses are available yet.</div>';
-      return;
+            return {
+              ...vendor,
+              service_items: services || []
+            };
+          })
+        );
+
+        allVendors = results;
+        renderVendors(allVendors);
+
+      } catch (error) {
+        console.error('Marketplace error:', error);
+        container.replaceChildren();
+
+        const message = document.createElement('div');
+        message.className = 'empty-box';
+        message.textContent = 'Marketplace error: ' + (error.message || 'Unknown error');
+        container.appendChild(message);
+      }
     }
-
-    renderVendors(allVendors);
-
-    // Load each business's services separately.
-    for (const vendor of allVendors) {
-      const result = await supabase
-        .from('service_items')
-        .select('id, vendor_id, title, price')
-        .eq('vendor_id', vendor.id);
-
-      if (result.error) throw result.error;
-
-      vendor.service_items = result.data || [];
-    }
-
-    renderVendors(allVendors);
-
-  } catch (err) {
-    console.error('BOOK.NOW marketplace error:', err);
-
-    container.innerHTML = '';
-
-    const message = document.createElement('div');
-    message.className = 'empty-box';
-    message.textContent =
-      'Could not load businesses: ' +
-      (err.message || 'Unknown database error');
-
-    container.appendChild(message);
-  }
-}
-
 
     function renderVendors(vendors) {
       const container = document.getElementById('marketplace-list');
@@ -312,7 +291,7 @@ async function loadMarketplace() {
       if (!selectedService) return;
 
       const grossAmount = selectedService.price;
-      const netEarnings = grossAmount * 0.90; // 90% vendor, 10% platform commission
+      const netEarnings = grossAmount * 0.90;
 
       const { error } = await supabase.from('orders').insert([{
         vendor_id: selectedService.vendorId,
@@ -323,7 +302,7 @@ async function loadMarketplace() {
 
       if (error) return alert("Booking error: " + error.message);
 
-      alert(`Booking confirmed for ${name}! Nzuzo Barbershop has received your appointment.`);
+      alert(`Booking confirmed for ${name}! The shop has received your appointment.`);
       closeModal();
       document.getElementById('customer-name').value = '';
       document.getElementById('customer-phone').value = '';
