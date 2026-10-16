@@ -107,7 +107,7 @@
     </div>
   </div>
 
-  <!-- VIEW 2: VENDOR DASHBOARD (GATED BEHIND AUTH) -->
+  <!-- VIEW 2: VENDOR DASHBOARD -->
   <div id="dashboard-screen" style="display: none;">
     <div class="top-nav">
       <div class="brand">
@@ -279,7 +279,6 @@
     }
 
     function bindButtons() {
-      // Auth Mode Toggle
       $("toggle-auth-btn").addEventListener("click", () => {
         isSignUpMode = !isSignUpMode;
         $("auth-heading").textContent = isSignUpMode ? "Register Partner Account" : "Partner Login";
@@ -288,7 +287,6 @@
         $("toggle-auth-btn").textContent = isSignUpMode ? "Already registered? Sign In" : "Need an account? Register as Partner";
       });
 
-      // Submit Auth Action
       $("auth-submit-btn").addEventListener("click", async () => {
         const email = $("auth-email").value.trim();
         const password = $("auth-password").value;
@@ -307,7 +305,7 @@
             const { error } = await db.auth.signInWithPassword({ email, password });
             if (error) throw error;
           }
-          showDashboard();
+          await showDashboard();
         } catch (err) {
           alert("Authentication Error: " + err.message);
         } finally {
@@ -315,7 +313,6 @@
         }
       });
 
-      // Logout Action
       $("logout-btn").addEventListener("click", async () => {
         await db.auth.signOut();
         $("dashboard-screen").style.display = "none";
@@ -479,7 +476,6 @@
         const { data: { user } } = await db.auth.getUser();
         if (!user) throw new Error("No active user session.");
 
-        // Fetch only vendors owned by this specific authenticated user (satisfying RLS)
         const { data: vendors, error } = await db
           .from("vendors")
           .select("*")
@@ -607,7 +603,7 @@
           setEmpty("orders-list", "No bookings received yet.");
         } else {
           orders.forEach(order => {
-            const statusText = String(order.status || "Pending");
+            const statusText = String(order.status || "PENDING");
             if (statusText.toLowerCase() === "completed") completed++;
             revenue += Number(order.vendor_net_earnings || 0);
 
@@ -620,7 +616,8 @@
             const left = document.createElement("div");
             const title = document.createElement("div");
             title.className = "order-title";
-            title.textContent = "Customer Booking";
+            // Displays real customer details captured from booking
+            title.textContent = order.customer_name ? `${order.customer_name} (${order.customer_phone})` : "Customer Booking";
 
             const time = document.createElement("div");
             time.className = "order-time";
@@ -664,7 +661,6 @@
         db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         bindButtons();
 
-        // Check if partner session already exists
         const { data: { session } } = await db.auth.getSession();
         if (session) {
           await showDashboard();
