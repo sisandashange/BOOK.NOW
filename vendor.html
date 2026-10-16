@@ -14,7 +14,6 @@
     :root {
       --primary: #0f172a;
       --accent: #2563eb;
-      --accent-soft: #eff6ff;
       --bg: #f8fafc;
       --surface: #ffffff;
       --text: #0f172a;
@@ -22,14 +21,12 @@
       --border: #e2e8f0;
       --success: #16a34a;
       --success-bg: #f0fdf4;
-      --warning: #d97706;
       --radius: 16px;
     }
 
     * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
     body { margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 60px; }
 
-    /* NAVBAR */
     .top-nav { background: var(--surface); padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 20; }
     .brand { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: var(--primary); }
     .brand-badge { background: #e0f2fe; color: #0369a1; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
@@ -42,25 +39,20 @@
 
     .container { padding: 16px 20px; max-width: 650px; margin: 0 auto; }
 
-    /* STATS OVERVIEW */
     .stats-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
     .stat-box { background: var(--surface); padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); }
     .stat-header { font-size: 12px; font-weight: 600; color: var(--muted); display: flex; align-items: center; gap: 6px; }
     .stat-value { font-size: 22px; font-weight: 700; margin-top: 6px; color: var(--text); }
 
-    /* NAVIGATION TABS */
     .nav-tabs { display: flex; background: #e2e8f0; padding: 4px; border-radius: 12px; margin-bottom: 20px; }
     .tab-item { flex: 1; padding: 10px; border: none; background: transparent; font-size: 13px; font-weight: 600; color: var(--muted); border-radius: 8px; cursor: pointer; }
     .tab-item.active { background: #fff; color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
 
-    /* SECTION HEADER */
     .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
     .section-head h3 { font-size: 16px; font-weight: 700; margin: 0; }
 
     .btn-primary { background: var(--accent); color: white; border: none; padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-    .btn-primary:active { transform: scale(0.98); }
 
-    /* ORDER & SERVICE CARDS */
     .card-list { display: flex; flex-direction: column; gap: 12px; }
     .order-card { background: var(--surface); padding: 16px; border-radius: 14px; border: 1px solid var(--border); }
     .order-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
@@ -69,7 +61,6 @@
     .order-price { font-weight: 700; color: var(--success); font-size: 16px; }
     .order-status { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; background: var(--success-bg); color: var(--success); text-transform: uppercase; }
 
-    /* MODAL SLIDE UP */
     .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: flex-end; z-index: 100; }
     .modal-sheet { background: #fff; width: 100%; max-width: 600px; padding: 24px; border-radius: 24px 24px 0 0; }
     .form-field { margin-bottom: 14px; }
@@ -81,7 +72,6 @@
 </head>
 <body>
 
-  <!-- TOP HEADER -->
   <div class="top-nav">
     <div class="brand">
       <i class="ph ph-storefront" style="font-size:22px; color: var(--accent);"></i>
@@ -92,7 +82,6 @@
     </button>
   </div>
 
-  <!-- ACTIVE BUSINESS BANNER -->
   <div class="business-bar">
     <div class="business-info">
       <div class="biz-avatar" id="biz-avatar-letter">N</div>
@@ -107,8 +96,6 @@
   </div>
 
   <div class="container">
-    
-    <!-- REAL METRICS -->
     <div class="stats-container">
       <div class="stat-box">
         <div class="stat-header"><i class="ph ph-currency-circle-dollar" style="font-size:16px;"></i> Total Payouts</div>
@@ -120,13 +107,11 @@
       </div>
     </div>
 
-    <!-- TABS -->
     <div class="nav-tabs">
       <button class="tab-item active" onclick="switchTab('orders-tab', this)">Bookings & Orders</button>
       <button class="tab-item" onclick="switchTab('services-tab', this)">Services Menu</button>
     </div>
 
-    <!-- TAB 1: ORDERS -->
     <div id="orders-tab" class="tab-content">
       <div class="section-head">
         <h3>Live Appointments</h3>
@@ -136,7 +121,6 @@
       </div>
     </div>
 
-    <!-- TAB 2: SERVICES -->
     <div id="services-tab" class="tab-content" style="display:none;">
       <div class="section-head">
         <h3>Services & Prices</h3>
@@ -148,7 +132,6 @@
         <div class="empty-box">No services added yet. Click "+ Add Service" above.</div>
       </div>
     </div>
-
   </div>
 
   <!-- MODAL: ADD SERVICE -->
@@ -160,7 +143,7 @@
       </div>
       <div class="form-field">
         <label>Service Title</label>
-        <input type="text" id="service-title" placeholder="e.g. Fade Cut & Beard Trim / Platter">
+        <input type="text" id="service-title" placeholder="e.g. Fade Cut & Beard Trim">
       </div>
       <div class="form-field">
         <label>Price (ZAR)</label>
@@ -200,8 +183,15 @@
 
     let activeVendor = null;
 
-    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function openModal(id) {
+      const modal = document.getElementById(id);
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeModal(id) {
+      const modal = document.getElementById(id);
+      if (modal) modal.style.display = 'none';
+    }
 
     function switchTab(tabId, btn) {
       document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
@@ -211,21 +201,27 @@
     }
 
     async function initDashboard() {
-      const { data: vendors } = await supabase.from('vendors').select('*');
-      const select = document.getElementById('vendor-select');
-      select.innerHTML = '';
+      try {
+        const { data: vendors, error } = await supabase.from('vendors').select('*');
+        
+        if (error || !vendors || vendors.length === 0) {
+          document.getElementById('biz-display-name').innerText = "No Business Found";
+          document.getElementById('biz-display-type').innerText = "Tap '+ Add Business' above";
+          return;
+        }
 
-      if (vendors && vendors.length > 0) {
+        const select = document.getElementById('vendor-select');
+        select.innerHTML = '';
         vendors.forEach(v => {
           select.innerHTML += `<option value="${v.id}">${v.name}</option>`;
         });
+
         activeVendor = vendors[0];
         updateHeaderUI();
         loadServices();
         loadOrders();
-      } else {
-        document.getElementById('biz-display-name').innerText = "No Business Registered";
-        document.getElementById('biz-display-type').innerText = "Click 'Add Business' above";
+      } catch (err) {
+        console.error("Init error:", err);
       }
     }
 
@@ -253,7 +249,7 @@
       if (!name) return alert("Please enter business name");
 
       const { data, error } = await supabase.from('vendors').insert([{ name, category }]).select();
-      if (error) return alert(error.message);
+      if (error) return alert("Error: " + error.message);
 
       closeModal('register-modal');
       document.getElementById('new-biz-name').value = '';
@@ -261,6 +257,7 @@
     }
 
     async function loadServices() {
+      if (!activeVendor) return;
       const container = document.getElementById('services-list');
       const { data: services } = await supabase.from('service_items').select('*').eq('vendor_id', activeVendor.id);
 
@@ -281,14 +278,14 @@
     }
 
     async function addService() {
-      if (!activeVendor) return alert("Select or add a business first!");
+      if (!activeVendor) return alert("Please select or add a business first!");
       const title = document.getElementById('service-title').value;
       const price = parseFloat(document.getElementById('service-price').value);
 
       if (!title || isNaN(price)) return alert("Enter valid title and price");
 
       const { error } = await supabase.from('service_items').insert([{ vendor_id: activeVendor.id, title, price }]);
-      if (error) return alert(error.message);
+      if (error) return alert("Error: " + error.message);
 
       closeModal('service-modal');
       document.getElementById('service-title').value = '';
@@ -297,6 +294,7 @@
     }
 
     async function loadOrders() {
+      if (!activeVendor) return;
       const container = document.getElementById('orders-list');
       const { data: orders } = await supabase.from('orders').select('*').eq('vendor_id', activeVendor.id).order('created_at', { ascending: false });
 
@@ -330,6 +328,7 @@
       document.getElementById('stat-count').innerText = count;
     }
 
+    // Initialize on load
     initDashboard();
   </script>
 </body>
