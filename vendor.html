@@ -51,7 +51,7 @@
     .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
     .section-head h3 { font-size: 16px; font-weight: 700; margin: 0; }
 
-    .btn-primary { background: var(--accent); color: white; border: none; padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-primary { background: var(--accent); color: white; border: none; padding: 12px 14px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
 
     .card-list { display: flex; flex-direction: column; gap: 12px; }
     .order-card { background: var(--surface); padding: 16px; border-radius: 14px; border: 1px solid var(--border); }
@@ -69,25 +69,6 @@
 
     .empty-box { text-align: center; padding: 40px 16px; background: var(--surface); border-radius: 14px; border: 1px dashed var(--border); color: var(--muted); font-size: 14px; }
   </style>
-
-  <script>
-    function openModal(id) {
-      const modal = document.getElementById(id);
-      if (modal) modal.style.display = 'flex';
-    }
-
-    function closeModal(id) {
-      const modal = document.getElementById(id);
-      if (modal) modal.style.display = 'none';
-    }
-
-    function switchTab(tabId, btn) {
-      document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
-      document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
-      document.getElementById(tabId).style.display = 'block';
-      btn.classList.add('active');
-    }
-  </script>
 </head>
 <body>
 
@@ -96,7 +77,7 @@
       <i class="ph ph-storefront" style="font-size:22px; color: var(--accent);"></i>
       Partner Portal <span class="brand-badge">LIVE</span>
     </div>
-    <button class="btn-primary" style="background:#f1f5f9; color:#0f172a;" onclick="openModal('register-modal')">
+    <button class="btn-primary" style="width: auto; padding: 8px 14px; background:#f1f5f9; color:#0f172a;" id="open-add-biz-btn">
       <i class="ph ph-plus"></i> Add Business
     </button>
   </div>
@@ -109,7 +90,7 @@
         <div class="biz-type" id="biz-display-type">Verifying partner account</div>
       </div>
     </div>
-    <select id="vendor-select" onchange="switchVendor()" style="padding:6px 10px; border-radius:8px; border:1px solid var(--border); font-size:12px; font-weight:600;">
+    <select id="vendor-select" style="padding:6px 10px; border-radius:8px; border:1px solid var(--border); font-size:12px; font-weight:600;">
       <option value="">Switch Shop</option>
     </select>
   </div>
@@ -127,8 +108,8 @@
     </div>
 
     <div class="nav-tabs">
-      <button class="tab-item active" onclick="switchTab('orders-tab', this)">Bookings & Orders</button>
-      <button class="tab-item" onclick="switchTab('services-tab', this)">Services Menu</button>
+      <button class="tab-item active" id="tab-orders-btn">Bookings & Orders</button>
+      <button class="tab-item" id="tab-services-btn">Services Menu</button>
     </div>
 
     <div id="orders-tab" class="tab-content">
@@ -143,7 +124,7 @@
     <div id="services-tab" class="tab-content" style="display:none;">
       <div class="section-head">
         <h3>Services & Prices</h3>
-        <button class="btn-primary" onclick="openModal('service-modal')">
+        <button class="btn-primary" id="open-add-service-btn" style="width: auto; padding: 8px 14px;">
           <i class="ph ph-plus"></i> Add Service
         </button>
       </div>
@@ -158,7 +139,7 @@
     <div class="modal-sheet">
       <div class="section-head">
         <h3>Add Service Offering</h3>
-        <i class="ph ph-x" style="font-size:20px; cursor:pointer;" onclick="closeModal('service-modal')"></i>
+        <i class="ph ph-x" style="font-size:20px; cursor:pointer;" id="close-service-modal"></i>
       </div>
       <div class="form-field">
         <label>Service Title</label>
@@ -168,7 +149,7 @@
         <label>Price (ZAR)</label>
         <input type="number" id="service-price" placeholder="e.g. 150">
       </div>
-      <button class="btn-primary" style="width:100%; justify-content:center; padding:12px;" onclick="addService()">Publish Service</button>
+      <button class="btn-primary" id="save-service-btn">Publish Service</button>
     </div>
   </div>
 
@@ -177,7 +158,7 @@
     <div class="modal-sheet">
       <div class="section-head">
         <h3>Register New Business</h3>
-        <i class="ph ph-x" style="font-size:20px; cursor:pointer;" onclick="closeModal('register-modal')"></i>
+        <i class="ph ph-x" style="font-size:20px; cursor:pointer;" id="close-register-modal"></i>
       </div>
       <div class="form-field">
         <label>Business Name</label>
@@ -191,7 +172,7 @@
           <option value="SHISANYAMA">Shisanyama / Braai Spot</option>
         </select>
       </div>
-      <button class="btn-primary" style="width:100%; justify-content:center; padding:12px;" onclick="registerVendor()">Save Business</button>
+      <button class="btn-primary" id="save-biz-btn">Save Business</button>
     </div>
   </div>
 
@@ -203,22 +184,115 @@
     try {
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     } catch (e) {
-      alert("Supabase initialization error: " + e.message);
+      alert("Supabase init error: " + e.message);
     }
 
     let activeVendor = null;
+
+    // UI Event Listeners (Guaranteed execution)
+    document.getElementById('open-add-biz-btn').addEventListener('click', () => {
+      document.getElementById('register-modal').style.display = 'flex';
+    });
+    document.getElementById('close-register-modal').addEventListener('click', () => {
+      document.getElementById('register-modal').style.display = 'none';
+    });
+
+    document.getElementById('open-add-service-btn').addEventListener('click', () => {
+      document.getElementById('service-modal').style.display = 'flex';
+    });
+    document.getElementById('close-service-modal').addEventListener('click', () => {
+      document.getElementById('service-modal').style.display = 'none';
+    });
+
+    document.getElementById('tab-orders-btn').addEventListener('click', (e) => {
+      document.getElementById('orders-tab').style.display = 'block';
+      document.getElementById('services-tab').style.display = 'none';
+      document.getElementById('tab-orders-btn').classList.add('active');
+      document.getElementById('tab-services-btn').classList.remove('active');
+    });
+
+    document.getElementById('tab-services-btn').addEventListener('click', (e) => {
+      document.getElementById('services-tab').style.display = 'block';
+      document.getElementById('orders-tab').style.display = 'none';
+      document.getElementById('tab-services-btn').classList.add('active');
+      document.getElementById('tab-orders-btn').classList.remove('active');
+    });
+
+    document.getElementById('vendor-select').addEventListener('change', async (e) => {
+      if (!supabase) return;
+      const selectedId = e.target.value;
+      const { data } = await supabase.from('vendors').select('*').eq('id', selectedId).single();
+      if (data) {
+        activeVendor = data;
+        updateHeaderUI();
+        loadServices();
+        loadOrders();
+      }
+    });
+
+    // Save Business Action
+    document.getElementById('save-biz-btn').addEventListener('click', async () => {
+      alert("Save Business button tapped!"); // Diagnostic test alert
+
+      if (!supabase) {
+        alert("Database not initialized.");
+        return;
+      }
+
+      const name = document.getElementById('new-biz-name').value.trim();
+      const category = document.getElementById('new-biz-category').value;
+
+      if (!name) {
+        alert("Please enter a business name.");
+        return;
+      }
+
+      const { data, error } = await supabase.from('vendors').insert([{ name, category }]).select();
+
+      if (error) {
+        alert("Supabase Error: " + error.message);
+        return;
+      }
+
+      alert("Business saved successfully!");
+      document.getElementById('register-modal').style.display = 'none';
+      document.getElementById('new-biz-name').value = '';
+      initDashboard();
+    });
+
+    // Save Service Action
+    document.getElementById('save-service-btn').addEventListener('click', async () => {
+      if (!supabase) return alert("Database not initialized.");
+      if (!activeVendor) return alert("Select a business first!");
+
+      const title = document.getElementById('service-title').value.trim();
+      const price = parseFloat(document.getElementById('service-price').value);
+
+      if (!title || isNaN(price)) {
+        alert("Enter a valid title and price.");
+        return;
+      }
+
+      const { error } = await supabase.from('service_items').insert([{ vendor_id: activeVendor.id, title, price }]);
+
+      if (error) {
+        alert("Supabase Error: " + error.message);
+        return;
+      }
+
+      alert("Service added successfully!");
+      document.getElementById('service-modal').style.display = 'none';
+      document.getElementById('service-title').value = '';
+      document.getElementById('service-price').value = '';
+      loadServices();
+    });
 
     async function initDashboard() {
       if (!supabase) return;
       try {
         const { data: vendors, error } = await supabase.from('vendors').select('*');
         
-        if (error) {
-          console.error("Fetch error:", error);
-          return;
-        }
-
-        if (!vendors || vendors.length === 0) {
+        if (error || !vendors || vendors.length === 0) {
           document.getElementById('biz-display-name').innerText = "No Business Found";
           document.getElementById('biz-display-type').innerText = "Tap '+ Add Business' above";
           return;
@@ -244,81 +318,6 @@
       document.getElementById('biz-display-name').innerText = activeVendor.name;
       document.getElementById('biz-display-type').innerText = activeVendor.category;
       document.getElementById('biz-avatar-letter').innerText = activeVendor.name.charAt(0).toUpperCase();
-    }
-
-    async function switchVendor() {
-      if (!supabase) return;
-      const selectedId = document.getElementById('vendor-select').value;
-      const { data } = await supabase.from('vendors').select('*').eq('id', selectedId).single();
-      if (data) {
-        activeVendor = data;
-        updateHeaderUI();
-        loadServices();
-        loadOrders();
-      }
-    }
-
-    async function registerVendor() {
-      if (!supabase) {
-        alert("Database connection not ready.");
-        return;
-      }
-
-      const nameInput = document.getElementById('new-biz-name');
-      const categoryInput = document.getElementById('new-biz-category');
-
-      if (!nameInput || !categoryInput) {
-        alert("Form inputs not found!");
-        return;
-      }
-
-      const name = nameInput.value.trim();
-      const category = categoryInput.value;
-
-      if (!name) {
-        alert("Please enter a business name.");
-        return;
-      }
-
-      // Attempt insert into Supabase
-      const { data, error } = await supabase.from('vendors').insert([{ name, category }]).select();
-
-      if (error) {
-        alert("Supabase Insert Error: " + error.message);
-        return;
-      }
-
-      alert("Business saved successfully!");
-      closeModal('register-modal');
-      nameInput.value = '';
-      initDashboard();
-    }
-
-    async function addService() {
-      if (!supabase) return alert("Database connection not ready.");
-      if (!activeVendor) return alert("Please select or add a business first!");
-      
-      const titleInput = document.getElementById('service-title');
-      const priceInput = document.getElementById('service-price');
-      const title = titleInput.value.trim();
-      const price = parseFloat(priceInput.value);
-
-      if (!title || isNaN(price)) {
-        alert("Enter a valid title and price.");
-        return;
-      }
-
-      const { error } = await supabase.from('service_items').insert([{ vendor_id: activeVendor.id, title, price }]);
-      if (error) {
-        alert("Error adding service: " + error.message);
-        return;
-      }
-
-      alert("Service added successfully!");
-      closeModal('service-modal');
-      titleInput.value = '';
-      priceInput.value = '';
-      loadServices();
     }
 
     async function loadServices() {
@@ -377,7 +376,7 @@
       document.getElementById('stat-count').innerText = count;
     }
 
-    // Initialize on load
+    // Run on page load
     initDashboard();
   </script>
 </body>
