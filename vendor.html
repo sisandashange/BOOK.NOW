@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- Load Supabase safely via CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <style>
@@ -69,6 +70,30 @@
 
     .empty-box { text-align: center; padding: 40px 16px; background: var(--surface); border-radius: 14px; border: 1px dashed var(--border); color: var(--muted); font-size: 14px; }
   </style>
+
+  <!-- CRITICAL UI FUNCTIONS LOADED IMMEDIATELY -->
+  <script>
+    function openModal(id) {
+      const modal = document.getElementById(id);
+      if (modal) {
+        modal.style.display = 'flex';
+      } else {
+        alert("Modal not found: " + id);
+      }
+    }
+
+    function closeModal(id) {
+      const modal = document.getElementById(id);
+      if (modal) modal.style.display = 'none';
+    }
+
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).style.display = 'block';
+      btn.classList.add('active');
+    }
+  </script>
 </head>
 <body>
 
@@ -176,31 +201,22 @@
     </div>
   </div>
 
+  <!-- SUPABASE & DATABASE LOGIC -->
   <script>
     const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
     const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    let supabase = null;
+    try {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    } catch (e) {
+      console.error("Supabase client init failed:", e);
+    }
 
     let activeVendor = null;
 
-    function openModal(id) {
-      const modal = document.getElementById(id);
-      if (modal) modal.style.display = 'flex';
-    }
-
-    function closeModal(id) {
-      const modal = document.getElementById(id);
-      if (modal) modal.style.display = 'none';
-    }
-
-    function switchTab(tabId, btn) {
-      document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
-      document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
-      document.getElementById(tabId).style.display = 'block';
-      btn.classList.add('active');
-    }
-
     async function initDashboard() {
+      if (!supabase) return;
       try {
         const { data: vendors, error } = await supabase.from('vendors').select('*');
         
@@ -233,6 +249,7 @@
     }
 
     async function switchVendor() {
+      if (!supabase) return;
       const selectedId = document.getElementById('vendor-select').value;
       const { data } = await supabase.from('vendors').select('*').eq('id', selectedId).single();
       if (data) {
@@ -244,6 +261,7 @@
     }
 
     async function registerVendor() {
+      if (!supabase) return alert("Database connection not ready.");
       const name = document.getElementById('new-biz-name').value;
       const category = document.getElementById('new-biz-category').value;
       if (!name) return alert("Please enter business name");
@@ -257,7 +275,7 @@
     }
 
     async function loadServices() {
-      if (!activeVendor) return;
+      if (!supabase || !activeVendor) return;
       const container = document.getElementById('services-list');
       const { data: services } = await supabase.from('service_items').select('*').eq('vendor_id', activeVendor.id);
 
@@ -278,6 +296,7 @@
     }
 
     async function addService() {
+      if (!supabase) return alert("Database connection not ready.");
       if (!activeVendor) return alert("Please select or add a business first!");
       const title = document.getElementById('service-title').value;
       const price = parseFloat(document.getElementById('service-price').value);
@@ -294,7 +313,7 @@
     }
 
     async function loadOrders() {
-      if (!activeVendor) return;
+      if (!supabase || !activeVendor) return;
       const container = document.getElementById('orders-list');
       const { data: orders } = await supabase.from('orders').select('*').eq('vendor_id', activeVendor.id).order('created_at', { ascending: false });
 
