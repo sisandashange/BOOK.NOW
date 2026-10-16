@@ -20,7 +20,6 @@
       --muted: #64748b;
       --border: #e2e8f0;
       --success: #16a34a;
-      --success-bg: #f0fdf4;
       --radius: 16px;
     }
 
@@ -79,10 +78,10 @@
     </div>
 
     <div class="filter-bar">
-      <button class="filter-chip active" onclick="filterCategory('ALL', this)">All Spots</button>
-      <button class="filter-chip" onclick="filterCategory('BARBER', this)">Barbershops</button>
-      <button class="filter-chip" onclick="filterCategory('SALON', this)">Salons</button>
-      <button class="filter-chip" onclick="filterCategory('SHISANYAMA', this)">Shisanyama</button>
+      <button class="filter-chip active" id="filter-all">All Spots</button>
+      <button class="filter-chip" id="filter-barber">Barbershops</button>
+      <button class="filter-chip" id="filter-salon">Salons</button>
+      <button class="filter-chip" id="filter-shisanyama">Shisanyama</button>
     </div>
 
     <div id="marketplace-list" class="card-list">
@@ -95,17 +94,17 @@
     <div class="modal-sheet">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
         <h3 id="modal-service-title" style="margin:0; font-size:16px; font-weight:700;">Complete Booking</h3>
-        <i class="ph ph-x" style="font-size:20px; cursor:pointer;" onclick="closeModal()"></i>
+        <i class="ph ph-x" id="close-modal-btn" style="font-size:20px; cursor:pointer;"></i>
       </div>
       <div class="form-field">
-        <label>Your Name</label>
+        <label for="customer-name">Your Name</label>
         <input type="text" id="customer-name" placeholder="e.g. Sipho Dlamini">
       </div>
       <div class="form-field">
-        <label>Phone Number</label>
+        <label for="customer-phone">Phone Number</label>
         <input type="tel" id="customer-phone" placeholder="e.g. 082 123 4567">
       </div>
-      <button class="btn-book" style="width:100%; padding:12px; font-size:14px;" onclick="confirmBooking()">Confirm Appointment</button>
+      <button class="btn-book" id="confirm-booking-btn" style="width:100%; padding:12px; font-size:14px;">Confirm Appointment</button>
     </div>
   </div>
 
@@ -113,52 +112,114 @@
     const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
     const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
     
-    let supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let supabase = null;
     let allVendors = [];
     let selectedService = null;
 
+    try {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    } catch (e) {
+      document.getElementById('marketplace-list').innerHTML = `<div class="empty-box">Init Error: ${e.message}</div>`;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('close-modal-btn').addEventListener('click', closeModal);
+      
+      document.getElementById('filter-all').addEventListener('click', (e) => filterCategory('ALL', e.target));
+      document.getElementById('filter-barber').addEventListener('click', (e) => filterCategory('BARBER', e.target));
+      document.getElementById('filter-salon').addEventListener('click', (e) => filterCategory('SALON', e.target));
+      document.getElementById('filter-shisanyama').addEventListener('click', (e) => filterCategory('SHISANYAMA', e.target));
+
+      document.getElementById('confirm-booking-btn').addEventListener('click', confirmBooking);
+
+      loadMarketplace();
+    });
+
     async function loadMarketplace() {
       const container = document.getElementById('marketplace-list');
-      
-      // Fetch vendors and their services
-      const { data: vendors, error } = await supabase.from('vendors').select('*, service_items(*)');
-      
-      if (error || !vendors || vendors.length === 0) {
-        container.innerHTML = '<div class="empty-box">No partner spots found right now. Check back soon!</div>';
-        return;
-      }
+      if (!supabase) return;
 
-      allVendors = vendors;
-      renderVendors(allVendors);
+      try {
+        const { data: vendors, error } = await supabase.from('vendors').select('*, service_items(*)');
+        
+        if (error) throw error;
+
+        if (!vendors || vendors.length === 0) {
+          container.innerHTML = '<div class="empty-box">No partner spots found right now. Check back soon!</div>';
+          return;
+        }
+
+        allVendors = vendors;
+        renderVendors(allVendors);
+      } catch (err) {
+        container.innerHTML = `<div class="empty-box">Could not load businesses: ${err.message}</div>`;
+      }
     }
 
     function renderVendors(vendors) {
       const container = document.getElementById('marketplace-list');
-      
+      container.replaceChildren();
+
       if (vendors.length === 0) {
         container.innerHTML = '<div class="empty-box">No spots in this category yet.</div>';
         return;
       }
 
-      container.innerHTML = vendors.map(v => `
-        <div class="vendor-card">
-          <div class="vendor-header">
-            <h3 class="vendor-title">${v.name}</h3>
-            <span class="vendor-category">${v.category}</span>
-          </div>
-          <div>
-            ${v.service_items && v.service_items.length > 0 ? v.service_items.map(s => `
-              <div class="service-row">
-                <div class="service-info">${s.title}</div>
-                <div class="service-price-book">
-                  <span class="service-price">R${Number(s.price).toFixed(2)}</span>
-                  <button class="btn-book" onclick="openBooking('${v.id}', '${s.id}', '${s.title}',${s.price})">Book</button>
-                </div>
-              </div>
-            `).join('') : '<div style="font-size:13px; color:var(--muted); padding:6px 0;">Menu coming soon</div>'}
-          </div>
-        </div>
-      `).join('');
+      vendors.forEach(v => {
+        const card = document.createElement('div');
+        card.className = 'vendor-card';
+
+        const header = document.createElement('div');
+        header.className = 'vendor-header';
+        
+        const title = document.createElement('h3');
+        title.className = 'vendor-title';
+        title.textContent = v.name || 'Unnamed Business';
+
+        const category = document.createElement('span');
+        category.className = 'vendor-category';
+        category.textContent = v.category || 'BUSINESS';
+
+        header.append(title, category);
+        card.appendChild(header);
+
+        const servicesBox = document.createElement('div');
+
+        if (v.service_items && v.service_items.length > 0) {
+          v.service_items.forEach(s => {
+            const row = document.createElement('div');
+            row.className = 'service-row';
+
+            const info = document.createElement('div');
+            info.className = 'service-info';
+            info.textContent = s.title;
+
+            const right = document.createElement('div');
+            right.className = 'service-price-book';
+
+            const price = document.createElement('span');
+            price.className = 'service-price';
+            price.textContent = `R${Number(s.price).toFixed(2)}`;
+
+            const bookBtn = document.createElement('button');
+            bookBtn.className = 'btn-book';
+            bookBtn.textContent = 'Book';
+            bookBtn.addEventListener('click', () => openBooking(v.id, s.id, s.title, s.price));
+
+            right.append(price, bookBtn);
+            row.append(info, right);
+            servicesBox.appendChild(row);
+          });
+        } else {
+          const emptyMsg = document.createElement('div');
+          emptyMsg.style.cssText = 'font-size:13px; color:var(--muted); padding:6px 0;';
+          emptyMsg.textContent = 'Menu coming soon';
+          servicesBox.appendChild(emptyMsg);
+        }
+
+        card.appendChild(servicesBox);
+        container.appendChild(card);
+      });
     }
 
     function filterCategory(cat, btn) {
@@ -175,7 +236,7 @@
 
     function openBooking(vendorId, serviceId, title, price) {
       selectedService = { vendorId, serviceId, title, price };
-      document.getElementById('modal-service-title').textContent = `Book: ${title} (R${price})`;
+      document.getElementById('modal-service-title').textContent = `Book: ${title} (R${price.toFixed(2)})`;
       document.getElementById('booking-modal').style.display = 'flex';
     }
 
@@ -191,7 +252,7 @@
       if (!selectedService) return;
 
       const grossAmount = selectedService.price;
-      const netEarnings = grossAmount * 0.90; // 90% vendor, 10% platform commission logic
+      const netEarnings = grossAmount * 0.90; // 90% vendor, 10% platform commission
 
       const { error } = await supabase.from('orders').insert([{
         vendor_id: selectedService.vendorId,
@@ -200,18 +261,13 @@
         status: 'PENDING'
       }]);
 
-      if (error) {
-        alert("Booking error: " + error.message);
-        return;
-      }
+      if (error) return alert("Booking error: " + error.message);
 
-      alert(`Booking confirmed for ${name}! The shop has received your order.`);
+      alert(`Booking confirmed for ${name}! Nzuzo Barbershop has received your appointment.`);
       closeModal();
       document.getElementById('customer-name').value = '';
       document.getElementById('customer-phone').value = '';
     }
-
-    loadMarketplace();
   </script>
 </body>
 </html>
