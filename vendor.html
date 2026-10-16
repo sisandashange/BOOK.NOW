@@ -685,10 +685,11 @@
         $("stat-revenue").textContent = money(revenue);
         $("stat-count").textContent = String(completed);
       } catch (error) {
-        setEmpty("orders-list", "Could not load bookings.");
-        $("stat-revenue").textContent = "R0.00";
-        $("stat-count").textContent = "0";
-      }
+  console.error("Load bookings error:", error);
+  setEmpty("orders-list", "Could not load bookings: " + error.message);
+  $("stat-revenue").textContent = "R0.00";
+  $("stat-count").textContent = "0";
+}
     }
 
     async function updateOrderStatus(orderId, newStatus) {
