@@ -189,102 +189,93 @@
 
     let activeVendor = null;
 
-    // UI Event Listeners (Guaranteed execution)
-    document.getElementById('open-add-biz-btn').addEventListener('click', () => {
-      document.getElementById('register-modal').style.display = 'flex';
-    });
-    document.getElementById('close-register-modal').addEventListener('click', () => {
-      document.getElementById('register-modal').style.display = 'none';
-    });
+    // Wait until DOM is fully loaded before hooking up clicks
+    document.addEventListener('DOMContentLoaded', () => {
+      
+      document.getElementById('open-add-biz-btn').addEventListener('click', () => {
+        document.getElementById('register-modal').style.display = 'flex';
+      });
 
-    document.getElementById('open-add-service-btn').addEventListener('click', () => {
-      document.getElementById('service-modal').style.display = 'flex';
-    });
-    document.getElementById('close-service-modal').addEventListener('click', () => {
-      document.getElementById('service-modal').style.display = 'none';
-    });
+      document.getElementById('close-register-modal').addEventListener('click', () => {
+        document.getElementById('register-modal').style.display = 'none';
+      });
 
-    document.getElementById('tab-orders-btn').addEventListener('click', (e) => {
-      document.getElementById('orders-tab').style.display = 'block';
-      document.getElementById('services-tab').style.display = 'none';
-      document.getElementById('tab-orders-btn').classList.add('active');
-      document.getElementById('tab-services-btn').classList.remove('active');
-    });
+      document.getElementById('open-add-service-btn').addEventListener('click', () => {
+        document.getElementById('service-modal').style.display = 'flex';
+      });
 
-    document.getElementById('tab-services-btn').addEventListener('click', (e) => {
-      document.getElementById('services-tab').style.display = 'block';
-      document.getElementById('orders-tab').style.display = 'none';
-      document.getElementById('tab-services-btn').classList.add('active');
-      document.getElementById('tab-orders-btn').classList.remove('active');
-    });
+      document.getElementById('close-service-modal').addEventListener('click', () => {
+        document.getElementById('service-modal').style.display = 'none';
+      });
 
-    document.getElementById('vendor-select').addEventListener('change', async (e) => {
-      if (!supabase) return;
-      const selectedId = e.target.value;
-      const { data } = await supabase.from('vendors').select('*').eq('id', selectedId).single();
-      if (data) {
-        activeVendor = data;
-        updateHeaderUI();
+      document.getElementById('tab-orders-btn').addEventListener('click', () => {
+        document.getElementById('orders-tab').style.display = 'block';
+        document.getElementById('services-tab').style.display = 'none';
+        document.getElementById('tab-orders-btn').classList.add('active');
+        document.getElementById('tab-services-btn').classList.remove('active');
+      });
+
+      document.getElementById('tab-services-btn').addEventListener('click', () => {
+        document.getElementById('services-tab').style.display = 'block';
+        document.getElementById('orders-tab').style.display = 'none';
+        document.getElementById('tab-services-btn').classList.add('active');
+        document.getElementById('tab-orders-btn').classList.remove('active');
+      });
+
+      document.getElementById('vendor-select').addEventListener('change', async (e) => {
+        if (!supabase) return;
+        const selectedId = e.target.value;
+        const { data } = await supabase.from('vendors').select('*').eq('id', selectedId).single();
+        if (data) {
+          activeVendor = data;
+          updateHeaderUI();
+          loadServices();
+          loadOrders();
+        }
+      });
+
+      // Save Business Action
+      document.getElementById('save-biz-btn').addEventListener('click', async () => {
+        if (!supabase) return alert("Database not initialized.");
+
+        const name = document.getElementById('new-biz-name').value.trim();
+        const category = document.getElementById('new-biz-category').value;
+
+        if (!name) return alert("Please enter a business name.");
+
+        const { data, error } = await supabase.from('vendors').insert([{ name, category }]).select();
+
+        if (error) return alert("Supabase Error: " + error.message);
+
+        alert("Business saved successfully!");
+        document.getElementById('register-modal').style.display = 'none';
+        document.getElementById('new-biz-name').value = '';
+        initDashboard();
+      });
+
+      // Save Service Action
+      document.getElementById('save-service-btn').addEventListener('click', async () => {
+        if (!supabase) return alert("Database not initialized.");
+        if (!activeVendor) return alert("Select a business first!");
+
+        const title = document.getElementById('service-title').value.trim();
+        const price = parseFloat(document.getElementById('service-price').value);
+
+        if (!title || isNaN(price)) return alert("Enter a valid title and price.");
+
+        const { error } = await supabase.from('service_items').insert([{ vendor_id: activeVendor.id, title, price }]);
+
+        if (error) return alert("Supabase Error: " + error.message);
+
+        alert("Service added successfully!");
+        document.getElementById('service-modal').style.display = 'none';
+        document.getElementById('service-title').value = '';
+        document.getElementById('service-price').value = '';
         loadServices();
-        loadOrders();
-      }
-    });
+      });
 
-    // Save Business Action
-    document.getElementById('save-biz-btn').addEventListener('click', async () => {
-      alert("Save Business button tapped!"); // Diagnostic test alert
-
-      if (!supabase) {
-        alert("Database not initialized.");
-        return;
-      }
-
-      const name = document.getElementById('new-biz-name').value.trim();
-      const category = document.getElementById('new-biz-category').value;
-
-      if (!name) {
-        alert("Please enter a business name.");
-        return;
-      }
-
-      const { data, error } = await supabase.from('vendors').insert([{ name, category }]).select();
-
-      if (error) {
-        alert("Supabase Error: " + error.message);
-        return;
-      }
-
-      alert("Business saved successfully!");
-      document.getElementById('register-modal').style.display = 'none';
-      document.getElementById('new-biz-name').value = '';
+      // Initial load
       initDashboard();
-    });
-
-    // Save Service Action
-    document.getElementById('save-service-btn').addEventListener('click', async () => {
-      if (!supabase) return alert("Database not initialized.");
-      if (!activeVendor) return alert("Select a business first!");
-
-      const title = document.getElementById('service-title').value.trim();
-      const price = parseFloat(document.getElementById('service-price').value);
-
-      if (!title || isNaN(price)) {
-        alert("Enter a valid title and price.");
-        return;
-      }
-
-      const { error } = await supabase.from('service_items').insert([{ vendor_id: activeVendor.id, title, price }]);
-
-      if (error) {
-        alert("Supabase Error: " + error.message);
-        return;
-      }
-
-      alert("Service added successfully!");
-      document.getElementById('service-modal').style.display = 'none';
-      document.getElementById('service-title').value = '';
-      document.getElementById('service-price').value = '';
-      loadServices();
     });
 
     async function initDashboard() {
@@ -375,9 +366,6 @@
       document.getElementById('stat-revenue').innerText = `R${revenue.toFixed(2)}`;
       document.getElementById('stat-count').innerText = count;
     }
-
-    // Run on page load
-    initDashboard();
   </script>
 </body>
 </html>
