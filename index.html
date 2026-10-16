@@ -135,26 +135,84 @@
       loadMarketplace();
     });
 
-    async function loadMarketplace() {
-      const container = document.getElementById('marketplace-list');
-      if (!supabase) return;
+    
+async function loadMarketplace() {
+  const container = document.getElementById('marketplace-list');
 
-      try {
-        const { data: vendors, error } = await supabase.from('vendors').select('*, service_items(*)');
-        
-        if (error) throw error;
+  container.innerHTML =
+    '<div class="empty-box">Connecting to BOOK.NOW...</div>';
 
-        if (!vendors || vendors.length === 0) {
-          container.innerHTML = '<div class="empty-box">No partner spots found right now. Check back soon!</div>';
-          return;
-        }
+  if (!window.supabase) {
+    container.innerHTML =
+      '<div class="empty-box">Supabase failed to load. Check your internet connection and refresh.</div>';
+    return;
+  }
 
-        allVendors = vendors;
-        renderVendors(allVendors);
-      } catch (err) {
-        container.innerHTML = `<div class="empty-box">Could not load businesses: ${err.message}</div>`;
-      }
+  if (!supabase) {
+    container.innerHTML =
+      '<div class="empty-box">Database client was not initialized.</div>';
+    return;
+  }
+
+  try {
+    const request = supabase
+      .from('vendors')
+      .select('id, name, category')
+      .order('created_at', { ascending: false });
+
+    const timeout = new Promise((_, reject) =>
+      setTimeout(
+        () => reject(new Error('Database request timed out. Check your connection and Supabase status.')),
+        12000
+      )
+    );
+
+    const { data: vendors, error } = await Promise.race([
+      request,
+      timeout
+    ]);
+
+    if (error) throw error;
+
+    allVendors = vendors || [];
+
+    if (allVendors.length === 0) {
+      container.innerHTML =
+        '<div class="empty-box">No businesses are available yet.</div>';
+      return;
     }
+
+    renderVendors(allVendors);
+
+    // Load each business's services separately.
+    for (const vendor of allVendors) {
+      const result = await supabase
+        .from('service_items')
+        .select('id, vendor_id, title, price')
+        .eq('vendor_id', vendor.id);
+
+      if (result.error) throw result.error;
+
+      vendor.service_items = result.data || [];
+    }
+
+    renderVendors(allVendors);
+
+  } catch (err) {
+    console.error('BOOK.NOW marketplace error:', err);
+
+    container.innerHTML = '';
+
+    const message = document.createElement('div');
+    message.className = 'empty-box';
+    message.textContent =
+      'Could not load businesses: ' +
+      (err.message || 'Unknown database error');
+
+    container.appendChild(message);
+  }
+}
+
 
     function renderVendors(vendors) {
       const container = document.getElementById('marketplace-list');
