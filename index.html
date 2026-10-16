@@ -109,52 +109,49 @@
   </div>
 
   <script>
+  (() => {
+    "use strict";
+
     const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
     const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
     
     let supabase = null;
     let allVendors = [];
     let selectedService = null;
+    let booted = false;
 
-    try {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    } catch (e) {
-      console.error("Init error:", e);
+    const $ = id => document.getElementById(id);
+
+    function bindEvents() {
+      $("close-modal-btn").addEventListener("click", closeModal);
+      
+      $("filter-all").addEventListener("click", (e) => filterCategory("ALL", e.target));
+      $("filter-barber").addEventListener("click", (e) => filterCategory("BARBER", e.target));
+      $("filter-salon").addEventListener("click", (e) => filterCategory("SALON", e.target));
+      $("filter-shisanyama").addEventListener("click", (e) => filterCategory("SHISANYAMA", e.target));
+
+      $("confirm-booking-btn").addEventListener("click", confirmBooking);
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('close-modal-btn').addEventListener('click', closeModal);
-      
-      document.getElementById('filter-all').addEventListener('click', (e) => filterCategory('ALL', e.target));
-      document.getElementById('filter-barber').addEventListener('click', (e) => filterCategory('BARBER', e.target));
-      document.getElementById('filter-salon').addEventListener('click', (e) => filterCategory('SALON', e.target));
-      document.getElementById('filter-shisanyama').addEventListener('click', (e) => filterCategory('SHISANYAMA', e.target));
-
-      document.getElementById('confirm-booking-btn').addEventListener('click', confirmBooking);
-
-      loadMarketplace();
-    });
-
     async function loadMarketplace() {
-      const container = document.getElementById('marketplace-list');
-
+      const container = $("marketplace-list");
       container.innerHTML = '<div class="empty-box">Connecting to BOOK.NOW...</div>';
 
       if (!window.supabase) {
-        container.textContent = 'Supabase library failed to load. Check your internet connection.';
+        container.textContent = "Supabase library failed to load. Check your internet connection.";
         return;
       }
 
       if (!supabase) {
-        container.textContent = 'Supabase client failed to initialize. Please check the configuration.';
+        container.textContent = "Supabase client failed to initialize.";
         return;
       }
 
       try {
         const { data: vendors, error } = await supabase
-          .from('vendors')
-          .select('id, name, category, created_at')
-          .order('created_at', { ascending: false });
+          .from("vendors")
+          .select("id, name, category, created_at")
+          .order("created_at", { ascending: false });
 
         if (error) throw error;
 
@@ -168,9 +165,9 @@
           vendors.map(async vendor => {
             const { data: services, error: serviceError } =
               await supabase
-                .from('service_items')
-                .select('id, vendor_id, title, price')
-                .eq('vendor_id', vendor.id);
+                .from("service_items")
+                .select("id, vendor_id, title, price")
+                .eq("vendor_id", vendor.id);
 
             if (serviceError) throw serviceError;
 
@@ -185,18 +182,18 @@
         renderVendors(allVendors);
 
       } catch (error) {
-        console.error('Marketplace error:', error);
+        console.error("Marketplace error:", error);
         container.replaceChildren();
 
-        const message = document.createElement('div');
-        message.className = 'empty-box';
-        message.textContent = 'Marketplace error: ' + (error.message || 'Unknown error');
+        const message = document.createElement("div");
+        message.className = "empty-box";
+        message.textContent = "Marketplace error: " + (error.message || "Unknown error");
         container.appendChild(message);
       }
     }
 
     function renderVendors(vendors) {
-      const container = document.getElementById('marketplace-list');
+      const container = $("marketplace-list");
       container.replaceChildren();
 
       if (vendors.length === 0) {
@@ -205,54 +202,54 @@
       }
 
       vendors.forEach(v => {
-        const card = document.createElement('div');
-        card.className = 'vendor-card';
+        const card = document.createElement("div");
+        card.className = "vendor-card";
 
-        const header = document.createElement('div');
-        header.className = 'vendor-header';
+        const header = document.createElement("div");
+        header.className = "vendor-header";
         
-        const title = document.createElement('h3');
-        title.className = 'vendor-title';
-        title.textContent = v.name || 'Unnamed Business';
+        const title = document.createElement("h3");
+        title.className = "vendor-title";
+        title.textContent = v.name || "Unnamed Business";
 
-        const category = document.createElement('span');
-        category.className = 'vendor-category';
-        category.textContent = v.category || 'BUSINESS';
+        const category = document.createElement("span");
+        category.className = "vendor-category";
+        category.textContent = v.category || "BUSINESS";
 
         header.append(title, category);
         card.appendChild(header);
 
-        const servicesBox = document.createElement('div');
+        const servicesBox = document.createElement("div");
 
         if (v.service_items && v.service_items.length > 0) {
           v.service_items.forEach(s => {
-            const row = document.createElement('div');
-            row.className = 'service-row';
+            const row = document.createElement("div");
+            row.className = "service-row";
 
-            const info = document.createElement('div');
-            info.className = 'service-info';
+            const info = document.createElement("div");
+            info.className = "service-info";
             info.textContent = s.title;
 
-            const right = document.createElement('div');
-            right.className = 'service-price-book';
+            const right = document.createElement("div");
+            right.className = "service-price-book";
 
-            const price = document.createElement('span');
-            price.className = 'service-price';
+            const price = document.createElement("span");
+            price.className = "service-price";
             price.textContent = `R${Number(s.price).toFixed(2)}`;
 
-            const bookBtn = document.createElement('button');
-            bookBtn.className = 'btn-book';
-            bookBtn.textContent = 'Book';
-            bookBtn.addEventListener('click', () => openBooking(v.id, s.id, s.title, s.price));
+            const bookBtn = document.createElement("button");
+            bookBtn.className = "btn-book";
+            bookBtn.textContent = "Book";
+            bookBtn.addEventListener("click", () => openBooking(v.id, s.id, s.title, s.price));
 
             right.append(price, bookBtn);
             row.append(info, right);
             servicesBox.appendChild(row);
           });
         } else {
-          const emptyMsg = document.createElement('div');
-          emptyMsg.style.cssText = 'font-size:13px; color:var(--muted); padding:6px 0;';
-          emptyMsg.textContent = 'Menu coming soon';
+          const emptyMsg = document.createElement("div");
+          emptyMsg.style.cssText = "font-size:13px; color:var(--muted); padding:6px 0;";
+          emptyMsg.textContent = "Menu coming soon";
           servicesBox.appendChild(emptyMsg);
         }
 
@@ -262,10 +259,10 @@
     }
 
     function filterCategory(cat, btn) {
-      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-      btn.classList.add('active');
+      document.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
+      btn.classList.add("active");
 
-      if (cat === 'ALL') {
+      if (cat === "ALL") {
         renderVendors(allVendors);
       } else {
         const filtered = allVendors.filter(v => v.category === cat);
@@ -275,17 +272,17 @@
 
     function openBooking(vendorId, serviceId, title, price) {
       selectedService = { vendorId, serviceId, title, price };
-      document.getElementById('modal-service-title').textContent = `Book: ${title} (R${price.toFixed(2)})`;
-      document.getElementById('booking-modal').style.display = 'flex';
+      $("modal-service-title").textContent = `Book: ${title} (R${price.toFixed(2)})`;
+      $("booking-modal").style.display = "flex";
     }
 
     function closeModal() {
-      document.getElementById('booking-modal').style.display = 'none';
+      $("booking-modal").style.display = "none";
     }
 
     async function confirmBooking() {
-      const name = document.getElementById('customer-name').value.trim();
-      const phone = document.getElementById('customer-phone').value.trim();
+      const name = $("customer-name").value.trim();
+      const phone = $("customer-phone").value.trim();
 
       if (!name || !phone) return alert("Please enter your name and phone number.");
       if (!selectedService) return;
@@ -293,20 +290,40 @@
       const grossAmount = selectedService.price;
       const netEarnings = grossAmount * 0.90;
 
-      const { error } = await supabase.from('orders').insert([{
+      const { error } = await supabase.from("orders").insert([{
         vendor_id: selectedService.vendorId,
         gross_amount: grossAmount,
         vendor_net_earnings: netEarnings,
-        status: 'PENDING'
+        status: "PENDING"
       }]);
 
       if (error) return alert("Booking error: " + error.message);
 
       alert(`Booking confirmed for ${name}! The shop has received your appointment.`);
       closeModal();
-      document.getElementById('customer-name').value = '';
-      document.getElementById('customer-phone').value = '';
+      $("customer-name").value = "";
+      $("customer-phone").value = "";
     }
+
+    function boot() {
+      if (booted) return;
+      booted = true;
+
+      try {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        bindEvents();
+        loadMarketplace();
+      } catch (e) {
+        console.error("Boot error:", e);
+      }
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", boot, { once: true });
+    } else {
+      boot();
+    }
+  })();
   </script>
 </body>
 </html>
