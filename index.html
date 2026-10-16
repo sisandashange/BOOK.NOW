@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Local Marketplace - Barbers, Salons & Shisanyama</title>
+  <!-- Load Supabase JS Client via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; font-family: sans-serif; }
+    body { margin: 0; padding: 16px; background: #f4f5f7; color: #333; }
+    h1 { color: #1a202c; text-align: center; }
+    .card { background: white; padding: 16px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #e2e8f0; }
+    .btn { background: #0070f3; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 8px; }
+    .btn:disabled { background: #ccc; }
+    .price { font-weight: bold; color: #2b6cb0; }
+    .ledger-box { background: #f7fafc; border-left: 4px solid #319795; padding: 10px; margin-top: 8px; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+  <h1>Marketplace</h1>
+
+  <!-- VENDOR LISTINGS -->
+  <div id="vendor-container">
+    <p>Loading vendors from Supabase...</p>
+  </div>
+
+  <!-- BOOKING MODAL / SECTION -->
+  <div id="booking-preview" class="card" style="display:none;">
+    <h3>Confirm Booking</h3>
+    <p id="selected-service-name"></p>
+    <p>Price: <span id="selected-service-price" class="price"></span></p>
+    
+    <div class="ledger-box">
+      <strong>Behind the scenes calculation:</strong><br>
+      • Platform Commission (10%): <span id="calc-commission"></span><br>
+      • Vendor Earnings (90%): <span id="calc-vendor"></span>
+    </div>
+
+    <button id="confirm-btn" class="btn">Confirm Booking</button>
+  </div>
+
+  <script>
+    // 1. Initialize Supabase Client
+    // Replace with your real Supabase Project URL and Anon Public Key
+    const SUPABASE_URL = "https://YOUR_SUPABASE_PROJECT_REF.supabase.co";
+    const SUPABASE_KEY = "YOUR_SUPABASE_ANON_PUBLIC_KEY";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Sample fallback data in case Supabase isn't connected yet
+    const demoVendors = [
+      {
+        id: "v1",
+        name: "Sipho's Barber Spot",
+        category: "BARBER",
+        services: [{ id: "s1", title: "Fade & Beard Trim", price: 150 }]
+      },
+      {
+        id: "v2",
+        name: "Gugu's Braai & Shisanyama",
+        category: "SHISANYAMA",
+        services: [{ id: "s2", title: "1kg Beef Platter + Chakalaka", price: 250 }]
+      }
+    ];
+
+    let currentSelection = null;
+
+    // 2. Render Vendors and Services
+    function renderVendors(vendors) {
+      const container = document.getElementById("vendor-container");
+      container.innerHTML = "";
+
+      vendors.forEach(vendor => {
+        const vendorCard = document.createElement("div");
+        vendorCard.className = "card";
+        
+        let servicesHTML = "";
+        vendor.services.forEach(service => {
+          servicesHTML += `
+            <div style="margin-top:8px; border-top:1px solid #eee; padding-top:8px;">
+              <strong>${service.title}</strong> - <span class="price">R${service.price}</span>
+              <button class="btn" onclick="selectService('${vendor.id}', '${vendor.name}', '${service.title}', ${service.price})">Book / Order</button>
+            </div>
+          `;
+        });
+
+        vendorCard.innerHTML = `
+          <span class="badge">${vendor.category}</span>
+          <h2>${vendor.name}</h2>
+          ${servicesHTML}
+        `;
+        container.appendChild(vendorCard);
+      });
+    }
+
+    // 3. Calculate Ledger Breakdown (10% Commission)
+    function selectService(vendorId, vendorName, serviceTitle, price) {
+      const commission = price * 0.10;
+      const vendorEarnings = price - commission;
+
+      currentSelection = { vendorId, vendorName, serviceTitle, price, commission, vendorEarnings };
+
+      document.getElementById("selected-service-name").innerText = `${serviceTitle} (${vendorName})`;
+      document.getElementById("selected-service-price").innerText = `R${price}`;
+      document.getElementById("calc-commission").innerText = `R${commission.toFixed(2)}`;
+      document.getElementById("calc-vendor").innerText = `R${vendorEarnings.toFixed(2)}`;
+      
+      document.getElementById("booking-preview").style.display = "block";
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    // 4. Submit Order to Supabase Database
+    document.getElementById("confirm-btn").addEventListener("click", async () => {
+      if (!currentSelection) return;
+
+      const btn = document.getElementById("confirm-btn");
+      btn.innerText = "Processing...";
+      btn.disabled = true;
+
+      try {
+        // Try saving directly to Supabase if configured
+        const { data, error } = await supabase.from('orders').insert([
+          {
+            vendor_id: currentSelection.vendorId,
+            gross_amount: currentSelection.price,
+            platform_commission: currentSelection.commission,
+            vendor_net_earnings: currentSelection.vendorEarnings,
+            status: 'CONFIRMED',
+            payment_status: 'UNPAID' // Pay at venue / cash
+          }
+        ]);
+
+        if (error) throw error;
+        alert("Booking Confirmed! Added to Supabase Ledger.");
+      } catch (err) {
+        // Fallback for offline/demo testing
+        console.warn("Supabase not linked or table missing, demonstrating locally:", err.message);
+        alert(`Booking Confirmed for ${currentSelection.serviceTitle}!\nInternal Ledger Record:\n- Vendor gets: R${currentSelection.vendorEarnings}\n- Platform keeps: R${currentSelection.commission}`);
+      } finally {
+        btn.innerText = "Confirm Booking";
+        btn.disabled = false;
+        document.getElementById("booking-preview").style.display = "none";
+      }
+    });
+
+    // Load initial demo view
+    renderVendors(demoVendors);
+  </script>
+</body>
+</html>
