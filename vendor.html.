@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vendor Portal - Management & Ledger</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { margin: 0; padding: 16px; background: #f8fafc; color: #1e293b; }
+    h1, h2 { color: #0f172a; margin-top: 0; }
+    .card { background: white; padding: 18px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .stat-card { background: #f1f5f9; padding: 12px; border-radius: 8px; text-align: center; }
+    .stat-number { font-size: 22px; font-weight: 700; color: #0284c7; }
+    .stat-label { font-size: 12px; color: #64748b; font-weight: 600; }
+    input, select { width: 100%; padding: 10px; margin: 6px 0 12px 0; border: 1px solid #cbd5e1; border-radius: 6px; }
+    .btn { background: #059669; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; }
+    .btn-secondary { background: #2563eb; }
+    .order-item { border-bottom: 1px solid #f1f5f9; padding: 10px 0; font-size: 14px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #dcfce7; color: #166534; }
+  </style>
+</head>
+<body>
+
+  <h1>Vendor Dashboard</h1>
+
+  <!-- VENDOR SELECTION / CREATION -->
+  <div class="card">
+    <h2>1. Select or Add Vendor</h2>
+    <label>Select Active Business:</label>
+    <select id="vendor-select" onchange="switchVendor()">
+      <option value="">-- Choose Business --</option>
+    </select>
+
+    <details style="margin-top: 10px;">
+      <summary style="font-size: 14px; cursor: pointer; color: #2563eb; font-weight: 600;">+ Register New Business</summary>
+      <div style="margin-top: 10px;">
+        <input type="text" id="new-vendor-name" placeholder="Business Name (e.g., King Cut Barber)">
+        <select id="new-vendor-category">
+          <option value="BARBER">Barbershop</option>
+          <option value="SALON">Salon</option>
+          <option value="SHISANYAMA">Shisanyama / Food</option>
+        </select>
+        <button class="btn" onclick="registerVendor()">Save Business</button>
+      </div>
+    </details>
+  </div>
+
+  <!-- LEDGER & STATS OVERVIEW -->
+  <div class="card">
+    <h2>2. Financial Ledger Balance</h2>
+    <div class="grid">
+      <div class="stat-card">
+        <div class="stat-number" id="stat-net">R0.00</div>
+        <div class="stat-label">Net Earnings (90%)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-commission" style="color: #d97706;">R0.00</div>
+        <div class="stat-label">Platform Fee (10%)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD SERVICE / MENU ITEM -->
+  <div class="card">
+    <h2>3. Add Service or Menu Item</h2>
+    <input type="text" id="service-title" placeholder="Item Name (e.g., Fade Cut / 1kg Meat Platter)">
+    <input type="number" id="service-price" placeholder="Price in ZAR (e.g., 150)">
+    <button class="btn btn-secondary" onclick="addService()">Add to Menu / Services</button>
+  </div>
+
+  <!-- LIVE ORDERS -->
+  <div class="card">
+    <h2>4. Incoming Bookings & Orders</h2>
+    <div id="orders-container">
+      <p style="color: #64748b; font-size: 14px;">Select a vendor to view orders.</p>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Supabase Client
+    const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let activeVendorId = null;
+
+    // 1. Fetch existing vendors into the dropdown
+    async function loadVendorsDropdown() {
+      const { data: vendors, error } = await supabase.from('vendors').select('*');
+      const select = document.getElementById('vendor-select');
+      select.innerHTML = '<option value="">-- Choose Business --</option>';
+
+      if (vendors && vendors.length > 0) {
+        vendors.forEach(v => {
+          select.innerHTML += `<option value="${v.id}">${v.name} (${v.category})</option>`;
+        });
+      }
+    }
+
+    // 2. Register a new Vendor
+    async function registerVendor() {
+      const name = document.getElementById('new-vendor-name').value;
+      const category = document.getElementById('new-vendor-category').value;
+
+      if (!name) return alert("Please enter a business name");
+
+      const { data, error } = await supabase.from('vendors').insert([
+        { name, category, commission_rate: 0.10 }
+      ]).select();
+
+      if (error) return alert("Error saving vendor: " + error.message);
+
+      alert("Vendor registered successfully!");
+      document.getElementById('new-vendor-name').value = "";
+      loadVendorsDropdown();
+    }
+
+    // 3. Switch active vendor and reload dashboard stats
+    async function switchVendor() {
+      activeVendorId = document.getElementById('vendor-select').value;
+      if (!activeVendorId) return;
+
+      loadOrdersAndLedger();
+    }
+
+    // 4. Add a new service item to the selected vendor
+    async function addService() {
+      if (!activeVendorId) return alert("Please select a business first!");
+
+      const title = document.getElementById('service-title').value;
+      const price = parseFloat(document.getElementById('service-price').value);
+
+      if (!title || isNaN(price)) return alert("Enter a valid name and price");
+
+      const { error } = await supabase.from('service_items').insert([
+        { vendor_id: activeVendorId, title, price }
+      ]);
+
+      if (error) return alert("Error adding service: " + error.message);
+
+      alert(`Added "${title}" @ R${price} to catalog!`);
+      document.getElementById('service-title').value = "";
+      document.getElementById('service-price').value = "";
+    }
+
+    // 5. Load incoming orders and calculate totals
+    async function loadOrdersAndLedger() {
+      const container = document.getElementById('orders-container');
+      container.innerHTML = "Loading orders...";
+
+      const { data: orders, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('vendor_id', activeVendorId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        container.innerHTML = "Failed to load orders.";
+        return;
+      }
+
+      let totalNet = 0;
+      let totalCommission = 0;
+
+      if (!orders || orders.length === 0) {
+        container.innerHTML = "<p style='color:#64748b;'>No orders placed for this vendor yet.</p>";
+      } else {
+        container.innerHTML = "";
+        orders.forEach(o => {
+          totalNet += Number(o.vendor_net_earnings || 0);
+          totalCommission += Number(o.platform_commission || 0);
+
+          container.innerHTML += `
+            <div class="order-item">
+              <span class="badge">${o.status}</span>
+              <strong style="margin-left: 8px;">Order Total: R${o.gross_amount}</strong><br>
+              <span style="color:#64748b; font-size: 12px;">
+                Net: R${o.vendor_net_earnings} | Commission: R${o.platform_commission}
+              </span>
+            </div>
+          `;
+        });
+      }
+
+      // Update Ledger Stat boxes
+      document.getElementById('stat-net').innerText = `R${totalNet.toFixed(2)}`;
+      document.getElementById('stat-commission').innerText = `R${totalCommission.toFixed(2)}`;
+    }
+
+    // Initialize dropdown on load
+    loadVendorsDropdown();
+  </script>
+</body>
+</html>
