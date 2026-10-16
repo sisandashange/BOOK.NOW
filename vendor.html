@@ -24,410 +24,166 @@
       --radius: 16px;
     }
 
-    * {
-      box-sizing: border-box;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
+    * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 60px; }
 
-    body {
-      margin: 0;
-      padding: 0;
-      background: var(--bg);
-      color: var(--text);
-      padding-bottom: 60px;
-    }
+    /* AUTH SCREEN STYLES */
+    #auth-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; background: var(--bg); }
+    .auth-card { background: var(--surface); padding: 28px; border-radius: 20px; border: 1px solid var(--border); width: 100%; max-width: 400px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+    .auth-title { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 6px; }
+    .auth-sub { font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 24px; }
 
-    .top-nav {
-      background: var(--surface);
-      padding: 14px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 20;
-    }
+    .top-nav { background: var(--surface); padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 20; }
+    .brand { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+    .brand-badge { background: #e0f2fe; color: #0369a1; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
 
-    .brand {
-      font-size: 17px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--primary);
-    }
+    .business-bar { background: var(--surface); padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .business-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .biz-avatar { width: 36px; height: 36px; border-radius: 10px; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+    .biz-name { font-weight: 700; font-size: 15px; margin: 0; }
+    .biz-type { font-size: 12px; color: var(--muted); margin-top: 1px; overflow-wrap: anywhere; }
 
-    .brand-badge {
-      background: #e0f2fe;
-      color: #0369a1;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
-      text-transform: uppercase;
-    }
+    .container { padding: 16px 20px; max-width: 650px; margin: 0 auto; }
 
-    .business-bar {
-      background: var(--surface);
-      padding: 12px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-    }
+    .stats-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .stat-box { background: var(--surface); padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); }
+    .stat-header { font-size: 12px; font-weight: 600; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+    .stat-value { font-size: 22px; font-weight: 700; margin-top: 6px; color: var(--text); }
 
-    .business-info {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-width: 0;
-    }
+    .nav-tabs { display: flex; background: #e2e8f0; padding: 4px; border-radius: 12px; margin-bottom: 20px; }
+    .tab-item { flex: 1; padding: 10px; border: none; background: transparent; font-size: 13px; font-weight: 600; color: var(--muted); border-radius: 8px; cursor: pointer; }
+    .tab-item.active { background: #fff; color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
 
-    .biz-avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      background: var(--primary);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 14px;
-      flex-shrink: 0;
-    }
+    .section-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .section-head h3 { font-size: 16px; font-weight: 700; margin: 0; }
 
-    .biz-name {
-      font-weight: 700;
-      font-size: 15px;
-      margin: 0;
-    }
+    .btn-primary { background: var(--accent); color: white; border: none; padding: 12px 14px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    .biz-type {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 1px;
-      overflow-wrap: anywhere;
-    }
+    .card-list { display: flex; flex-direction: column; gap: 12px; }
+    .order-card { background: var(--surface); padding: 16px; border-radius: 14px; border: 1px solid var(--border); }
+    .order-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+    .order-title { font-weight: 700; font-size: 15px; }
+    .order-time { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .order-price { font-weight: 700; color: var(--success); font-size: 16px; }
+    .order-status { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; background: var(--success-bg); color: var(--success); text-transform: uppercase; }
 
-    .container {
-      padding: 16px 20px;
-      max-width: 650px;
-      margin: 0 auto;
-    }
+    .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: flex-end; z-index: 100; overflow-y: auto; }
+    .modal-sheet { background: #fff; width: 100%; max-width: 600px; padding: 24px; border-radius: 24px 24px 0 0; margin-top: auto; }
 
-    .stats-container {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
+    .form-field { margin-bottom: 14px; }
+    .form-field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; }
+    .form-field input, .form-field select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); font-size: 14px; outline: none; }
 
-    .stat-box {
-      background: var(--surface);
-      padding: 16px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-    }
-
-    .stat-header {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--muted);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .stat-value {
-      font-size: 22px;
-      font-weight: 700;
-      margin-top: 6px;
-      color: var(--text);
-    }
-
-    .nav-tabs {
-      display: flex;
-      background: #e2e8f0;
-      padding: 4px;
-      border-radius: 12px;
-      margin-bottom: 20px;
-    }
-
-    .tab-item {
-      flex: 1;
-      padding: 10px;
-      border: none;
-      background: transparent;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--muted);
-      border-radius: 8px;
-      cursor: pointer;
-    }
-
-    .tab-item.active {
-      background: #fff;
-      color: var(--text);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    }
-
-    .section-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-
-    .section-head h3 {
-      font-size: 16px;
-      font-weight: 700;
-      margin: 0;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: white;
-      border: none;
-      padding: 12px 14px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      width: 100%;
-    }
-
-    .btn-primary:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .card-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .order-card {
-      background: var(--surface);
-      padding: 16px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-    }
-
-    .order-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 10px;
-    }
-
-    .order-title {
-      font-weight: 700;
-      font-size: 15px;
-    }
-
-    .order-time {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 2px;
-    }
-
-    .order-price {
-      font-weight: 700;
-      color: var(--success);
-      font-size: 16px;
-    }
-
-    .order-status {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      background: var(--success-bg);
-      color: var(--success);
-      text-transform: uppercase;
-    }
-
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.4);
-      backdrop-filter: blur(4px);
-      display: none;
-      justify-content: center;
-      align-items: flex-end;
-      z-index: 100;
-      overflow-y: auto;
-    }
-
-    .modal-sheet {
-      background: #fff;
-      width: 100%;
-      max-width: 600px;
-      padding: 24px;
-      border-radius: 24px 24px 0 0;
-      margin-top: auto;
-    }
-
-    .form-field {
-      margin-bottom: 14px;
-    }
-
-    .form-field label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--muted);
-      margin-bottom: 6px;
-      text-transform: uppercase;
-    }
-
-    .form-field input,
-    .form-field select {
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      font-size: 14px;
-      outline: none;
-    }
-
-    .empty-box {
-      text-align: center;
-      padding: 40px 16px;
-      background: var(--surface);
-      border-radius: 14px;
-      border: 1px dashed var(--border);
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    @media (max-width: 400px) {
-      .top-nav {
-        padding: 12px;
-      }
-
-      .brand {
-        font-size: 14px;
-      }
-
-      .business-bar {
-        padding: 12px;
-      }
-
-      .container {
-        padding: 14px 12px;
-      }
-
-      .stat-box {
-        padding: 12px;
-      }
-
-      .stat-value {
-        font-size: 19px;
-      }
-    }
+    .empty-box { text-align: center; padding: 40px 16px; background: var(--surface); border-radius: 14px; border: 1px dashed var(--border); color: var(--muted); font-size: 14px; }
+    .link-btn { color: var(--accent); cursor: pointer; font-weight: 600; text-align: center; margin-top: 14px; font-size: 13px; display: block; }
   </style>
 </head>
 
 <body>
 
-  <div class="top-nav">
-    <div class="brand">
-      <i class="ph ph-storefront" style="font-size:22px;color:var(--accent);"></i>
-      Partner Portal <span class="brand-badge">LIVE</span>
-    </div>
+  <!-- VIEW 1: AUTHENTICATION SCREEN -->
+  <div id="auth-screen">
+    <div class="auth-card">
+      <div class="brand" style="justify-content: center; margin-bottom: 16px;">
+        <i class="ph ph-storefront" style="font-size:26px; color:var(--accent);"></i>
+        Partner Hub
+      </div>
+      <div class="auth-title" id="auth-heading">Partner Login</div>
+      <div class="auth-sub" id="auth-subheading">Access your business dashboard securely</div>
 
-    <button class="btn-primary"
-      style="width:auto;padding:8px 14px;background:#f1f5f9;color:#0f172a;"
-      id="open-add-biz-btn">
-      <i class="ph ph-plus"></i> Add Business
-    </button>
+      <div class="form-field">
+        <label for="auth-email">Email Address</label>
+        <input type="email" id="auth-email" placeholder="owner@business.co.za">
+      </div>
+
+      <div class="form-field">
+        <label for="auth-password">Password</label>
+        <input type="password" id="auth-password" placeholder="••••••••">
+      </div>
+
+      <button class="btn-primary" id="auth-submit-btn">Sign In</button>
+      <span class="link-btn" id="toggle-auth-btn">Need an account? Register as Partner</span>
+    </div>
   </div>
 
-  <div class="business-bar">
-    <div class="business-info">
-      <div class="biz-avatar" id="biz-avatar-letter">N</div>
-      <div>
-        <div class="biz-name" id="biz-display-name">Loading Business...</div>
-        <div class="biz-type" id="biz-display-type">Verifying partner account</div>
-      </div>
-    </div>
-
-    <select id="vendor-select"
-      aria-label="Switch business"
-      style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);font-size:12px;font-weight:600;max-width:45%;">
-      <option value="">Switch Shop</option>
-    </select>
-  </div>
-
-  <div class="container">
-
-    <div class="stats-container">
-      <div class="stat-box">
-        <div class="stat-header">
-          <i class="ph ph-currency-circle-dollar" style="font-size:16px;"></i>
-          Total Payouts
-        </div>
-        <div class="stat-value" id="stat-revenue">R0.00</div>
+  <!-- VIEW 2: VENDOR DASHBOARD (GATED BEHIND AUTH) -->
+  <div id="dashboard-screen" style="display: none;">
+    <div class="top-nav">
+      <div class="brand">
+        <i class="ph ph-storefront" style="font-size:22px;color:var(--accent);"></i>
+        Partner Portal <span class="brand-badge">SECURE</span>
       </div>
 
-      <div class="stat-box">
-        <div class="stat-header">
-          <i class="ph ph-calendar-check" style="font-size:16px;"></i>
-          Completed Bookings
-        </div>
-        <div class="stat-value" id="stat-count">0</div>
-      </div>
-    </div>
-
-    <div class="nav-tabs">
-      <button class="tab-item active" id="tab-orders-btn">
-        Bookings &amp; Orders
-      </button>
-      <button class="tab-item" id="tab-services-btn">
-        Services Menu
-      </button>
-    </div>
-
-    <div id="orders-tab" class="tab-content">
-      <div class="section-head">
-        <h3>Live Appointments</h3>
-      </div>
-
-      <div id="orders-list" class="card-list">
-        <div class="empty-box">No bookings received yet.</div>
-      </div>
-    </div>
-
-    <div id="services-tab" class="tab-content" style="display:none;">
-      <div class="section-head">
-        <h3>Services &amp; Prices</h3>
-
-        <button class="btn-primary" id="open-add-service-btn"
-          style="width:auto;padding:8px 14px;">
-          <i class="ph ph-plus"></i> Add Service
+      <div style="display: flex; gap: 8px;">
+        <button class="btn-primary" style="width:auto;padding:8px 12px;background:#f1f5f9;color:#0f172a;" id="open-add-biz-btn">
+          <i class="ph ph-plus"></i> Add Business
+        </button>
+        <button class="btn-primary" style="width:auto;padding:8px 12px;background:#fee2e2;color:#991b1b;" id="logout-btn" title="Logout">
+          <i class="ph ph-sign-out"></i>
         </button>
       </div>
+    </div>
 
-      <div id="services-list" class="card-list">
-        <div class="empty-box">
-          No services added yet. Click "+ Add Service" above.
+    <div class="business-bar">
+      <div class="business-info">
+        <div class="biz-avatar" id="biz-avatar-letter">N</div>
+        <div>
+          <div class="biz-name" id="biz-display-name">Loading Business...</div>
+          <div class="biz-type" id="biz-display-type">Verifying partner account</div>
+        </div>
+      </div>
+
+      <select id="vendor-select" aria-label="Switch business" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);font-size:12px;font-weight:600;max-width:45%;">
+        <option value="">Switch Shop</option>
+      </select>
+    </div>
+
+    <div class="container">
+      <div class="stats-container">
+        <div class="stat-box">
+          <div class="stat-header">
+            <i class="ph ph-currency-circle-dollar" style="font-size:16px;"></i>
+            Total Payouts
+          </div>
+          <div class="stat-value" id="stat-revenue">R0.00</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-header">
+            <i class="ph ph-calendar-check" style="font-size:16px;"></i>
+            Completed Bookings
+          </div>
+          <div class="stat-value" id="stat-count">0</div>
+        </div>
+      </div>
+
+      <div class="nav-tabs">
+        <button class="tab-item active" id="tab-orders-btn">Bookings &amp; Orders</button>
+        <button class="tab-item" id="tab-services-btn">Services Menu</button>
+      </div>
+
+      <div id="orders-tab" class="tab-content">
+        <div class="section-head">
+          <h3>Live Appointments</h3>
+        </div>
+        <div id="orders-list" class="card-list">
+          <div class="empty-box">No bookings received yet.</div>
+        </div>
+      </div>
+
+      <div id="services-tab" class="tab-content" style="display:none;">
+        <div class="section-head">
+          <h3>Services &amp; Prices</h3>
+          <button class="btn-primary" id="open-add-service-btn" style="width:auto;padding:8px 14px;">
+            <i class="ph ph-plus"></i> Add Service
+          </button>
+        </div>
+        <div id="services-list" class="card-list">
+          <div class="empty-box">No services added yet. Click "+ Add Service" above.</div>
         </div>
       </div>
     </div>
-
   </div>
 
   <!-- MODAL: ADD SERVICE -->
@@ -435,26 +191,17 @@
     <div class="modal-sheet">
       <div class="section-head">
         <h3>Add Service Offering</h3>
-        <i class="ph ph-x" style="font-size:20px;cursor:pointer;"
-          id="close-service-modal" role="button" tabindex="0"
-          aria-label="Close service form"></i>
+        <i class="ph ph-x" style="font-size:20px;cursor:pointer;" id="close-service-modal"></i>
       </div>
-
       <div class="form-field">
         <label for="service-title">Service Title</label>
-        <input type="text" id="service-title"
-          placeholder="e.g. Fade Cut & Beard Trim" maxlength="150">
+        <input type="text" id="service-title" placeholder="e.g. Fade Cut & Beard Trim" maxlength="150">
       </div>
-
       <div class="form-field">
         <label for="service-price">Price (ZAR)</label>
-        <input type="number" id="service-price"
-          placeholder="e.g. 150" min="1" max="10000" step="0.01">
+        <input type="number" id="service-price" placeholder="e.g. 150" min="1" max="10000" step="0.01">
       </div>
-
-      <button class="btn-primary" id="save-service-btn">
-        Publish Service
-      </button>
+      <button class="btn-primary" id="save-service-btn">Publish Service</button>
     </div>
   </div>
 
@@ -463,17 +210,12 @@
     <div class="modal-sheet">
       <div class="section-head">
         <h3>Register New Business</h3>
-        <i class="ph ph-x" style="font-size:20px;cursor:pointer;"
-          id="close-register-modal" role="button" tabindex="0"
-          aria-label="Close business form"></i>
+        <i class="ph ph-x" style="font-size:20px;cursor:pointer;" id="close-register-modal"></i>
       </div>
-
       <div class="form-field">
         <label for="new-biz-name">Business Name</label>
-        <input type="text" id="new-biz-name"
-          placeholder="e.g. Nzuzo Barbershop" maxlength="150">
+        <input type="text" id="new-biz-name" placeholder="e.g. Nzuzo Barbershop" maxlength="150">
       </div>
-
       <div class="form-field">
         <label for="new-biz-category">Category</label>
         <select id="new-biz-category">
@@ -482,492 +224,462 @@
           <option value="SHISANYAMA">Shisanyama / Braai Spot</option>
         </select>
       </div>
-
-      <button class="btn-primary" id="save-biz-btn">
-        Save Business
-      </button>
+      <button class="btn-primary" id="save-biz-btn">Save Business</button>
     </div>
   </div>
 
-  
-<script>
-(() => {
-  "use strict";
+  <script>
+  (() => {
+    "use strict";
 
-  const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
+    const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
 
-  let db = null;
-  let activeVendor = null;
-  let booted = false;
+    let db = null;
+    let activeVendor = null;
+    let isSignUpMode = false;
+    let booted = false;
 
-  const $ = id => document.getElementById(id);
+    const $ = id => document.getElementById(id);
 
-  function showError(message) {
-    console.error("[BOOK.NOW]", message);
-    const type = $("biz-display-type");
-    if (type) type.textContent = message;
-  }
-
-  function openModal(id) {
-    const modal = $(id);
-    if (modal) {
-      modal.style.display = "flex";
-      document.body.style.overflow = "hidden";
-    }
-  }
-
-  function closeModal(id) {
-    const modal = $(id);
-    if (modal) modal.style.display = "none";
-
-    const anyOpen = ["register-modal", "service-modal"].some(
-      modalId => $(modalId)?.style.display === "flex"
-    );
-
-    document.body.style.overflow = anyOpen ? "hidden" : "";
-  }
-
-  function setButtonLoading(button, loading, text) {
-    if (!button) return;
-    button.disabled = loading;
-    button.textContent = text;
-  }
-
-  function setEmpty(id, message) {
-    const el = $(id);
-    if (!el) return;
-    el.replaceChildren();
-    const box = document.createElement("div");
-    box.className = "empty-box";
-    box.textContent = message;
-    el.appendChild(box);
-  }
-
-  function money(value) {
-    const number = Number(value);
-    return "R" + (Number.isFinite(number) ? number : 0).toFixed(2);
-  }
-
-  // Attach UI handlers before connecting to the database.
-  function bindButtons() {
-    $("open-add-biz-btn").addEventListener("click", () => {
-      openModal("register-modal");
-    });
-
-    $("close-register-modal").addEventListener("click", () => {
-      closeModal("register-modal");
-    });
-
-    $("open-add-service-btn").addEventListener("click", () => {
-      if (!activeVendor) {
-        alert("Please add or select a business first.");
-        return;
+    function openModal(id) {
+      const modal = $(id);
+      if (modal) {
+        modal.style.display = "flex";
+        document.body.style.overflow = "hidden";
       }
-      openModal("service-modal");
-    });
+    }
 
-    $("close-service-modal").addEventListener("click", () => {
-      closeModal("service-modal");
-    });
+    function closeModal(id) {
+      const modal = $(id);
+      if (modal) modal.style.display = "none";
+      const anyOpen = ["register-modal", "service-modal"].some(m => $(m)?.style.display === "flex");
+      document.body.style.overflow = anyOpen ? "hidden" : "";
+    }
 
-    [
-      ["register-modal", "close-register-modal"],
-      ["service-modal", "close-service-modal"]
-    ].forEach(([modalId, closeId]) => {
-      $(modalId).addEventListener("click", event => {
-        if (event.target === $(modalId)) closeModal(modalId);
+    function setButtonLoading(button, loading, text) {
+      if (!button) return;
+      button.disabled = loading;
+      button.textContent = text;
+    }
+
+    function setEmpty(id, message) {
+      const el = $(id);
+      if (!el) return;
+      el.replaceChildren();
+      const box = document.createElement("div");
+      box.className = "empty-box";
+      box.textContent = message;
+      el.appendChild(box);
+    }
+
+    function money(value) {
+      const number = Number(value);
+      return "R" + (Number.isFinite(number) ? number : 0).toFixed(2);
+    }
+
+    function bindButtons() {
+      // Auth Mode Toggle
+      $("toggle-auth-btn").addEventListener("click", () => {
+        isSignUpMode = !isSignUpMode;
+        $("auth-heading").textContent = isSignUpMode ? "Register Partner Account" : "Partner Login";
+        $("auth-subheading").textContent = isSignUpMode ? "Create an account to register your shop" : "Access your business dashboard securely";
+        $("auth-submit-btn").textContent = isSignUpMode ? "Register Account" : "Sign In";
+        $("toggle-auth-btn").textContent = isSignUpMode ? "Already registered? Sign In" : "Need an account? Register as Partner";
       });
 
-      $(closeId).addEventListener("keydown", event => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          closeModal(modalId);
+      // Submit Auth Action
+      $("auth-submit-btn").addEventListener("click", async () => {
+        const email = $("auth-email").value.trim();
+        const password = $("auth-password").value;
+        const btn = $("auth-submit-btn");
+
+        if (!email || !password) return alert("Please enter both email and password.");
+
+        setButtonLoading(btn, true, "Processing...");
+
+        try {
+          if (isSignUpMode) {
+            const { error } = await db.auth.signUp({ email, password });
+            if (error) throw error;
+            alert("Account created successfully! Welcome aboard.");
+          } else {
+            const { error } = await db.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+          }
+          showDashboard();
+        } catch (err) {
+          alert("Authentication Error: " + err.message);
+        } finally {
+          setButtonLoading(btn, false, isSignUpMode ? "Register Account" : "Sign In");
         }
       });
-    });
 
-    document.addEventListener("keydown", event => {
-      if (event.key === "Escape") {
-        closeModal("register-modal");
-        closeModal("service-modal");
+      // Logout Action
+      $("logout-btn").addEventListener("click", async () => {
+        await db.auth.signOut();
+        $("dashboard-screen").style.display = "none";
+        $("auth-screen").style.display = "flex";
+      });
+
+      $("open-add-biz-btn").addEventListener("click", () => openModal("register-modal"));
+      $("close-register-modal").addEventListener("click", () => closeModal("register-modal"));
+
+      $("open-add-service-btn").addEventListener("click", () => {
+        if (!activeVendor) {
+          alert("Please add or select a business first.");
+          return;
+        }
+        openModal("service-modal");
+      });
+
+      $("close-service-modal").addEventListener("click", () => closeModal("service-modal"));
+
+      [
+        ["register-modal", "close-register-modal"],
+        ["service-modal", "close-service-modal"]
+      ].forEach(([modalId, closeId]) => {
+        $(modalId).addEventListener("click", event => {
+          if (event.target === $(modalId)) closeModal(modalId);
+        });
+      });
+
+      $("tab-orders-btn").addEventListener("click", () => {
+        $("orders-tab").style.display = "block";
+        $("services-tab").style.display = "none";
+        $("tab-orders-btn").classList.add("active");
+        $("tab-services-btn").classList.remove("active");
+      });
+
+      $("tab-services-btn").addEventListener("click", () => {
+        $("services-tab").style.display = "block";
+        $("orders-tab").style.display = "none";
+        $("tab-services-btn").classList.add("active");
+        $("tab-orders-btn").classList.remove("active");
+      });
+
+      $("vendor-select").addEventListener("change", async event => {
+        const id = event.target.value;
+        if (!id || !db) return;
+
+        try {
+          const { data, error } = await db
+            .from("vendors")
+            .select("*")
+            .eq("id", id)
+            .single();
+
+          if (error) throw error;
+
+          activeVendor = data;
+          updateHeader();
+          await Promise.all([loadServices(), loadOrders()]);
+        } catch (error) {
+          alert("Could not switch business: " + error.message);
+        }
+      });
+
+      $("save-biz-btn").addEventListener("click", saveBusiness);
+      $("save-service-btn").addEventListener("click", saveService);
+    }
+
+    async function saveBusiness() {
+      const button = $("save-biz-btn");
+      const name = $("new-biz-name").value.trim();
+      const category = $("new-biz-category").value;
+
+      if (!name) {
+        alert("Please enter a business name.");
+        $("new-biz-name").focus();
+        return;
       }
-    });
 
-    $("tab-orders-btn").addEventListener("click", () => {
-      $("orders-tab").style.display = "block";
-      $("services-tab").style.display = "none";
-      $("tab-orders-btn").classList.add("active");
-      $("tab-services-btn").classList.remove("active");
-    });
-
-    $("tab-services-btn").addEventListener("click", () => {
-      $("services-tab").style.display = "block";
-      $("orders-tab").style.display = "none";
-      $("tab-services-btn").classList.add("active");
-      $("tab-orders-btn").classList.remove("active");
-    });
-
-    $("vendor-select").addEventListener("change", async event => {
-      const id = event.target.value;
-      if (!id || !db) return;
+      setButtonLoading(button, true, "Saving...");
 
       try {
+        const { data: { user } } = await db.auth.getUser();
+        if (!user) throw new Error("Not authenticated.");
+
         const { data, error } = await db
           .from("vendors")
-          .select("*")
-          .eq("id", id)
+          .insert([{ name, category, owner_id: user.id }])
+          .select()
           .single();
 
         if (error) throw error;
 
-        activeVendor = data;
+        $("new-biz-name").value = "";
+        closeModal("register-modal");
+
+        await initDashboard(data.id);
+        alert("Business saved successfully!");
+      } catch (error) {
+        alert("Could not save business: " + error.message);
+      } finally {
+        setButtonLoading(button, false, "Save Business");
+      }
+    }
+
+    async function saveService() {
+      const button = $("save-service-btn");
+      if (!activeVendor) {
+        alert("Please select a business first.");
+        return;
+      }
+
+      const title = $("service-title").value.trim();
+      const priceText = $("service-price").value.trim();
+      const price = Number(priceText);
+
+      if (!title) {
+        alert("Please enter a service title.");
+        return;
+      }
+
+      if (!priceText || !Number.isFinite(price) || price < 1 || price > 10000) {
+        alert("Price must be between R1 and R10,000.");
+        return;
+      }
+
+      setButtonLoading(button, true, "Publishing...");
+
+      try {
+        const { error } = await db
+          .from("service_items")
+          .insert([{ vendor_id: activeVendor.id, title, price }]);
+
+        if (error) throw error;
+
+        $("service-title").value = "";
+        $("service-price").value = "";
+        closeModal("service-modal");
+
+        await loadServices();
+        alert("Service published successfully!");
+      } catch (error) {
+        alert("Could not publish service: " + error.message);
+      } finally {
+        setButtonLoading(button, false, "Publish Service");
+      }
+    }
+
+    async function showDashboard() {
+      $("auth-screen").style.display = "none";
+      $("dashboard-screen").style.display = "block";
+      await initDashboard();
+    }
+
+    async function initDashboard(preferredVendorId = null) {
+      if (!db) return;
+
+      $("biz-display-name").textContent = "Loading Business...";
+      $("biz-display-type").textContent = "Fetching your shops...";
+
+      try {
+        const { data: { user } } = await db.auth.getUser();
+        if (!user) throw new Error("No active user session.");
+
+        // Fetch only vendors owned by this specific authenticated user (satisfying RLS)
+        const { data: vendors, error } = await db
+          .from("vendors")
+          .select("*")
+          .eq("owner_id", user.id)
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        const select = $("vendor-select");
+        select.replaceChildren();
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "Switch Shop";
+        select.appendChild(placeholder);
+
+        if (!vendors || vendors.length === 0) {
+          activeVendor = null;
+          $("biz-display-name").textContent = "No Business Found";
+          $("biz-display-type").textContent = "Tap '+ Add Business' above";
+          $("biz-avatar-letter").textContent = "N";
+          $("stat-revenue").textContent = "R0.00";
+          $("stat-count").textContent = "0";
+          setEmpty("services-list", "No services added yet.");
+          setEmpty("orders-list", "No bookings received yet.");
+          return;
+        }
+
+        vendors.forEach(vendor => {
+          const option = document.createElement("option");
+          option.value = String(vendor.id);
+          option.textContent = vendor.name || "Unnamed Business";
+          select.appendChild(option);
+        });
+
+        activeVendor =
+          vendors.find(v => String(v.id) === String(preferredVendorId)) ||
+          vendors[0];
+
+        select.value = String(activeVendor.id);
         updateHeader();
 
         await Promise.all([loadServices(), loadOrders()]);
       } catch (error) {
-        showError("Could not switch business: " + error.message);
-        alert("Could not switch business: " + error.message);
+        $("biz-display-name").textContent = "Authentication Error";
+        $("biz-display-type").textContent = error.message;
       }
-    });
-
-    $("save-biz-btn").addEventListener("click", saveBusiness);
-    $("save-service-btn").addEventListener("click", saveService);
-  }
-
-  async function saveBusiness() {
-    const button = $("save-biz-btn");
-
-    if (!db) {
-      alert("Database is not connected. Reload the page and check your connection.");
-      return;
     }
 
-    const name = $("new-biz-name").value.trim();
-    const category = $("new-biz-category").value;
-
-    if (!name) {
-      alert("Please enter a business name.");
-      $("new-biz-name").focus();
-      return;
+    function updateHeader() {
+      if (!activeVendor) return;
+      const name = activeVendor.name || "Unnamed Business";
+      $("biz-display-name").textContent = name;
+      $("biz-display-type").textContent = activeVendor.category || "Business";
+      $("biz-avatar-letter").textContent = name.charAt(0).toUpperCase();
     }
 
-    setButtonLoading(button, true, "Saving...");
+    async function loadServices() {
+      if (!db || !activeVendor) return;
+      setEmpty("services-list", "Loading services...");
 
-    try {
-      const { data, error } = await db
-        .from("vendors")
-        .insert([{ name, category }])
-        .select()
-        .single();
+      try {
+        const { data, error } = await db
+          .from("service_items")
+          .select("*")
+          .eq("vendor_id", activeVendor.id);
 
-      if (error) throw error;
-      if (!data) throw new Error("No business record was returned.");
+        if (error) throw error;
 
-      $("new-biz-name").value = "";
-      closeModal("register-modal");
+        const container = $("services-list");
+        container.replaceChildren();
 
-      await initDashboard(data.id);
-      alert("Business saved successfully!");
-    } catch (error) {
-      console.error("Save business:", error);
-      alert("Could not save business: " + error.message);
-    } finally {
-      setButtonLoading(button, false, "Save Business");
-    }
-  }
+        if (!data || data.length === 0) {
+          setEmpty("services-list", "No services added yet. Click '+ Add Service' above.");
+          return;
+        }
 
-  async function saveService() {
-    const button = $("save-service-btn");
-
-    if (!db) {
-      alert("Database is not connected. Reload the page and check your connection.");
-      return;
-    }
-
-    if (!activeVendor) {
-      alert("Please add or select a business first.");
-      return;
-    }
-
-    const title = $("service-title").value.trim();
-    const priceText = $("service-price").value.trim();
-    const price = Number(priceText);
-
-    if (!title) {
-      alert("Please enter a service title.");
-      $("service-title").focus();
-      return;
-    }
-
-    if (!priceText || !Number.isFinite(price) || price < 1 || price > 10000) {
-      alert("Price must be between R1 and R10,000.");
-      $("service-price").focus();
-      return;
-    }
-
-    setButtonLoading(button, true, "Publishing...");
-
-    try {
-      const { error } = await db
-        .from("service_items")
-        .insert([{
-          vendor_id: activeVendor.id,
-          title,
-          price
-        }]);
-
-      if (error) throw error;
-
-      $("service-title").value = "";
-      $("service-price").value = "";
-      closeModal("service-modal");
-
-      await loadServices();
-      alert("Service published successfully!");
-    } catch (error) {
-      console.error("Save service:", error);
-      alert("Could not publish service: " + error.message);
-    } finally {
-      setButtonLoading(button, false, "Publish Service");
-    }
-  }
-
-  async function initDashboard(preferredVendorId = null) {
-    if (!db) {
-      $("biz-display-name").textContent = "Connection Error";
-      showError("Supabase did not load. Check your internet connection and reload.");
-      return;
-    }
-
-    $("biz-display-name").textContent = "Loading Business...";
-    $("biz-display-type").textContent = "Connecting to database...";
-
-    try {
-      const { data: vendors, error } = await db
-        .from("vendors")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      const select = $("vendor-select");
-      select.replaceChildren();
-
-      const placeholder = document.createElement("option");
-      placeholder.value = "";
-      placeholder.textContent = "Switch Shop";
-      select.appendChild(placeholder);
-
-      if (!vendors || vendors.length === 0) {
-        activeVendor = null;
-        $("biz-display-name").textContent = "No Business Found";
-        $("biz-display-type").textContent = "Tap '+ Add Business' above";
-        $("biz-avatar-letter").textContent = "N";
-        $("stat-revenue").textContent = "R0.00";
-        $("stat-count").textContent = "0";
-        setEmpty("services-list", "No services added yet.");
-        setEmpty("orders-list", "No bookings received yet.");
-        return;
-      }
-
-      vendors.forEach(vendor => {
-        const option = document.createElement("option");
-        option.value = String(vendor.id);
-        option.textContent = vendor.name || "Unnamed Business";
-        select.appendChild(option);
-      });
-
-      activeVendor =
-        vendors.find(v => String(v.id) === String(preferredVendorId)) ||
-        vendors[0];
-
-      select.value = String(activeVendor.id);
-      updateHeader();
-
-      await Promise.all([loadServices(), loadOrders()]);
-    } catch (error) {
-      console.error("Dashboard initialization:", error);
-      $("biz-display-name").textContent = "Database Error";
-      showError(error.message || "Could not load businesses.");
-      setEmpty("services-list", "Could not load services.");
-      setEmpty("orders-list", "Could not load bookings.");
-    }
-  }
-
-  function updateHeader() {
-    if (!activeVendor) return;
-
-    const name = activeVendor.name || "Unnamed Business";
-    $("biz-display-name").textContent = name;
-    $("biz-display-type").textContent = activeVendor.category || "Business";
-    $("biz-avatar-letter").textContent = name.charAt(0).toUpperCase();
-  }
-
-  async function loadServices() {
-    if (!db || !activeVendor) return;
-
-    setEmpty("services-list", "Loading services...");
-
-    try {
-      const { data, error } = await db
-        .from("service_items")
-        .select("*")
-        .eq("vendor_id", activeVendor.id);
-
-      if (error) throw error;
-
-      const container = $("services-list");
-      container.replaceChildren();
-
-      if (!data || data.length === 0) {
-        setEmpty("services-list", "No services added yet. Click '+ Add Service' above.");
-        return;
-      }
-
-      data.forEach(service => {
-        const card = document.createElement("div");
-        card.className = "order-card";
-        card.style.cssText =
-          "display:flex;justify-content:space-between;align-items:center;gap:12px;";
-
-        const info = document.createElement("div");
-        const title = document.createElement("div");
-        title.className = "order-title";
-        title.textContent = service.title || "Untitled Service";
-
-        const status = document.createElement("div");
-        status.className = "order-time";
-        status.textContent = "Active & Available";
-
-        const price = document.createElement("div");
-        price.className = "order-price";
-        price.textContent = money(service.price);
-
-        info.append(title, status);
-        card.append(info, price);
-        container.appendChild(card);
-      });
-    } catch (error) {
-      console.error("Load services:", error);
-      setEmpty("services-list", "Could not load services: " + error.message);
-    }
-  }
-
-  async function loadOrders() {
-    if (!db || !activeVendor) return;
-
-    setEmpty("orders-list", "Loading bookings...");
-
-    try {
-      const { data: orders, error } = await db
-        .from("orders")
-        .select("*")
-        .eq("vendor_id", activeVendor.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      let revenue = 0;
-      let completed = 0;
-
-      const container = $("orders-list");
-      container.replaceChildren();
-
-      if (!orders || orders.length === 0) {
-        setEmpty("orders-list", "No bookings received yet.");
-      } else {
-        orders.forEach(order => {
-          const statusText = String(order.status || "Pending");
-
-          if (statusText.toLowerCase() === "completed") completed++;
-          revenue += Number(order.vendor_net_earnings || 0);
-
+        data.forEach(service => {
           const card = document.createElement("div");
           card.className = "order-card";
+          card.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:12px;";
 
-          const top = document.createElement("div");
-          top.className = "order-top";
-
-          const left = document.createElement("div");
+          const info = document.createElement("div");
           const title = document.createElement("div");
           title.className = "order-title";
-          title.textContent = "Customer Booking";
+          title.textContent = service.title || "Untitled Service";
 
-          const time = document.createElement("div");
-          time.className = "order-time";
-          const date = order.created_at ? new Date(order.created_at) : null;
-          time.textContent = date && !Number.isNaN(date.getTime())
-            ? date.toLocaleString()
-            : "Date unavailable";
-
-          left.append(title, time);
-
-          const right = document.createElement("div");
-          right.style.textAlign = "right";
+          const status = document.createElement("div");
+          status.className = "order-time";
+          status.textContent = "Active & Available";
 
           const price = document.createElement("div");
           price.className = "order-price";
-          price.textContent = money(order.gross_amount);
+          price.textContent = money(service.price);
 
-          const status = document.createElement("span");
-          status.className = "order-status";
-          status.textContent = statusText;
-
-          right.append(price, status);
-          top.append(left, right);
-          card.appendChild(top);
+          info.append(title, status);
+          card.append(info, price);
           container.appendChild(card);
         });
+      } catch (error) {
+        setEmpty("services-list", "Could not load services.");
       }
-
-      $("stat-revenue").textContent = money(revenue);
-      $("stat-count").textContent = String(completed);
-    } catch (error) {
-      console.error("Load bookings:", error);
-      setEmpty("orders-list", "Could not load bookings: " + error.message);
-      $("stat-revenue").textContent = "R0.00";
-      $("stat-count").textContent = "0";
-    }
-  }
-
-  function boot() {
-    if (booted) return;
-    booted = true;
-
-    try {
-      bindButtons();
-    } catch (error) {
-      console.error("Button setup failed:", error);
-      showError("Portal setup error: " + error.message);
-      return;
     }
 
-    if (!window.supabase ||
-        typeof window.supabase.createClient !== "function") {
-      $("biz-display-name").textContent = "Connection Error";
-      showError("Supabase library failed to load. Check your internet and reload.");
-      return;
+    async function loadOrders() {
+      if (!db || !activeVendor) return;
+      setEmpty("orders-list", "Loading bookings...");
+
+      try {
+        const { data: orders, error } = await db
+          .from("orders")
+          .select("*")
+          .eq("vendor_id", activeVendor.id)
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        let revenue = 0;
+        let completed = 0;
+
+        const container = $("orders-list");
+        container.replaceChildren();
+
+        if (!orders || orders.length === 0) {
+          setEmpty("orders-list", "No bookings received yet.");
+        } else {
+          orders.forEach(order => {
+            const statusText = String(order.status || "Pending");
+            if (statusText.toLowerCase() === "completed") completed++;
+            revenue += Number(order.vendor_net_earnings || 0);
+
+            const card = document.createElement("div");
+            card.className = "order-card";
+
+            const top = document.createElement("div");
+            top.className = "order-top";
+
+            const left = document.createElement("div");
+            const title = document.createElement("div");
+            title.className = "order-title";
+            title.textContent = "Customer Booking";
+
+            const time = document.createElement("div");
+            time.className = "order-time";
+            const date = order.created_at ? new Date(order.created_at) : null;
+            time.textContent = date && !Number.isNaN(date.getTime()) ? date.toLocaleString() : "Date unavailable";
+
+            left.append(title, time);
+
+            const right = document.createElement("div");
+            right.style.textAlign = "right";
+
+            const price = document.createElement("div");
+            price.className = "order-price";
+            price.textContent = money(order.gross_amount);
+
+            const status = document.createElement("span");
+            status.className = "order-status";
+            status.textContent = statusText;
+
+            right.append(price, status);
+            top.append(left, right);
+            card.appendChild(top);
+            container.appendChild(card);
+          });
+        }
+
+        $("stat-revenue").textContent = money(revenue);
+        $("stat-count").textContent = String(completed);
+      } catch (error) {
+        setEmpty("orders-list", "Could not load bookings.");
+        $("stat-revenue").textContent = "R0.00";
+        $("stat-count").textContent = "0";
+      }
     }
 
-    try {
-      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      initDashboard();
-    } catch (error) {
-      console.error("Supabase initialization:", error);
-      $("biz-display-name").textContent = "Connection Error";
-      showError(error.message || "Could not initialize database.");
+    async function boot() {
+      if (booted) return;
+      booted = true;
+
+      try {
+        db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        bindButtons();
+
+        // Check if partner session already exists
+        const { data: { session } } = await db.auth.getSession();
+        if (session) {
+          await showDashboard();
+        }
+      } catch (error) {
+        console.error("Boot error:", error);
+      }
     }
-  }
 
-  // Works whether this script runs before or after DOMContentLoaded.
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot, { once: true });
-  } else {
-    boot();
-  }
-})();
-</script>
-
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", boot, { once: true });
+    } else {
+      boot();
+    }
+  })();
+  </script>
 </body>
 </html>
