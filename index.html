@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Marketplace - Salons, Barbers & Shisanyama</title>
+  <title>BOOK.NOW — Discover & Book Local Spots</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  
+
   <style>
     :root {
       --primary: #0f172a;
@@ -19,164 +19,196 @@
       --text: #0f172a;
       --muted: #64748b;
       --border: #e2e8f0;
-      --success: #059669;
+      --success: #16a34a;
+      --success-bg: #f0fdf4;
       --radius: 16px;
     }
 
     * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-    body { margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 40px; }
+    body { margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 60px; }
 
-    header { background: var(--surface); padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; sticky: top; }
-    .brand { font-size: 18px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+    .top-nav { background: var(--surface); padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 20; }
+    .brand { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+    .partner-link { font-size: 12px; font-weight: 600; color: var(--accent); text-decoration: none; background: #eff6ff; padding: 6px 10px; border-radius: 8px; }
 
-    .container { padding: 16px 20px; max-width: 600px; margin: 0 auto; }
+    .container { padding: 16px 20px; max-width: 650px; margin: 0 auto; }
 
-    .vendor-card { background: var(--surface); padding: 18px; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 16px; }
-    .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; background: #e0f2fe; color: #0369a1; text-transform: uppercase; margin-bottom: 6px; }
-    .vendor-title { font-size: 18px; font-weight: 700; margin: 0 0 12px 0; }
+    .hero { margin-bottom: 20px; }
+    .hero h1 { font-size: 22px; font-weight: 700; margin: 0 0 6px 0; }
+    .hero p { font-size: 13px; color: var(--muted); margin: 0; }
 
-    .service-row { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center; }
-    .service-name { font-weight: 600; font-size: 14px; }
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
+    .filter-chip { background: var(--surface); border: 1px solid var(--border); padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; color: var(--muted); }
+    .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    .card-list { display: flex; flex-direction: column; gap: 14px; }
+    .vendor-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; padding: 16px; }
+    .vendor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .vendor-title { font-size: 16px; font-weight: 700; margin: 0; }
+    .vendor-category { font-size: 11px; font-weight: 700; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; }
+
+    .service-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); }
+    .service-info { font-size: 14px; font-weight: 600; }
+    .service-price-book { display: flex; align-items: center; gap: 12px; }
     .service-price { font-weight: 700; color: var(--success); font-size: 15px; }
+    .btn-book { background: var(--accent); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
 
-    .btn { background: var(--accent); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
-    .btn:active { transform: scale(0.98); }
+    .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: flex-end; z-index: 100; }
+    .modal-sheet { background: #fff; width: 100%; max-width: 600px; padding: 24px; border-radius: 24px 24px 0 0; }
+    .form-field { margin-bottom: 14px; }
+    .form-field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; }
+    .form-field input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); font-size: 14px; outline: none; }
 
-    /* BOOKING SHEET */
-    .sheet-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.4); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: flex-end; z-index: 100; }
-    .sheet-body { background: #fff; width: 100%; max-width: 600px; padding: 24px; border-radius: 24px 24px 0 0; }
-    
-    .field { margin-bottom: 14px; }
-    .field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
-    .field input, .field select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); font-size: 14px; outline: none; }
-
-    .time-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 6px; }
-    .time-slot { border: 1px solid var(--border); padding: 8px; text-align: center; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; background: var(--bg); }
-    .time-slot.selected { background: var(--accent); color: white; border-color: var(--accent); }
+    .empty-box { text-align: center; padding: 40px 16px; background: var(--surface); border-radius: 14px; border: 1px dashed var(--border); color: var(--muted); font-size: 14px; }
   </style>
 </head>
 <body>
 
-  <header>
-    <div class="brand"><i class="ph ph-scissors" style="color:var(--accent);"></i> TownBook</div>
-    <a href="vendor.html" style="font-size:12px; font-weight:600; color:var(--accent); text-decoration:none;">Partner Login →</a>
-  </header>
+  <div class="top-nav">
+    <div class="brand">
+      <i class="ph ph-calendar-star" style="font-size:22px; color: var(--accent);"></i>
+      BOOK.NOW
+    </div>
+    <a href="vendor.html" class="partner-link">Partner Login</a>
+  </div>
 
   <div class="container">
-    <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 16px;">Book Local Services</h2>
-    <div id="listings-container">
-      <p style="color: var(--muted); font-size: 14px;">Loading vendors...</p>
+    <div class="hero">
+      <h1>Book Local Excellence</h1>
+      <p>Find and book top-rated barbers, salons, and braai spots near you.</p>
+    </div>
+
+    <div class="filter-bar">
+      <button class="filter-chip active" onclick="filterCategory('ALL', this)">All Spots</button>
+      <button class="filter-chip" onclick="filterCategory('BARBER', this)">Barbershops</button>
+      <button class="filter-chip" onclick="filterCategory('SALON', this)">Salons</button>
+      <button class="filter-chip" onclick="filterCategory('SHISANYAMA', this)">Shisanyama</button>
+    </div>
+
+    <div id="marketplace-list" class="card-list">
+      <div class="empty-box">Loading available businesses...</div>
     </div>
   </div>
 
-  <!-- BOOKING SHEET -->
-  <div id="booking-sheet" class="sheet-overlay">
-    <div class="sheet-body">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-        <h3 style="margin:0; font-size:18px;" id="sheet-service-title">Confirm Appointment</h3>
-        <i class="ph ph-x" style="font-size:20px; cursor:pointer;" onclick="closeSheet()"></i>
+  <!-- BOOKING MODAL -->
+  <div id="booking-modal" class="modal">
+    <div class="modal-sheet">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h3 id="modal-service-title" style="margin:0; font-size:16px; font-weight:700;">Complete Booking</h3>
+        <i class="ph ph-x" style="font-size:20px; cursor:pointer;" onclick="closeModal()"></i>
       </div>
-
-      <div class="field">
+      <div class="form-field">
         <label>Your Name</label>
-        <input type="text" id="cust-name" placeholder="e.g. Sipho M.">
+        <input type="text" id="customer-name" placeholder="e.g. Sipho Dlamini">
       </div>
-
-      <div class="field">
-        <label>Select Date</label>
-        <input type="date" id="cust-date">
+      <div class="form-field">
+        <label>Phone Number</label>
+        <input type="tel" id="customer-phone" placeholder="e.g. 082 123 4567">
       </div>
-
-      <div class="field">
-        <label>Select Time Slot</label>
-        <div class="time-grid">
-          <div class="time-slot" onclick="selectTime('09:00', this)">09:00 AM</div>
-          <div class="time-slot" onclick="selectTime('11:00', this)">11:00 AM</div>
-          <div class="time-slot" onclick="selectTime('14:00', this)">02:00 PM</div>
-          <div class="time-slot" onclick="selectTime('16:00', this)">04:00 PM</div>
-        </div>
-      </div>
-
-      <button class="btn" style="width:100%; padding:14px; font-size:15px; margin-top:10px;" onclick="confirmBooking()">Confirm Booking (Pay at Venue)</button>
+      <button class="btn-book" style="width:100%; padding:12px; font-size:14px;" onclick="confirmBooking()">Confirm Appointment</button>
     </div>
   </div>
 
   <script>
     const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
     const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
+    
+    let supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let allVendors = [];
     let selectedService = null;
-    let selectedTimeSlot = null;
-
-    function closeSheet() { document.getElementById('booking-sheet').style.display = 'none'; }
-
-    function selectTime(time, el) {
-      document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
-      el.classList.add('selected');
-      selectedTimeSlot = time;
-    }
 
     async function loadMarketplace() {
-      const container = document.getElementById('listings-container');
-      const { data: vendors } = await supabase.from('vendors').select('*, services:service_items(*)');
+      const container = document.getElementById('marketplace-list');
+      
+      // Fetch vendors and their services
+      const { data: vendors, error } = await supabase.from('vendors').select('*, service_items(*)');
+      
+      if (error || !vendors || vendors.length === 0) {
+        container.innerHTML = '<div class="empty-box">No partner spots found right now. Check back soon!</div>';
+        return;
+      }
 
-      if (!vendors || vendors.length === 0) {
-        container.innerHTML = '<p style="color:var(--muted); font-size:14px;">No businesses listed yet. Add one in the Partner Console!</p>';
+      allVendors = vendors;
+      renderVendors(allVendors);
+    }
+
+    function renderVendors(vendors) {
+      const container = document.getElementById('marketplace-list');
+      
+      if (vendors.length === 0) {
+        container.innerHTML = '<div class="empty-box">No spots in this category yet.</div>';
         return;
       }
 
       container.innerHTML = vendors.map(v => `
         <div class="vendor-card">
-          <span class="badge">${v.category}</span>
-          <h3 class="vendor-title">${v.name}</h3>
-          ${(v.services || []).map(s => `
-            <div class="service-row">
-              <div>
-                <div class="service-name">${s.title}</div>
-                <div class="service-price">R${s.price}</div>
+          <div class="vendor-header">
+            <h3 class="vendor-title">${v.name}</h3>
+            <span class="vendor-category">${v.category}</span>
+          </div>
+          <div>
+            ${v.service_items && v.service_items.length > 0 ? v.service_items.map(s => `
+              <div class="service-row">
+                <div class="service-info">${s.title}</div>
+                <div class="service-price-book">
+                  <span class="service-price">R${Number(s.price).toFixed(2)}</span>
+                  <button class="btn-book" onclick="openBooking('${v.id}', '${s.id}', '${s.title}',${s.price})">Book</button>
+                </div>
               </div>
-              <button class="btn" onclick='openBooking(${JSON.stringify(v)},${JSON.stringify(s)})'>Book</button>
-            </div>
-          `).join('')}
+            `).join('') : '<div style="font-size:13px; color:var(--muted); padding:6px 0;">Menu coming soon</div>'}
+          </div>
         </div>
       `).join('');
     }
 
-    function openBooking(vendor, service) {
-      selectedService = { vendor, service };
-      document.getElementById('sheet-service-title').innerText = `${service.title} @ ${vendor.name}`;
-      document.getElementById('cust-date').valueAsDate = new Date();
-      document.getElementById('booking-sheet').style.display = 'flex';
+    function filterCategory(cat, btn) {
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+
+      if (cat === 'ALL') {
+        renderVendors(allVendors);
+      } else {
+        const filtered = allVendors.filter(v => v.category === cat);
+        renderVendors(filtered);
+      }
+    }
+
+    function openBooking(vendorId, serviceId, title, price) {
+      selectedService = { vendorId, serviceId, title, price };
+      document.getElementById('modal-service-title').textContent = `Book: ${title} (R${price})`;
+      document.getElementById('booking-modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('booking-modal').style.display = 'none';
     }
 
     async function confirmBooking() {
-      const custName = document.getElementById('cust-name').value;
-      const date = document.getElementById('cust-date').value;
+      const name = document.getElementById('customer-name').value.trim();
+      const phone = document.getElementById('customer-phone').value.trim();
 
-      if (!custName || !date || !selectedTimeSlot) {
-        return alert("Please fill in your name, select a date, and pick a time slot.");
+      if (!name || !phone) return alert("Please enter your name and phone number.");
+      if (!selectedService) return;
+
+      const grossAmount = selectedService.price;
+      const netEarnings = grossAmount * 0.90; // 90% vendor, 10% platform commission logic
+
+      const { error } = await supabase.from('orders').insert([{
+        vendor_id: selectedService.vendorId,
+        gross_amount: grossAmount,
+        vendor_net_earnings: netEarnings,
+        status: 'PENDING'
+      }]);
+
+      if (error) {
+        alert("Booking error: " + error.message);
+        return;
       }
 
-      const gross = selectedService.service.price;
-      const commission = gross * 0.10;
-      const net = gross - commission;
-
-      const { error } = await supabase.from('orders').insert([
-        {
-          vendor_id: selectedService.vendor.id,
-          gross_amount: gross,
-          platform_commission: commission,
-          vendor_net_earnings: net,
-          status: 'CONFIRMED',
-          payment_status: 'UNPAID'
-        }
-      ]);
-
-      if (error) return alert("Error: " + error.message);
-
-      alert(`Booking Confirmed for ${custName} on ${date} @ ${selectedTimeSlot}!`);
-      closeSheet();
+      alert(`Booking confirmed for ${name}! The shop has received your order.`);
+      closeModal();
+      document.getElementById('customer-name').value = '';
+      document.getElementById('customer-phone').value = '';
     }
 
     loadMarketplace();
