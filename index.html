@@ -280,62 +280,78 @@
       $("booking-modal").style.display = "none";
     }
 
-    
-async function confirmBooking() {
-  const name = document.getElementById('customer-name').value.trim();
-  const phone = document.getElementById('customer-phone').value.trim();
-  const button = document.getElementById('confirm-booking-btn');
+    async function confirmBooking() {
+      const name = $("customer-name").value.trim();
+      const phone = $("customer-phone").value.trim();
+      const button = $("confirm-booking-btn");
 
-  if (!name || !phone) {
-    alert('Please enter your name and phone number.');
-    return;
-  }
-
-  if (!selectedService) {
-    alert('Please select a service first.');
-    return;
-  }
-
-  if (!supabase) {
-    alert('Connection unavailable. Please refresh and try again.');
-    return;
-  }
-
-  button.disabled = true;
-  button.textContent = 'Submitting...';
-
-  try {
-    const { data: bookingId, error } = await supabase.rpc(
-      'create_booking',
-      {
-        p_service_id: selectedService.serviceId,
-        p_customer_name: name,
-        p_customer_phone: phone
+      if (!name || !phone) {
+        alert("Please enter your name and phone number.");
+        return;
       }
-    );
 
-    if (error) throw error;
+      if (!selectedService) {
+        alert("Please select a service first.");
+        return;
+      }
 
-    alert(
-      'Your booking request has been submitted!\n' +
-      'Reference: ' + bookingId +
-      '\nPlease wait for the business to confirm your appointment.'
-    );
+      if (!supabase) {
+        alert("Connection unavailable. Please refresh and try again.");
+        return;
+      }
 
-    closeModal();
-    document.getElementById('customer-name').value = '';
-    document.getElementById('customer-phone').value = '';
-    selectedService = null;
+      button.disabled = true;
+      button.textContent = "Submitting...";
 
-  } catch (error) {
-    console.error('Booking error:', error);
-    alert('Could not submit booking: ' + error.message);
-  } finally {
-    button.disabled = false;
-    button.textContent = 'Confirm Appointment';
-  }
-}
+      try {
+        const grossAmount = selectedService.price;
+        const netEarnings = grossAmount * 0.90;
 
+        const { error } = await supabase.from("orders").insert([{
+          vendor_id: selectedService.vendorId,
+          gross_amount: grossAmount,
+          vendor_net_earnings: netEarnings,
+          status: "PENDING",
+          customer_name: name,
+          customer_phone: phone
+        }]);
+
+        if (error) throw error;
+
+        alert(`Booking confirmed for ${name}! The shop has received your appointment.`);
+        closeModal();
+        $("customer-name").value = "";
+        $("customer-phone").value = "";
+        selectedService = null;
+
+      } catch (error) {
+        console.error("Booking error:", error);
+        alert("Could not submit booking: " + error.message);
+      } finally {
+        button.disabled = false;
+        button.textContent = "Confirm Appointment";
+      }
+    }
+
+    function boot() {
+      if (booted) return;
+      booted = true;
+
+      try {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        bindEvents();
+        loadMarketplace();
+      } catch (e) {
+        console.error("Boot error:", e);
+      }
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", boot, { once: true });
+    } else {
+      boot();
+    }
+  })();
   </script>
 </body>
 </html>
