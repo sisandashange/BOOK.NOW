@@ -3,184 +3,193 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vendor Portal - Management</title>
-  <!-- Google Fonts & Phosphor Icons for a clean, modern look -->
+  <title>Vendor Partner Console</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <!-- Supabase CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <style>
     :root {
       --primary: #0f172a;
       --accent: #2563eb;
-      --accent-hover: #1d4ed8;
+      --accent-soft: #eff6ff;
       --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text-main: #0f172a;
-      --text-muted: #64748b;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
       --border: #e2e8f0;
+      --success: #16a34a;
+      --success-bg: #f0fdf4;
+      --warning: #d97706;
       --radius: 16px;
     }
 
     * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-    body { margin: 0; padding: 0; background: var(--bg); color: var(--text-main); padding-bottom: 40px; }
+    body { margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 60px; }
 
-    /* HEADER */
-    header { background: var(--card-bg); padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
-    .brand-title { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
-    
-    /* VENDOR SELECTOR TOP BAR */
-    .vendor-picker-wrapper { padding: 12px 20px; background: #fff; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; }
-    select.select-custom { flex: 1; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); font-weight: 600; font-size: 14px; color: var(--text-main); outline: none; }
-    
-    .container { padding: 16px 20px; max-width: 600px; margin: 0 auto; }
+    /* NAVBAR */
+    .top-nav { background: var(--surface); padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 20; }
+    .brand { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+    .brand-badge { background: #e0f2fe; color: #0369a1; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
 
-    /* METRICS STATS GRID */
-    .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-    .metric-card { background: var(--card-bg); padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-    .metric-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
-    .metric-value { font-size: 24px; font-weight: 700; color: var(--text-main); margin-top: 6px; }
+    .business-bar { background: var(--surface); padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .business-info { display: flex; align-items: center; gap: 10px; }
+    .biz-avatar { width: 36px; height: 36px; border-radius: 10px; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+    .biz-name { font-weight: 700; font-size: 15px; margin: 0; }
+    .biz-type { font-size: 12px; color: var(--muted); margin-top: 1px; }
 
-    /* TAB NAVIGATION */
-    .tabs { display: flex; background: #e2e8f0; padding: 4px; border-radius: 12px; margin-bottom: 20px; }
-    .tab-btn { flex: 1; padding: 10px; border: none; background: transparent; font-size: 13px; font-weight: 600; color: var(--text-muted); border-radius: 8px; cursor: pointer; transition: all 0.2s; }
-    .tab-btn.active { background: #fff; color: var(--text-main); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .container { padding: 16px 20px; max-width: 650px; margin: 0 auto; }
 
-    /* SECTION CARDS */
-    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .section-title { font-size: 16px; font-weight: 700; margin: 0; }
-    
-    .btn-action { background: var(--accent); color: white; border: none; padding: 8px 14px; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-    .btn-action:hover { background: var(--accent-hover); }
+    /* STATS OVERVIEW */
+    .stats-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .stat-box { background: var(--surface); padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); }
+    .stat-header { font-size: 12px; font-weight: 600; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+    .stat-value { font-size: 22px; font-weight: 700; margin-top: 6px; color: var(--text); }
 
-    /* ITEM & ORDER LISTS */
-    .list-container { display: flex; flex-direction: column; gap: 10px; }
-    .list-item { background: var(--card-bg); padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-    .list-item-title { font-weight: 600; font-size: 14px; }
-    .list-item-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-    .list-item-price { font-weight: 700; color: #059669; font-size: 15px; }
+    /* NAVIGATION TABS */
+    .nav-tabs { display: flex; background: #e2e8f0; padding: 4px; border-radius: 12px; margin-bottom: 20px; }
+    .tab-item { flex: 1; padding: 10px; border: none; background: transparent; font-size: 13px; font-weight: 600; color: var(--muted); border-radius: 8px; cursor: pointer; }
+    .tab-item.active { background: #fff; color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
 
-    /* STATUS BADGE */
-    .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; background: #dcfce7; color: #15803d; }
+    /* SECTION HEADER */
+    .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .section-head h3 { font-size: 16px; font-weight: 700; margin: 0; }
 
-    /* MODAL OVERLAY FOR FORMS */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: flex-end; z-index: 100; }
-    .modal-content { background: #fff; width: 100%; max-width: 600px; padding: 24px; border-radius: 24px 24px 0 0; animation: slideUp 0.25s ease-out; }
-    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .btn-primary { background: var(--accent); color: white; border: none; padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-primary:active { transform: scale(0.98); }
 
-    .form-group { margin-bottom: 14px; }
-    .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
-    .form-group input, .form-group select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); font-size: 14px; outline: none; }
-    .form-group input:focus { border-color: var(--accent); }
+    /* ORDER & SERVICE CARDS */
+    .card-list { display: flex; flex-direction: column; gap: 12px; }
+    .order-card { background: var(--surface); padding: 16px; border-radius: 14px; border: 1px solid var(--border); }
+    .order-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .order-title { font-weight: 700; font-size: 15px; }
+    .order-time { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .order-price { font-weight: 700; color: var(--success); font-size: 16px; }
+    .order-status { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; background: var(--success-bg); color: var(--success); text-transform: uppercase; }
 
-    .empty-state { text-align: center; padding: 32px 16px; color: var(--text-muted); font-size: 14px; }
+    /* MODAL SLIDE UP */
+    .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: flex-end; z-index: 100; }
+    .modal-sheet { background: #fff; width: 100%; max-width: 600px; padding: 24px; border-radius: 24px 24px 0 0; }
+    .form-field { margin-bottom: 14px; }
+    .form-field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; }
+    .form-field input, .form-field select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); font-size: 14px; outline: none; }
+
+    .empty-box { text-align: center; padding: 40px 16px; background: var(--surface); border-radius: 14px; border: 1px dashed var(--border); color: var(--muted); font-size: 14px; }
   </style>
 </head>
 <body>
 
-  <!-- HEADER -->
-  <header>
-    <div class="brand-title">Partner Hub</div>
-    <button class="btn-action" style="background:#f1f5f9; color:#0f172a;" onclick="openModal('register-modal')">
-      <i class="ph ph-plus-circle"></i> New Business
+  <!-- TOP HEADER -->
+  <div class="top-nav">
+    <div class="brand">
+      <i class="ph ph-storefront" style="font-size:22px; color: var(--accent);"></i>
+      Partner Portal <span class="brand-badge">LIVE</span>
+    </div>
+    <button class="btn-primary" style="background:#f1f5f9; color:#0f172a;" onclick="openModal('register-modal')">
+      <i class="ph ph-plus"></i> Add Business
     </button>
-  </header>
+  </div>
 
-  <!-- VENDOR SELECTOR -->
-  <div class="vendor-picker-wrapper">
-    <i class="ph ph-storefront" style="font-size: 20px; color: var(--text-muted);"></i>
-    <select id="vendor-select" class="select-custom" onchange="switchVendor()">
-      <option value="">Loading Businesses...</option>
+  <!-- ACTIVE BUSINESS BANNER -->
+  <div class="business-bar">
+    <div class="business-info">
+      <div class="biz-avatar" id="biz-avatar-letter">N</div>
+      <div>
+        <div class="biz-name" id="biz-display-name">Loading Business...</div>
+        <div class="biz-type" id="biz-display-type">Verifying partner account</div>
+      </div>
+    </div>
+    <select id="vendor-select" onchange="switchVendor()" style="padding:6px 10px; border-radius:8px; border:1px solid var(--border); font-size:12px; font-weight:600;">
+      <option value="">Switch Shop</option>
     </select>
   </div>
 
   <div class="container">
     
-    <!-- METRICS OVERVIEW -->
-    <div class="metrics-grid">
-      <div class="metric-card">
-        <div class="metric-label"><i class="ph ph-wallet"></i> Total Revenue</div>
-        <div class="metric-value" id="stat-revenue">R0.00</div>
+    <!-- REAL METRICS -->
+    <div class="stats-container">
+      <div class="stat-box">
+        <div class="stat-header"><i class="ph ph-currency-circle-dollar" style="font-size:16px;"></i> Total Payouts</div>
+        <div class="stat-value" id="stat-revenue">R0.00</div>
       </div>
-      <div class="metric-card">
-        <div class="metric-label"><i class="ph ph-calendar-check"></i> Bookings</div>
-        <div class="metric-value" id="stat-count">0</div>
+      <div class="stat-box">
+        <div class="stat-header"><i class="ph ph-calendar-check" style="font-size:16px;"></i> Completed Bookings</div>
+        <div class="stat-value" id="stat-count">0</div>
       </div>
     </div>
 
     <!-- TABS -->
-    <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('orders-tab', this)">Bookings</button>
-      <button class="tab-btn" onclick="switchTab('services-tab', this)">Services & Menu</button>
+    <div class="nav-tabs">
+      <button class="tab-item active" onclick="switchTab('orders-tab', this)">Bookings & Orders</button>
+      <button class="tab-item" onclick="switchTab('services-tab', this)">Services Menu</button>
     </div>
 
-    <!-- TAB 1: BOOKINGS & ORDERS -->
+    <!-- TAB 1: ORDERS -->
     <div id="orders-tab" class="tab-content">
-      <div class="section-header">
-        <h3 class="section-title">Recent Activity</h3>
+      <div class="section-head">
+        <h3>Live Appointments</h3>
       </div>
-      <div id="orders-list" class="list-container">
-        <div class="empty-state">Select a business above to view orders.</div>
+      <div id="orders-list" class="card-list">
+        <div class="empty-box">No bookings received yet.</div>
       </div>
     </div>
 
-    <!-- TAB 2: SERVICES & MENU -->
-    <div id="services-tab" class="tab-content" style="display: none;">
-      <div class="section-header">
-        <h3 class="section-title">Service Catalog</h3>
-        <button class="btn-action" onclick="openModal('add-service-modal')">
-          <i class="ph ph-plus"></i> Add Item
+    <!-- TAB 2: SERVICES -->
+    <div id="services-tab" class="tab-content" style="display:none;">
+      <div class="section-head">
+        <h3>Services & Prices</h3>
+        <button class="btn-primary" onclick="openModal('service-modal')">
+          <i class="ph ph-plus"></i> Add Service
         </button>
       </div>
-      <div id="services-list" class="list-container">
-        <div class="empty-state">Select a business above to view catalog.</div>
+      <div id="services-list" class="card-list">
+        <div class="empty-box">No services added yet. Click "+ Add Service" above.</div>
       </div>
     </div>
 
   </div>
 
-  <!-- MODAL 1: ADD NEW SERVICE -->
-  <div id="add-service-modal" class="modal-overlay">
-    <div class="modal-content">
-      <div class="section-header">
-        <h3 class="section-title">Add New Offering</h3>
-        <i class="ph ph-x" style="font-size:20px; cursor:pointer;" onclick="closeModal('add-service-modal')"></i>
+  <!-- MODAL: ADD SERVICE -->
+  <div id="service-modal" class="modal">
+    <div class="modal-sheet">
+      <div class="section-head">
+        <h3>Add Service Offering</h3>
+        <i class="ph ph-x" style="font-size:20px; cursor:pointer;" onclick="closeModal('service-modal')"></i>
       </div>
-      <div class="form-group">
-        <label>SERVICE / ITEM NAME</label>
-        <input type="text" id="service-title" placeholder="e.g. Skin Fade Cut or Beef Platter">
+      <div class="form-field">
+        <label>Service Title</label>
+        <input type="text" id="service-title" placeholder="e.g. Fade Cut & Beard Trim / Platter">
       </div>
-      <div class="form-group">
-        <label>PRICE (ZAR)</label>
-        <input type="number" id="service-price" placeholder="e.g. 180">
+      <div class="form-field">
+        <label>Price (ZAR)</label>
+        <input type="number" id="service-price" placeholder="e.g. 150">
       </div>
-      <button class="btn-action" style="width:100%; justify-content:center; padding:12px;" onclick="addService()">Save Item</button>
+      <button class="btn-primary" style="width:100%; justify-content:center; padding:12px;" onclick="addService()">Publish Service</button>
     </div>
   </div>
 
-  <!-- MODAL 2: REGISTER NEW VENDOR -->
-  <div id="register-modal" class="modal-overlay">
-    <div class="modal-content">
-      <div class="section-header">
-        <h3 class="section-title">Register Business</h3>
+  <!-- MODAL: REGISTER NEW BUSINESS -->
+  <div id="register-modal" class="modal">
+    <div class="modal-sheet">
+      <div class="section-head">
+        <h3>Register New Business</h3>
         <i class="ph ph-x" style="font-size:20px; cursor:pointer;" onclick="closeModal('register-modal')"></i>
       </div>
-      <div class="form-group">
-        <label>BUSINESS NAME</label>
-        <input type="text" id="new-vendor-name" placeholder="e.g. Legend Cuts Barber">
+      <div class="form-field">
+        <label>Business Name</label>
+        <input type="text" id="new-biz-name" placeholder="e.g. Nzuzo Barbershop">
       </div>
-      <div class="form-group">
-        <label>CATEGORY</label>
-        <select id="new-vendor-category">
+      <div class="form-field">
+        <label>Category</label>
+        <select id="new-biz-category">
           <option value="BARBER">Barbershop</option>
-          <option value="SALON">Salon</option>
-          <option value="SHISANYAMA">Shisanyama / Food</option>
+          <option value="SALON">Hair & Beauty Salon</option>
+          <option value="SHISANYAMA">Shisanyama / Braai Spot</option>
         </select>
       </div>
-      <button class="btn-action" style="width:100%; justify-content:center; padding:12px;" onclick="registerVendor()">Register Partner</button>
+      <button class="btn-primary" style="width:100%; justify-content:center; padding:12px;" onclick="registerVendor()">Save Business</button>
     </div>
   </div>
 
@@ -189,118 +198,128 @@
     const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let activeVendorId = null;
+    let activeVendor = null;
 
-    // UI Helpers: Modals & Tabs
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
     function switchTab(tabId, btn) {
       document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
-      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
       document.getElementById(tabId).style.display = 'block';
       btn.classList.add('active');
     }
 
-    // 1. Fetch Vendors Dropdown
-    async function loadVendorsDropdown() {
+    async function initDashboard() {
       const { data: vendors } = await supabase.from('vendors').select('*');
       const select = document.getElementById('vendor-select');
-      select.innerHTML = '<option value="">-- Select Active Business --</option>';
+      select.innerHTML = '';
 
       if (vendors && vendors.length > 0) {
         vendors.forEach(v => {
-          select.innerHTML += `<option value="${v.id}">${v.name} (${v.category})</option>`;
+          select.innerHTML += `<option value="${v.id}">${v.name}</option>`;
         });
-        select.selectedIndex = 1; // Pick first business automatically
-        switchVendor();
+        activeVendor = vendors[0];
+        updateHeaderUI();
+        loadServices();
+        loadOrders();
+      } else {
+        document.getElementById('biz-display-name').innerText = "No Business Registered";
+        document.getElementById('biz-display-type').innerText = "Click 'Add Business' above";
       }
     }
 
-    // 2. Register Vendor
-    async function registerVendor() {
-      const name = document.getElementById('new-vendor-name').value;
-      const category = document.getElementById('new-vendor-category').value;
-      if (!name) return alert("Enter a business name");
+    function updateHeaderUI() {
+      if (!activeVendor) return;
+      document.getElementById('biz-display-name').innerText = activeVendor.name;
+      document.getElementById('biz-display-type').innerText = activeVendor.category;
+      document.getElementById('biz-avatar-letter').innerText = activeVendor.name.charAt(0).toUpperCase();
+    }
 
-      const { error } = await supabase.from('vendors').insert([{ name, category }]);
-      if (error) return alert("Error: " + error.message);
+    async function switchVendor() {
+      const selectedId = document.getElementById('vendor-select').value;
+      const { data } = await supabase.from('vendors').select('*').eq('id', selectedId).single();
+      if (data) {
+        activeVendor = data;
+        updateHeaderUI();
+        loadServices();
+        loadOrders();
+      }
+    }
+
+    async function registerVendor() {
+      const name = document.getElementById('new-biz-name').value;
+      const category = document.getElementById('new-biz-category').value;
+      if (!name) return alert("Please enter business name");
+
+      const { data, error } = await supabase.from('vendors').insert([{ name, category }]).select();
+      if (error) return alert(error.message);
 
       closeModal('register-modal');
-      document.getElementById('new-vendor-name').value = '';
-      loadVendorsDropdown();
+      document.getElementById('new-biz-name').value = '';
+      initDashboard();
     }
 
-    // 3. Switch Selected Vendor & Refresh View
-    async function switchVendor() {
-      activeVendorId = document.getElementById('vendor-select').value;
-      if (!activeVendorId) return;
-
-      loadServices();
-      loadOrders();
-    }
-
-    // 4. Fetch Services Catalog
     async function loadServices() {
       const container = document.getElementById('services-list');
-      const { data: services } = await supabase.from('service_items').select('*').eq('vendor_id', activeVendorId);
+      const { data: services } = await supabase.from('service_items').select('*').eq('vendor_id', activeVendor.id);
 
       if (!services || services.length === 0) {
-        container.innerHTML = '<div class="empty-state">No services added yet. Click "+ Add Item" above.</div>';
+        container.innerHTML = '<div class="empty-box">No services added yet. Click "+ Add Service" above.</div>';
         return;
       }
 
       container.innerHTML = services.map(s => `
-        <div class="list-item">
+        <div class="order-card" style="display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <div class="list-item-title">${s.title}</div>
-            <div class="list-item-subtitle">Available</div>
+            <div class="order-title">${s.title}</div>
+            <div class="order-time">Active & Available</div>
           </div>
-          <div class="list-item-price">R${s.price}</div>
+          <div class="order-price">R${s.price}</div>
         </div>
       `).join('');
     }
 
-    // 5. Add Service Item
     async function addService() {
-      if (!activeVendorId) return alert("Select a business first!");
+      if (!activeVendor) return alert("Select or add a business first!");
       const title = document.getElementById('service-title').value;
       const price = parseFloat(document.getElementById('service-price').value);
 
-      if (!title || isNaN(price)) return alert("Fill in valid service details.");
+      if (!title || isNaN(price)) return alert("Enter valid title and price");
 
-      const { error } = await supabase.from('service_items').insert([{ vendor_id: activeVendorId, title, price }]);
+      const { error } = await supabase.from('service_items').insert([{ vendor_id: activeVendor.id, title, price }]);
       if (error) return alert(error.message);
 
-      closeModal('add-service-modal');
+      closeModal('service-modal');
       document.getElementById('service-title').value = '';
       document.getElementById('service-price').value = '';
       loadServices();
     }
 
-    // 6. Load Orders & Update Metrics
     async function loadOrders() {
       const container = document.getElementById('orders-list');
-      const { data: orders } = await supabase.from('orders').select('*').eq('vendor_id', activeVendorId).order('created_at', { ascending: false });
+      const { data: orders } = await supabase.from('orders').select('*').eq('vendor_id', activeVendor.id).order('created_at', { ascending: false });
 
       let revenue = 0;
       let count = 0;
 
       if (!orders || orders.length === 0) {
-        container.innerHTML = '<div class="empty-state">No active bookings found.</div>';
+        container.innerHTML = '<div class="empty-box">No bookings received yet.</div>';
       } else {
         count = orders.length;
         container.innerHTML = orders.map(o => {
           revenue += Number(o.vendor_net_earnings || 0);
           return `
-            <div class="list-item">
-              <div>
-                <div class="list-item-title">Booking Order</div>
-                <div class="list-item-subtitle">${new Date(o.created_at).toLocaleDateString()}</div>
-              </div>
-              <div style="text-align:right;">
-                <div class="list-item-price">R${o.gross_amount}</div>
-                <span class="status-badge">${o.status}</span>
+            <div class="order-card">
+              <div class="order-top">
+                <div>
+                  <div class="order-title">Customer Order</div>
+                  <div class="order-time">${new Date(o.created_at).toLocaleDateString()}</div>
+                </div>
+                <div style="text-align:right;">
+                  <div class="order-price">R${o.gross_amount}</div>
+                  <span class="order-status">${o.status}</span>
+                </div>
               </div>
             </div>
           `;
@@ -311,8 +330,7 @@
       document.getElementById('stat-count').innerText = count;
     }
 
-    // Initialize Page
-    loadVendorsDropdown();
+    initDashboard();
   </script>
 </body>
 </html>
