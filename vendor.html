@@ -3,193 +3,315 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vendor Portal - Management & Ledger</title>
+  <title>Vendor Portal - Management</title>
+  <!-- Google Fonts & Phosphor Icons for a clean, modern look -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- Supabase CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
   <style>
-    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
-    body { margin: 0; padding: 16px; background: #f8fafc; color: #1e293b; }
-    h1, h2 { color: #0f172a; margin-top: 0; }
-    .card { background: white; padding: 18px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .stat-card { background: #f1f5f9; padding: 12px; border-radius: 8px; text-align: center; }
-    .stat-number { font-size: 22px; font-weight: 700; color: #0284c7; }
-    .stat-label { font-size: 12px; color: #64748b; font-weight: 600; }
-    input, select { width: 100%; padding: 10px; margin: 6px 0 12px 0; border: 1px solid #cbd5e1; border-radius: 6px; }
-    .btn { background: #059669; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; }
-    .btn-secondary { background: #2563eb; }
-    .order-item { border-bottom: 1px solid #f1f5f9; padding: 10px 0; font-size: 14px; }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #dcfce7; color: #166534; }
+    :root {
+      --primary: #0f172a;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; padding: 0; background: var(--bg); color: var(--text-main); padding-bottom: 40px; }
+
+    /* HEADER */
+    header { background: var(--card-bg); padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+    .brand-title { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
+    
+    /* VENDOR SELECTOR TOP BAR */
+    .vendor-picker-wrapper { padding: 12px 20px; background: #fff; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; }
+    select.select-custom { flex: 1; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); font-weight: 600; font-size: 14px; color: var(--text-main); outline: none; }
+    
+    .container { padding: 16px 20px; max-width: 600px; margin: 0 auto; }
+
+    /* METRICS STATS GRID */
+    .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .metric-card { background: var(--card-bg); padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+    .metric-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
+    .metric-value { font-size: 24px; font-weight: 700; color: var(--text-main); margin-top: 6px; }
+
+    /* TAB NAVIGATION */
+    .tabs { display: flex; background: #e2e8f0; padding: 4px; border-radius: 12px; margin-bottom: 20px; }
+    .tab-btn { flex: 1; padding: 10px; border: none; background: transparent; font-size: 13px; font-weight: 600; color: var(--text-muted); border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+    .tab-btn.active { background: #fff; color: var(--text-main); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+    /* SECTION CARDS */
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .section-title { font-size: 16px; font-weight: 700; margin: 0; }
+    
+    .btn-action { background: var(--accent); color: white; border: none; padding: 8px 14px; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-action:hover { background: var(--accent-hover); }
+
+    /* ITEM & ORDER LISTS */
+    .list-container { display: flex; flex-direction: column; gap: 10px; }
+    .list-item { background: var(--card-bg); padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .list-item-title { font-weight: 600; font-size: 14px; }
+    .list-item-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .list-item-price { font-weight: 700; color: #059669; font-size: 15px; }
+
+    /* STATUS BADGE */
+    .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; background: #dcfce7; color: #15803d; }
+
+    /* MODAL OVERLAY FOR FORMS */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: flex-end; z-index: 100; }
+    .modal-content { background: #fff; width: 100%; max-width: 600px; padding: 24px; border-radius: 24px 24px 0 0; animation: slideUp 0.25s ease-out; }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+    .form-group input, .form-group select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); font-size: 14px; outline: none; }
+    .form-group input:focus { border-color: var(--accent); }
+
+    .empty-state { text-align: center; padding: 32px 16px; color: var(--text-muted); font-size: 14px; }
   </style>
 </head>
 <body>
 
-  <h1>Vendor Dashboard</h1>
+  <!-- HEADER -->
+  <header>
+    <div class="brand-title">Partner Hub</div>
+    <button class="btn-action" style="background:#f1f5f9; color:#0f172a;" onclick="openModal('register-modal')">
+      <i class="ph ph-plus-circle"></i> New Business
+    </button>
+  </header>
 
-  <!-- VENDOR SELECTION / CREATION -->
-  <div class="card">
-    <h2>1. Select or Add Vendor</h2>
-    <label>Select Active Business:</label>
-    <select id="vendor-select" onchange="switchVendor()">
-      <option value="">-- Choose Business --</option>
+  <!-- VENDOR SELECTOR -->
+  <div class="vendor-picker-wrapper">
+    <i class="ph ph-storefront" style="font-size: 20px; color: var(--text-muted);"></i>
+    <select id="vendor-select" class="select-custom" onchange="switchVendor()">
+      <option value="">Loading Businesses...</option>
     </select>
+  </div>
 
-    <details style="margin-top: 10px;">
-      <summary style="font-size: 14px; cursor: pointer; color: #2563eb; font-weight: 600;">+ Register New Business</summary>
-      <div style="margin-top: 10px;">
-        <input type="text" id="new-vendor-name" placeholder="Business Name (e.g., King Cut Barber)">
+  <div class="container">
+    
+    <!-- METRICS OVERVIEW -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label"><i class="ph ph-wallet"></i> Total Revenue</div>
+        <div class="metric-value" id="stat-revenue">R0.00</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label"><i class="ph ph-calendar-check"></i> Bookings</div>
+        <div class="metric-value" id="stat-count">0</div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('orders-tab', this)">Bookings</button>
+      <button class="tab-btn" onclick="switchTab('services-tab', this)">Services & Menu</button>
+    </div>
+
+    <!-- TAB 1: BOOKINGS & ORDERS -->
+    <div id="orders-tab" class="tab-content">
+      <div class="section-header">
+        <h3 class="section-title">Recent Activity</h3>
+      </div>
+      <div id="orders-list" class="list-container">
+        <div class="empty-state">Select a business above to view orders.</div>
+      </div>
+    </div>
+
+    <!-- TAB 2: SERVICES & MENU -->
+    <div id="services-tab" class="tab-content" style="display: none;">
+      <div class="section-header">
+        <h3 class="section-title">Service Catalog</h3>
+        <button class="btn-action" onclick="openModal('add-service-modal')">
+          <i class="ph ph-plus"></i> Add Item
+        </button>
+      </div>
+      <div id="services-list" class="list-container">
+        <div class="empty-state">Select a business above to view catalog.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODAL 1: ADD NEW SERVICE -->
+  <div id="add-service-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="section-header">
+        <h3 class="section-title">Add New Offering</h3>
+        <i class="ph ph-x" style="font-size:20px; cursor:pointer;" onclick="closeModal('add-service-modal')"></i>
+      </div>
+      <div class="form-group">
+        <label>SERVICE / ITEM NAME</label>
+        <input type="text" id="service-title" placeholder="e.g. Skin Fade Cut or Beef Platter">
+      </div>
+      <div class="form-group">
+        <label>PRICE (ZAR)</label>
+        <input type="number" id="service-price" placeholder="e.g. 180">
+      </div>
+      <button class="btn-action" style="width:100%; justify-content:center; padding:12px;" onclick="addService()">Save Item</button>
+    </div>
+  </div>
+
+  <!-- MODAL 2: REGISTER NEW VENDOR -->
+  <div id="register-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="section-header">
+        <h3 class="section-title">Register Business</h3>
+        <i class="ph ph-x" style="font-size:20px; cursor:pointer;" onclick="closeModal('register-modal')"></i>
+      </div>
+      <div class="form-group">
+        <label>BUSINESS NAME</label>
+        <input type="text" id="new-vendor-name" placeholder="e.g. Legend Cuts Barber">
+      </div>
+      <div class="form-group">
+        <label>CATEGORY</label>
         <select id="new-vendor-category">
           <option value="BARBER">Barbershop</option>
           <option value="SALON">Salon</option>
           <option value="SHISANYAMA">Shisanyama / Food</option>
         </select>
-        <button class="btn" onclick="registerVendor()">Save Business</button>
       </div>
-    </details>
-  </div>
-
-  <!-- LEDGER & STATS OVERVIEW -->
-  <div class="card">
-    <h2>2. Financial Ledger Balance</h2>
-    <div class="grid">
-      <div class="stat-card">
-        <div class="stat-number" id="stat-net">R0.00</div>
-        <div class="stat-label">Net Earnings (90%)</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number" id="stat-commission" style="color: #d97706;">R0.00</div>
-        <div class="stat-label">Platform Fee (10%)</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ADD SERVICE / MENU ITEM -->
-  <div class="card">
-    <h2>3. Add Service or Menu Item</h2>
-    <input type="text" id="service-title" placeholder="Item Name (e.g., Fade Cut / 1kg Meat Platter)">
-    <input type="number" id="service-price" placeholder="Price in ZAR (e.g., 150)">
-    <button class="btn btn-secondary" onclick="addService()">Add to Menu / Services</button>
-  </div>
-
-  <!-- LIVE ORDERS -->
-  <div class="card">
-    <h2>4. Incoming Bookings & Orders</h2>
-    <div id="orders-container">
-      <p style="color: #64748b; font-size: 14px;">Select a vendor to view orders.</p>
+      <button class="btn-action" style="width:100%; justify-content:center; padding:12px;" onclick="registerVendor()">Register Partner</button>
     </div>
   </div>
 
   <script>
-    // Initialize Supabase Client
     const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
     const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let activeVendorId = null;
 
-    // 1. Fetch existing vendors into the dropdown
+    // UI Helpers: Modals & Tabs
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).style.display = 'block';
+      btn.classList.add('active');
+    }
+
+    // 1. Fetch Vendors Dropdown
     async function loadVendorsDropdown() {
-      const { data: vendors, error } = await supabase.from('vendors').select('*');
+      const { data: vendors } = await supabase.from('vendors').select('*');
       const select = document.getElementById('vendor-select');
-      select.innerHTML = '<option value="">-- Choose Business --</option>';
+      select.innerHTML = '<option value="">-- Select Active Business --</option>';
 
       if (vendors && vendors.length > 0) {
         vendors.forEach(v => {
           select.innerHTML += `<option value="${v.id}">${v.name} (${v.category})</option>`;
         });
+        select.selectedIndex = 1; // Pick first business automatically
+        switchVendor();
       }
     }
 
-    // 2. Register a new Vendor
+    // 2. Register Vendor
     async function registerVendor() {
       const name = document.getElementById('new-vendor-name').value;
       const category = document.getElementById('new-vendor-category').value;
+      if (!name) return alert("Enter a business name");
 
-      if (!name) return alert("Please enter a business name");
+      const { error } = await supabase.from('vendors').insert([{ name, category }]);
+      if (error) return alert("Error: " + error.message);
 
-      const { data, error } = await supabase.from('vendors').insert([
-        { name, category, commission_rate: 0.10 }
-      ]).select();
-
-      if (error) return alert("Error saving vendor: " + error.message);
-
-      alert("Vendor registered successfully!");
-      document.getElementById('new-vendor-name').value = "";
+      closeModal('register-modal');
+      document.getElementById('new-vendor-name').value = '';
       loadVendorsDropdown();
     }
 
-    // 3. Switch active vendor and reload dashboard stats
+    // 3. Switch Selected Vendor & Refresh View
     async function switchVendor() {
       activeVendorId = document.getElementById('vendor-select').value;
       if (!activeVendorId) return;
 
-      loadOrdersAndLedger();
+      loadServices();
+      loadOrders();
     }
 
-    // 4. Add a new service item to the selected vendor
-    async function addService() {
-      if (!activeVendorId) return alert("Please select a business first!");
+    // 4. Fetch Services Catalog
+    async function loadServices() {
+      const container = document.getElementById('services-list');
+      const { data: services } = await supabase.from('service_items').select('*').eq('vendor_id', activeVendorId);
 
-      const title = document.getElementById('service-title').value;
-      const price = parseFloat(document.getElementById('service-price').value);
-
-      if (!title || isNaN(price)) return alert("Enter a valid name and price");
-
-      const { error } = await supabase.from('service_items').insert([
-        { vendor_id: activeVendorId, title, price }
-      ]);
-
-      if (error) return alert("Error adding service: " + error.message);
-
-      alert(`Added "${title}" @ R${price} to catalog!`);
-      document.getElementById('service-title').value = "";
-      document.getElementById('service-price').value = "";
-    }
-
-    // 5. Load incoming orders and calculate totals
-    async function loadOrdersAndLedger() {
-      const container = document.getElementById('orders-container');
-      container.innerHTML = "Loading orders...";
-
-      const { data: orders, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('vendor_id', activeVendorId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        container.innerHTML = "Failed to load orders.";
+      if (!services || services.length === 0) {
+        container.innerHTML = '<div class="empty-state">No services added yet. Click "+ Add Item" above.</div>';
         return;
       }
 
-      let totalNet = 0;
-      let totalCommission = 0;
-
-      if (!orders || orders.length === 0) {
-        container.innerHTML = "<p style='color:#64748b;'>No orders placed for this vendor yet.</p>";
-      } else {
-        container.innerHTML = "";
-        orders.forEach(o => {
-          totalNet += Number(o.vendor_net_earnings || 0);
-          totalCommission += Number(o.platform_commission || 0);
-
-          container.innerHTML += `
-            <div class="order-item">
-              <span class="badge">${o.status}</span>
-              <strong style="margin-left: 8px;">Order Total: R${o.gross_amount}</strong><br>
-              <span style="color:#64748b; font-size: 12px;">
-                Net: R${o.vendor_net_earnings} | Commission: R${o.platform_commission}
-              </span>
-            </div>
-          `;
-        });
-      }
-
-      // Update Ledger Stat boxes
-      document.getElementById('stat-net').innerText = `R${totalNet.toFixed(2)}`;
-      document.getElementById('stat-commission').innerText = `R${totalCommission.toFixed(2)}`;
+      container.innerHTML = services.map(s => `
+        <div class="list-item">
+          <div>
+            <div class="list-item-title">${s.title}</div>
+            <div class="list-item-subtitle">Available</div>
+          </div>
+          <div class="list-item-price">R${s.price}</div>
+        </div>
+      `).join('');
     }
 
-    // Initialize dropdown on load
+    // 5. Add Service Item
+    async function addService() {
+      if (!activeVendorId) return alert("Select a business first!");
+      const title = document.getElementById('service-title').value;
+      const price = parseFloat(document.getElementById('service-price').value);
+
+      if (!title || isNaN(price)) return alert("Fill in valid service details.");
+
+      const { error } = await supabase.from('service_items').insert([{ vendor_id: activeVendorId, title, price }]);
+      if (error) return alert(error.message);
+
+      closeModal('add-service-modal');
+      document.getElementById('service-title').value = '';
+      document.getElementById('service-price').value = '';
+      loadServices();
+    }
+
+    // 6. Load Orders & Update Metrics
+    async function loadOrders() {
+      const container = document.getElementById('orders-list');
+      const { data: orders } = await supabase.from('orders').select('*').eq('vendor_id', activeVendorId).order('created_at', { ascending: false });
+
+      let revenue = 0;
+      let count = 0;
+
+      if (!orders || orders.length === 0) {
+        container.innerHTML = '<div class="empty-state">No active bookings found.</div>';
+      } else {
+        count = orders.length;
+        container.innerHTML = orders.map(o => {
+          revenue += Number(o.vendor_net_earnings || 0);
+          return `
+            <div class="list-item">
+              <div>
+                <div class="list-item-title">Booking Order</div>
+                <div class="list-item-subtitle">${new Date(o.created_at).toLocaleDateString()}</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="list-item-price">R${o.gross_amount}</div>
+                <span class="status-badge">${o.status}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      document.getElementById('stat-revenue').innerText = `R${revenue.toFixed(2)}`;
+      document.getElementById('stat-count').innerText = count;
+    }
+
+    // Initialize Page
     loadVendorsDropdown();
   </script>
 </body>
