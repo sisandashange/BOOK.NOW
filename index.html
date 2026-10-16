@@ -294,7 +294,9 @@
         vendor_id: selectedService.vendorId,
         gross_amount: grossAmount,
         vendor_net_earnings: netEarnings,
-        status: "PENDING"
+        status: "PENDING",
+        customer_name: name,
+        customer_phone: phone
       }]);
 
       if (error) return alert("Booking error: " + error.message);
