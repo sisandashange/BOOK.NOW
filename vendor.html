@@ -489,472 +489,485 @@
     </div>
   </div>
 
-  <script>
-    const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
+  
+<script>
+(() => {
+  "use strict";
 
-    let supabase = null;
-    let activeVendor = null;
+  const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
 
-    try {
-      if (!window.supabase || typeof window.supabase.createClient !== "function") {
-        throw new Error("Supabase library failed to load. Check your internet connection and reload the page.");
-      }
+  let db = null;
+  let activeVendor = null;
+  let booted = false;
 
-      supabase = window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_KEY
-      );
-    } catch (error) {
-      console.error("Supabase initialization error:", error);
+  const $ = id => document.getElementById(id);
 
-      window.addEventListener("DOMContentLoaded", () => {
-        document.getElementById("biz-display-name").textContent = "Database Error";
-        document.getElementById("biz-display-type").textContent = error.message;
-      });
+  function showError(message) {
+    console.error("[BOOK.NOW]", message);
+    const type = $("biz-display-type");
+    if (type) type.textContent = message;
+  }
+
+  function openModal(id) {
+    const modal = $(id);
+    if (modal) {
+      modal.style.display = "flex";
+      document.body.style.overflow = "hidden";
     }
+  }
 
-    document.addEventListener("DOMContentLoaded", () => {
+  function closeModal(id) {
+    const modal = $(id);
+    if (modal) modal.style.display = "none";
 
-      const registerModal = document.getElementById("register-modal");
-      const serviceModal = document.getElementById("service-modal");
+    const anyOpen = ["register-modal", "service-modal"].some(
+      modalId => $(modalId)?.style.display === "flex"
+    );
 
-      document.getElementById("open-add-biz-btn").addEventListener("click", () => {
-        registerModal.style.display = "flex";
-      });
+    document.body.style.overflow = anyOpen ? "hidden" : "";
+  }
 
-      document.getElementById("close-register-modal").addEventListener("click", () => {
-        registerModal.style.display = "none";
-      });
+  function setButtonLoading(button, loading, text) {
+    if (!button) return;
+    button.disabled = loading;
+    button.textContent = text;
+  }
 
-      document.getElementById("open-add-service-btn").addEventListener("click", () => {
-        if (!activeVendor) {
-          alert("Please add or select a business first.");
-          return;
-        }
+  function setEmpty(id, message) {
+    const el = $(id);
+    if (!el) return;
+    el.replaceChildren();
+    const box = document.createElement("div");
+    box.className = "empty-box";
+    box.textContent = message;
+    el.appendChild(box);
+  }
 
-        serviceModal.style.display = "flex";
-      });
+  function money(value) {
+    const number = Number(value);
+    return "R" + (Number.isFinite(number) ? number : 0).toFixed(2);
+  }
 
-      document.getElementById("close-service-modal").addEventListener("click", () => {
-        serviceModal.style.display = "none";
-      });
-
-      // Allow the close icons to work with the keyboard.
-      ["close-register-modal", "close-service-modal"].forEach(id => {
-        document.getElementById(id).addEventListener("keydown", event => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            document.getElementById(id === "close-register-modal"
-              ? "register-modal"
-              : "service-modal").style.display = "none";
-          }
-        });
-      });
-
-      // Close modals when the background is tapped.
-      [registerModal, serviceModal].forEach(modal => {
-        modal.addEventListener("click", event => {
-          if (event.target === modal) {
-            modal.style.display = "none";
-          }
-        });
-      });
-
-      // Switch between tabs.
-      document.getElementById("tab-orders-btn").addEventListener("click", () => {
-        document.getElementById("orders-tab").style.display = "block";
-        document.getElementById("services-tab").style.display = "none";
-
-        document.getElementById("tab-orders-btn").classList.add("active");
-        document.getElementById("tab-services-btn").classList.remove("active");
-      });
-
-      document.getElementById("tab-services-btn").addEventListener("click", () => {
-        document.getElementById("services-tab").style.display = "block";
-        document.getElementById("orders-tab").style.display = "none";
-
-        document.getElementById("tab-services-btn").classList.add("active");
-        document.getElementById("tab-orders-btn").classList.remove("active");
-      });
-
-      // Switch the selected business.
-      document.getElementById("vendor-select").addEventListener("change", async event => {
-        if (!supabase) {
-          alert("Database not initialized.");
-          return;
-        }
-
-        const selectedId = event.target.value;
-        if (!selectedId) return;
-
-        try {
-          const { data, error } = await supabase
-            .from("vendors")
-            .select("*")
-            .eq("id", selectedId)
-            .single();
-
-          if (error) throw error;
-
-          activeVendor = data;
-          updateHeaderUI();
-
-          await Promise.all([
-            loadServices(),
-            loadOrders()
-          ]);
-        } catch (error) {
-          console.error("Switch business error:", error);
-          alert("Could not switch business: " + error.message);
-        }
-      });
-
-      // Save a new business.
-      document.getElementById("save-biz-btn").addEventListener("click", async () => {
-        const button = document.getElementById("save-biz-btn");
-
-        if (!supabase) {
-          alert("Database not initialized.");
-          return;
-        }
-
-        const name = document.getElementById("new-biz-name").value.trim();
-        const category = document.getElementById("new-biz-category").value;
-
-        if (!name) {
-          alert("Please enter a business name.");
-          document.getElementById("new-biz-name").focus();
-          return;
-        }
-
-        button.disabled = true;
-        button.textContent = "Saving...";
-
-        try {
-          const { data, error } = await supabase
-            .from("vendors")
-            .insert([{ name, category }])
-            .select()
-            .single();
-
-          if (error) throw error;
-          if (!data) throw new Error("The database did not return the saved business.");
-
-          document.getElementById("register-modal").style.display = "none";
-          document.getElementById("new-biz-name").value = "";
-
-          await initDashboard(data.id);
-
-          alert("Business saved successfully!");
-        } catch (error) {
-          console.error("Save business error:", error);
-          alert("Could not save business: " + (error.message || "Unknown database error"));
-        } finally {
-          button.disabled = false;
-          button.textContent = "Save Business";
-        }
-      });
-
-      // Publish a service.
-      document.getElementById("save-service-btn").addEventListener("click", async () => {
-        const button = document.getElementById("save-service-btn");
-
-        if (!supabase) {
-          alert("Database not initialized.");
-          return;
-        }
-
-        if (!activeVendor) {
-          alert("Select a business first!");
-          return;
-        }
-
-        const title = document.getElementById("service-title").value.trim();
-        const priceText = document.getElementById("service-price").value.trim();
-        const price = Number(priceText);
-
-        if (!title) {
-          alert("Enter a valid service title.");
-          document.getElementById("service-title").focus();
-          return;
-        }
-
-        if (
-          priceText === "" ||
-          !Number.isFinite(price) ||
-          price < 1 ||
-          price > 10000
-        ) {
-          alert("Invalid price. Must be between R1 and R10,000.");
-          return;
-        }
-
-        button.disabled = true;
-        button.textContent = "Publishing...";
-
-        try {
-          const { error } = await supabase
-            .from("service_items")
-            .insert([{
-              vendor_id: activeVendor.id,
-              title,
-              price
-            }]);
-
-          if (error) throw error;
-
-          document.getElementById("service-modal").style.display = "none";
-          document.getElementById("service-title").value = "";
-          document.getElementById("service-price").value = "";
-
-          await loadServices();
-
-          alert("Service added successfully!");
-        } catch (error) {
-          console.error("Publish service error:", error);
-          alert("Could not publish service: " + (error.message || "Unknown database error"));
-        } finally {
-          button.disabled = false;
-          button.textContent = "Publish Service";
-        }
-      });
-
-      initDashboard();
+  // Attach UI handlers before connecting to the database.
+  function bindButtons() {
+    $("open-add-biz-btn").addEventListener("click", () => {
+      openModal("register-modal");
     });
 
-    async function initDashboard(preferredVendorId = null) {
-      if (!supabase) return;
+    $("close-register-modal").addEventListener("click", () => {
+      closeModal("register-modal");
+    });
 
-      const nameElement = document.getElementById("biz-display-name");
-      const typeElement = document.getElementById("biz-display-type");
+    $("open-add-service-btn").addEventListener("click", () => {
+      if (!activeVendor) {
+        alert("Please add or select a business first.");
+        return;
+      }
+      openModal("service-modal");
+    });
 
-      nameElement.textContent = "Loading Business...";
-      typeElement.textContent = "Verifying partner account";
+    $("close-service-modal").addEventListener("click", () => {
+      closeModal("service-modal");
+    });
+
+    [
+      ["register-modal", "close-register-modal"],
+      ["service-modal", "close-service-modal"]
+    ].forEach(([modalId, closeId]) => {
+      $(modalId).addEventListener("click", event => {
+        if (event.target === $(modalId)) closeModal(modalId);
+      });
+
+      $(closeId).addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          closeModal(modalId);
+        }
+      });
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        closeModal("register-modal");
+        closeModal("service-modal");
+      }
+    });
+
+    $("tab-orders-btn").addEventListener("click", () => {
+      $("orders-tab").style.display = "block";
+      $("services-tab").style.display = "none";
+      $("tab-orders-btn").classList.add("active");
+      $("tab-services-btn").classList.remove("active");
+    });
+
+    $("tab-services-btn").addEventListener("click", () => {
+      $("services-tab").style.display = "block";
+      $("orders-tab").style.display = "none";
+      $("tab-services-btn").classList.add("active");
+      $("tab-orders-btn").classList.remove("active");
+    });
+
+    $("vendor-select").addEventListener("change", async event => {
+      const id = event.target.value;
+      if (!id || !db) return;
 
       try {
-        const { data: vendors, error } = await supabase
+        const { data, error } = await db
           .from("vendors")
           .select("*")
-          .order("created_at", { ascending: false });
+          .eq("id", id)
+          .single();
 
         if (error) throw error;
 
-        const select = document.getElementById("vendor-select");
-        select.innerHTML = '<option value="">Switch Shop</option>';
+        activeVendor = data;
+        updateHeader();
 
-        if (!vendors || vendors.length === 0) {
-          activeVendor = null;
-
-          nameElement.textContent = "No Business Found";
-          typeElement.textContent = "Tap '+ Add Business' above";
-          document.getElementById("biz-avatar-letter").textContent = "N";
-
-          document.getElementById("services-list").innerHTML =
-            '<div class="empty-box">No services added yet. Click "+ Add Service" above.</div>';
-
-          document.getElementById("orders-list").innerHTML =
-            '<div class="empty-box">No bookings received yet.</div>';
-
-          document.getElementById("stat-revenue").textContent = "R0.00";
-          document.getElementById("stat-count").textContent = "0";
-          return;
-        }
-
-        vendors.forEach(vendor => {
-          const option = document.createElement("option");
-          option.value = vendor.id;
-          option.textContent = vendor.name || "Unnamed Business";
-          select.appendChild(option);
-        });
-
-        activeVendor =
-          vendors.find(vendor => String(vendor.id) === String(preferredVendorId)) ||
-          vendors[0];
-
-        select.value = activeVendor.id;
-
-        updateHeaderUI();
-
-        await Promise.all([
-          loadServices(),
-          loadOrders()
-        ]);
-
+        await Promise.all([loadServices(), loadOrders()]);
       } catch (error) {
-        console.error("Dashboard loading error:", error);
-
-        nameElement.textContent = "Database Error";
-        typeElement.textContent = error.message || "Could not load businesses";
+        showError("Could not switch business: " + error.message);
+        alert("Could not switch business: " + error.message);
       }
+    });
+
+    $("save-biz-btn").addEventListener("click", saveBusiness);
+    $("save-service-btn").addEventListener("click", saveService);
+  }
+
+  async function saveBusiness() {
+    const button = $("save-biz-btn");
+
+    if (!db) {
+      alert("Database is not connected. Reload the page and check your connection.");
+      return;
     }
 
-    function updateHeaderUI() {
-      if (!activeVendor) return;
+    const name = $("new-biz-name").value.trim();
+    const category = $("new-biz-category").value;
 
-      const name = activeVendor.name || "Unnamed Business";
-
-      document.getElementById("biz-display-name").textContent = name;
-      document.getElementById("biz-display-type").textContent =
-        activeVendor.category || "Business";
-      document.getElementById("biz-avatar-letter").textContent =
-        name.charAt(0).toUpperCase();
+    if (!name) {
+      alert("Please enter a business name.");
+      $("new-biz-name").focus();
+      return;
     }
 
-    async function loadServices() {
-      if (!supabase || !activeVendor) return;
+    setButtonLoading(button, true, "Saving...");
 
-      const container = document.getElementById("services-list");
-      container.innerHTML = '<div class="empty-box">Loading services...</div>';
+    try {
+      const { data, error } = await db
+        .from("vendors")
+        .insert([{ name, category }])
+        .select()
+        .single();
 
-      try {
-        const { data: services, error } = await supabase
-          .from("service_items")
-          .select("*")
-          .eq("vendor_id", activeVendor.id);
+      if (error) throw error;
+      if (!data) throw new Error("No business record was returned.");
 
-        if (error) throw error;
+      $("new-biz-name").value = "";
+      closeModal("register-modal");
 
-        if (!services || services.length === 0) {
-          container.innerHTML =
-            '<div class="empty-box">No services added yet. Click "+ Add Service" above.</div>';
-          return;
-        }
+      await initDashboard(data.id);
+      alert("Business saved successfully!");
+    } catch (error) {
+      console.error("Save business:", error);
+      alert("Could not save business: " + error.message);
+    } finally {
+      setButtonLoading(button, false, "Save Business");
+    }
+  }
 
-        container.innerHTML = "";
+  async function saveService() {
+    const button = $("save-service-btn");
 
-        services.forEach(service => {
+    if (!db) {
+      alert("Database is not connected. Reload the page and check your connection.");
+      return;
+    }
+
+    if (!activeVendor) {
+      alert("Please add or select a business first.");
+      return;
+    }
+
+    const title = $("service-title").value.trim();
+    const priceText = $("service-price").value.trim();
+    const price = Number(priceText);
+
+    if (!title) {
+      alert("Please enter a service title.");
+      $("service-title").focus();
+      return;
+    }
+
+    if (!priceText || !Number.isFinite(price) || price < 1 || price > 10000) {
+      alert("Price must be between R1 and R10,000.");
+      $("service-price").focus();
+      return;
+    }
+
+    setButtonLoading(button, true, "Publishing...");
+
+    try {
+      const { error } = await db
+        .from("service_items")
+        .insert([{
+          vendor_id: activeVendor.id,
+          title,
+          price
+        }]);
+
+      if (error) throw error;
+
+      $("service-title").value = "";
+      $("service-price").value = "";
+      closeModal("service-modal");
+
+      await loadServices();
+      alert("Service published successfully!");
+    } catch (error) {
+      console.error("Save service:", error);
+      alert("Could not publish service: " + error.message);
+    } finally {
+      setButtonLoading(button, false, "Publish Service");
+    }
+  }
+
+  async function initDashboard(preferredVendorId = null) {
+    if (!db) {
+      $("biz-display-name").textContent = "Connection Error";
+      showError("Supabase did not load. Check your internet connection and reload.");
+      return;
+    }
+
+    $("biz-display-name").textContent = "Loading Business...";
+    $("biz-display-type").textContent = "Connecting to database...";
+
+    try {
+      const { data: vendors, error } = await db
+        .from("vendors")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      const select = $("vendor-select");
+      select.replaceChildren();
+
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "Switch Shop";
+      select.appendChild(placeholder);
+
+      if (!vendors || vendors.length === 0) {
+        activeVendor = null;
+        $("biz-display-name").textContent = "No Business Found";
+        $("biz-display-type").textContent = "Tap '+ Add Business' above";
+        $("biz-avatar-letter").textContent = "N";
+        $("stat-revenue").textContent = "R0.00";
+        $("stat-count").textContent = "0";
+        setEmpty("services-list", "No services added yet.");
+        setEmpty("orders-list", "No bookings received yet.");
+        return;
+      }
+
+      vendors.forEach(vendor => {
+        const option = document.createElement("option");
+        option.value = String(vendor.id);
+        option.textContent = vendor.name || "Unnamed Business";
+        select.appendChild(option);
+      });
+
+      activeVendor =
+        vendors.find(v => String(v.id) === String(preferredVendorId)) ||
+        vendors[0];
+
+      select.value = String(activeVendor.id);
+      updateHeader();
+
+      await Promise.all([loadServices(), loadOrders()]);
+    } catch (error) {
+      console.error("Dashboard initialization:", error);
+      $("biz-display-name").textContent = "Database Error";
+      showError(error.message || "Could not load businesses.");
+      setEmpty("services-list", "Could not load services.");
+      setEmpty("orders-list", "Could not load bookings.");
+    }
+  }
+
+  function updateHeader() {
+    if (!activeVendor) return;
+
+    const name = activeVendor.name || "Unnamed Business";
+    $("biz-display-name").textContent = name;
+    $("biz-display-type").textContent = activeVendor.category || "Business";
+    $("biz-avatar-letter").textContent = name.charAt(0).toUpperCase();
+  }
+
+  async function loadServices() {
+    if (!db || !activeVendor) return;
+
+    setEmpty("services-list", "Loading services...");
+
+    try {
+      const { data, error } = await db
+        .from("service_items")
+        .select("*")
+        .eq("vendor_id", activeVendor.id);
+
+      if (error) throw error;
+
+      const container = $("services-list");
+      container.replaceChildren();
+
+      if (!data || data.length === 0) {
+        setEmpty("services-list", "No services added yet. Click '+ Add Service' above.");
+        return;
+      }
+
+      data.forEach(service => {
+        const card = document.createElement("div");
+        card.className = "order-card";
+        card.style.cssText =
+          "display:flex;justify-content:space-between;align-items:center;gap:12px;";
+
+        const info = document.createElement("div");
+        const title = document.createElement("div");
+        title.className = "order-title";
+        title.textContent = service.title || "Untitled Service";
+
+        const status = document.createElement("div");
+        status.className = "order-time";
+        status.textContent = "Active & Available";
+
+        const price = document.createElement("div");
+        price.className = "order-price";
+        price.textContent = money(service.price);
+
+        info.append(title, status);
+        card.append(info, price);
+        container.appendChild(card);
+      });
+    } catch (error) {
+      console.error("Load services:", error);
+      setEmpty("services-list", "Could not load services: " + error.message);
+    }
+  }
+
+  async function loadOrders() {
+    if (!db || !activeVendor) return;
+
+    setEmpty("orders-list", "Loading bookings...");
+
+    try {
+      const { data: orders, error } = await db
+        .from("orders")
+        .select("*")
+        .eq("vendor_id", activeVendor.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      let revenue = 0;
+      let completed = 0;
+
+      const container = $("orders-list");
+      container.replaceChildren();
+
+      if (!orders || orders.length === 0) {
+        setEmpty("orders-list", "No bookings received yet.");
+      } else {
+        orders.forEach(order => {
+          const statusText = String(order.status || "Pending");
+
+          if (statusText.toLowerCase() === "completed") completed++;
+          revenue += Number(order.vendor_net_earnings || 0);
+
           const card = document.createElement("div");
           card.className = "order-card";
-          card.style.cssText =
-            "display:flex;justify-content:space-between;align-items:center;gap:12px;";
 
-          const info = document.createElement("div");
+          const top = document.createElement("div");
+          top.className = "order-top";
 
+          const left = document.createElement("div");
           const title = document.createElement("div");
           title.className = "order-title";
-          title.textContent = service.title || "Untitled Service";
+          title.textContent = "Customer Booking";
 
-          const status = document.createElement("div");
-          status.className = "order-time";
-          status.textContent = "Active & Available";
+          const time = document.createElement("div");
+          time.className = "order-time";
+          const date = order.created_at ? new Date(order.created_at) : null;
+          time.textContent = date && !Number.isNaN(date.getTime())
+            ? date.toLocaleString()
+            : "Date unavailable";
 
-          info.appendChild(title);
-          info.appendChild(status);
+          left.append(title, time);
+
+          const right = document.createElement("div");
+          right.style.textAlign = "right";
 
           const price = document.createElement("div");
           price.className = "order-price";
-          price.textContent = "R" + Number(service.price || 0).toFixed(2);
+          price.textContent = money(order.gross_amount);
 
-          card.appendChild(info);
-          card.appendChild(price);
+          const status = document.createElement("span");
+          status.className = "order-status";
+          status.textContent = statusText;
+
+          right.append(price, status);
+          top.append(left, right);
+          card.appendChild(top);
           container.appendChild(card);
         });
-
-      } catch (error) {
-        console.error("Load services error:", error);
-        container.textContent =
-          "Could not load services: " + (error.message || "Unknown database error");
       }
+
+      $("stat-revenue").textContent = money(revenue);
+      $("stat-count").textContent = String(completed);
+    } catch (error) {
+      console.error("Load bookings:", error);
+      setEmpty("orders-list", "Could not load bookings: " + error.message);
+      $("stat-revenue").textContent = "R0.00";
+      $("stat-count").textContent = "0";
+    }
+  }
+
+  function boot() {
+    if (booted) return;
+    booted = true;
+
+    try {
+      bindButtons();
+    } catch (error) {
+      console.error("Button setup failed:", error);
+      showError("Portal setup error: " + error.message);
+      return;
     }
 
-    async function loadOrders() {
-      if (!supabase || !activeVendor) return;
-
-      const container = document.getElementById("orders-list");
-      container.innerHTML = '<div class="empty-box">Loading bookings...</div>';
-
-      try {
-        const { data: orders, error } = await supabase
-          .from("orders")
-          .select("*")
-          .eq("vendor_id", activeVendor.id)
-          .order("created_at", { ascending: false });
-
-        if (error) throw error;
-
-        let revenue = 0;
-        let completedCount = 0;
-
-        if (!orders || orders.length === 0) {
-          container.innerHTML =
-            '<div class="empty-box">No bookings received yet.</div>';
-        } else {
-          container.innerHTML = "";
-
-          orders.forEach(order => {
-            const statusText = String(order.status || "Pending");
-
-            if (statusText.toLowerCase() === "completed") {
-              completedCount++;
-            }
-
-            revenue += Number(order.vendor_net_earnings || 0);
-
-            const card = document.createElement("div");
-            card.className = "order-card";
-
-            const top = document.createElement("div");
-            top.className = "order-top";
-
-            const left = document.createElement("div");
-
-            const title = document.createElement("div");
-            title.className = "order-title";
-            title.textContent = "Customer Booking";
-
-            const time = document.createElement("div");
-            time.className = "order-time";
-
-            const date = order.created_at ? new Date(order.created_at) : null;
-
-            time.textContent =
-              date && !Number.isNaN(date.getTime())
-                ? date.toLocaleDateString()
-                : "Date unavailable";
-
-            left.appendChild(title);
-            left.appendChild(time);
-
-            const right = document.createElement("div");
-            right.style.textAlign = "right";
-
-            const price = document.createElement("div");
-            price.className = "order-price";
-            price.textContent =
-              "R" + Number(order.gross_amount || 0).toFixed(2);
-
-            const status = document.createElement("span");
-            status.className = "order-status";
-            status.textContent = statusText;
-
-            right.appendChild(price);
-            right.appendChild(status);
-
-            top.appendChild(left);
-            top.appendChild(right);
-            card.appendChild(top);
-            container.appendChild(card);
-          });
-        }
-
-        document.getElementById("stat-revenue").textContent =
-          "R" + revenue.toFixed(2);
-
-        document.getElementById("stat-count").textContent =
-          String(completedCount);
-
-      } catch (error) {
-        console.error("Load bookings error:", error);
-
-        container.textContent =
-          "Could not load bookings: " + (error.message || "Unknown database error");
-
-        document.getElementById("stat-revenue").textContent = "R0.00";
-        document.getElementById("stat-count").textContent = "0";
-      }
+    if (!window.supabase ||
+        typeof window.supabase.createClient !== "function") {
+      $("biz-display-name").textContent = "Connection Error";
+      showError("Supabase library failed to load. Check your internet and reload.");
+      return;
     }
-  </script>
+
+    try {
+      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      initDashboard();
+    } catch (error) {
+      console.error("Supabase initialization:", error);
+      $("biz-display-name").textContent = "Connection Error";
+      showError(error.message || "Could not initialize database.");
+    }
+  }
+
+  // Works whether this script runs before or after DOMContentLoaded.
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot, { once: true });
+  } else {
+    boot();
+  }
+})();
+</script>
 
 </body>
 </html>
