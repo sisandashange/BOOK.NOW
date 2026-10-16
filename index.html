@@ -307,18 +307,24 @@
         const grossAmount = selectedService.price;
         const netEarnings = grossAmount * 0.90;
 
-        const { error } = await supabase.from("orders").insert([{
-          vendor_id: selectedService.vendorId,
-          gross_amount: grossAmount,
-          vendor_net_earnings: netEarnings,
-          status: "PENDING",
-          customer_name: name,
-          customer_phone: phone
-        }]);
+        
+const { data: orderId, error } = await supabase.rpc(
+  "create_booking",
+  {
+    p_service_id: selectedService.serviceId,
+    p_customer_name: name,
+    p_customer_phone: phone
+  }
+);
 
-        if (error) throw error;
+if (error) {
+  console.error("Booking error:", error);
+  alert("Booking failed: " + error.message);
+  return;
+}
 
-        alert(`Booking confirmed for ${name}! The shop has received your appointment.`);
+alert("Booking successful! Your booking reference is: " + orderId);
+
         closeModal();
         $("customer-name").value = "";
         $("customer-phone").value = "";
