@@ -188,8 +188,8 @@
       <div class="form-field">
         <label>Payment Method</label>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
-          <button type="button" id="pay-method-card" class="pay-method-btn active" onclick="setPaymentMethod('CARD')" style="padding: 10px; border-radius: 8px; border: 2px solid var(--accent); background: #eff6ff; color: var(--accent); font-weight: 700; font-size: 12px; cursor: pointer;">
-            <i class="ph ph-credit-card"></i> Pay with Card
+          <button type="button" id="pay-method-eft" class="pay-method-btn active" onclick="setPaymentMethod('EFT')" style="padding: 10px; border-radius: 8px; border: 2px solid var(--accent); background: #eff6ff; color: var(--accent); font-weight: 700; font-size: 12px; cursor: pointer;">
+            <i class="ph ph-bank"></i> Instant EFT (Direct)
           </button>
           <button type="button" id="pay-method-cash" class="pay-method-btn" onclick="setPaymentMethod('CASH')" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: white; color: var(--text); font-weight: 700; font-size: 12px; cursor: pointer;">
             <i class="ph ph-money"></i> Pay Cash
@@ -197,28 +197,17 @@
         </div>
       </div>
 
-      <!-- DYNAMIC CARD DETAILS SECTION (Not stored in DB for security) -->
-      <div id="card-details-container" style="background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 12px;">
-        <div class="form-field" style="margin-bottom: 8px;">
-          <label style="font-size: 10px;">Card Number</label>
-          <input type="text" id="card-number" placeholder="4111 2222 3333 4444" maxlength="19">
+      <!-- DIRECT EFT NOTICE CONTAINER -->
+      <div id="eft-details-container" style="background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 12px; font-size: 12px;">
+        <div style="font-weight: 700; color: var(--primary); margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+          <i class="ph ph-shield-check" style="color: var(--success); font-size: 16px;"></i> Direct Bank Transfer
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-          <div class="form-field" style="margin-bottom: 0;">
-            <label style="font-size: 10px;">Expiry (MM/YY)</label>
-            <input type="text" id="card-expiry" placeholder="MM/YY" maxlength="5">
-          </div>
-          <div class="form-field" style="margin-bottom: 0;">
-            <label style="font-size: 10px;">CVV</label>
-            <input type="password" id="card-cvv" placeholder="123" maxlength="4">
-          </div>
-        </div>
-        <div style="font-size: 10px; color: var(--muted); margin-top: 6px; display: flex; align-items: center; gap: 4px;">
-          <i class="ph ph-shield-check" style="color: var(--success);"></i> Secured & routed directly to founder account. Card details are never stored.
-        </div>
+        <p style="margin: 0; color: var(--muted); line-height: 1.4; font-size: 11px;">
+          Your order will be submitted directly to the shop. Click confirm to receive banking details and instantly notify the vendor on WhatsApp!
+        </p>
       </div>
 
-      <button class="btn-book" id="confirm-booking-btn" style="width:100%; padding:12px; font-size:13px; margin-top:6px;">Confirm & Pay Online</button>
+      <button class="btn-book" id="confirm-booking-btn" style="width:100%; padding:12px; font-size:13px; margin-top:6px;">Confirm Appointment</button>
     </div>
   </div>
 
@@ -232,7 +221,7 @@
     let supabase = null;
     let selectedService = null;
     let vendorData = null;
-    let selectedPaymentMethod = "CARD";
+    let selectedPaymentMethod = "EFT";
 
     const FALLBACK_IMAGES = {
       BARBER: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80",
@@ -245,33 +234,30 @@
 
     window.setPaymentMethod = function(method) {
       selectedPaymentMethod = method;
-      const cardBtn = $("pay-method-card");
+      const eftBtn = $("pay-method-eft");
       const cashBtn = $("pay-method-cash");
-      const cardContainer = $("card-details-container");
-      const submitBtn = $("confirm-booking-btn");
+      const eftNotice = $("eft-details-container");
 
-      if (method === "CARD") {
-        cardBtn.style.border = "2px solid var(--accent)";
-        cardBtn.style.background = "#eff6ff";
-        cardBtn.style.color = "var(--accent)";
+      if (method === "EFT") {
+        eftBtn.style.border = "2px solid var(--accent)";
+        eftBtn.style.background = "#eff6ff";
+        eftBtn.style.color = "var(--accent)";
         
         cashBtn.style.border = "1px solid var(--border)";
         cashBtn.style.background = "white";
         cashBtn.style.color = "var(--text)";
 
-        cardContainer.style.display = "block";
-        submitBtn.textContent = "Confirm & Pay Online";
+        eftNotice.style.display = "block";
       } else {
         cashBtn.style.border = "2px solid var(--accent)";
         cashBtn.style.background = "#eff6ff";
         cashBtn.style.color = "var(--accent)";
 
-        cardBtn.style.border = "1px solid var(--border)";
-        cardBtn.style.background = "white";
-        cardBtn.style.color = "var(--text)";
+        eftBtn.style.border = "1px solid var(--border)";
+        eftBtn.style.background = "white";
+        eftBtn.style.color = "var(--text)";
 
-        cardContainer.style.display = "none";
-        submitBtn.textContent = "Confirm Cash Booking";
+        eftNotice.style.display = "none";
       }
     };
 
@@ -472,27 +458,18 @@
       const button = $("confirm-booking-btn");
 
       if (!name || !phone) return alert("Please enter your name and phone number.");
-      if (selectedPaymentMethod === "CARD") {
-        const cardNumber = $("card-number").value.trim();
-        const cardExpiry = $("card-expiry").value.trim();
-        const cardCvv = $("card-cvv").value.trim();
-        if (!cardNumber || !cardExpiry || !cardCvv) {
-          return alert("Please enter your card details to complete the online payment.");
-        }
-      }
-
       if (!selectedService) return;
 
       button.disabled = true;
-      button.textContent = "Processing payment & booking...";
+      button.textContent = "Submitting Booking...";
 
       try {
         const grossAmount = selectedService.price;
-        const netEarnings = grossAmount * 0.90;
-        const commission = grossAmount * 0.10;
+        const netEarnings = grossAmount; // 100% earnings to vendor
+        const commission = 0.00;         // 0% platform commission (R299/mo subscription model)
 
         const paymentMethodVal = selectedPaymentMethod;
-        const paymentStatusVal = selectedPaymentMethod === "CARD" ? "PAID" : "UNPAID";
+        const paymentStatusVal = "UNPAID";
 
         const { error } = await supabase.from("orders").insert([{
           vendor_id: selectedService.vendorId,
@@ -512,9 +489,9 @@
         const rawVendorPhone = vendorData && vendorData.phone_number ? vendorData.phone_number : "27820000000"; 
         const cleanVendorPhone = rawVendorPhone.replace(/[^0-9]/g, "");
 
-        const paymentNote = selectedPaymentMethod === "CARD" ? "💳 Paid online via Card" : "💵 Paying Cash at store";
+        const paymentNote = selectedPaymentMethod === "EFT" ? "💳 Paying via Direct Instant EFT" : "💵 Paying Cash at store";
         const message = encodeURIComponent(
-          `Hi ${vendorShopName}! 👋 I just booked "${selectedService.title}" (R${selectedService.price.toFixed(2)}) on BOOK.NOW.\n\nMy Name: ${name}\nMy Phone: ${phone}\nPayment: ${paymentNote}\nPlease confirm my appointment!`
+          `Hi ${vendorShopName}! 👋 I just booked "${selectedService.title}" (R${selectedService.price.toFixed(2)}) on BOOK.NOW.\n\nMy Name: ${name}\nMy Phone: ${phone}\nPayment Method: ${paymentNote}\nPlease confirm my appointment!`
         );
 
         const whatsappUrl = `https://wa.me/${cleanVendorPhone}?text=${message}`;
@@ -523,9 +500,9 @@
         sheet.innerHTML = `
           <div style="text-align: center; padding: 20px 0;">
             <i class="ph ph-check-circle" style="font-size: 50px; color: var(--success); margin-bottom: 10px;"></i>
-            <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 800;">Booking & Payment Successful!</h3>
+            <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 800;">Booking Request Sent!</h3>
             <p style="font-size: 13px; color: var(--muted); margin: 0 0 20px 0; line-height: 1.4;">
-              Your appointment with <strong>${vendorShopName}</strong> is logged. ${selectedPaymentMethod === 'CARD' ? 'Funds have been routed directly to the founder account.' : 'Please pay cash upon arrival.'}
+              Your appointment with <strong>${vendorShopName}</strong> has been logged. Click below to confirm directly with them on WhatsApp!
             </p>
             <a href="${whatsappUrl}" target="_blank" class="btn-book" style="display: block; width: 100%; text-decoration: none; padding: 14px; font-size: 14px; background: #25d366; color: white; border-radius: 12px; font-weight: 700; margin-bottom: 10px;">
               <i class="ph ph-whatsapp-logo" style="font-size: 18px; vertical-align: middle;"></i> Open WhatsApp to Confirm
@@ -539,7 +516,7 @@
       } catch (error) {
         alert("Booking failed: " + error.message);
         button.disabled = false;
-        button.textContent = "Confirm & Pay";
+        button.textContent = "Confirm Appointment";
       }
     }
 
