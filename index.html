@@ -190,7 +190,7 @@
     let selectedService = null;
     let booted = false;
 
-    // Default imagery for categories
+    // High-resolution category imagery
     const FALLBACK_IMAGES = {
       BARBER: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80",
       SALON: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80",
@@ -223,9 +223,10 @@
       }
 
       try {
+        // Query existing columns safely
         const { data: vendors, error } = await supabase
           .from("vendors")
-          .select("id, name, category, image_url, created_at")
+          .select("id, name, category, created_at")
           .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -281,7 +282,7 @@
 
         const img = document.createElement("img");
         img.className = "store-cover";
-        img.src = v.image_url || FALLBACK_IMAGES[v.category] || FALLBACK_IMAGES.DEFAULT;
+        img.src = FALLBACK_IMAGES[v.category] || FALLBACK_IMAGES.DEFAULT;
         img.alt = v.name;
 
         const body = document.createElement("div");
@@ -321,7 +322,7 @@
 
     function openStoreModal(vendor) {
       $("store-modal-name").textContent = vendor.name;
-      $("store-modal-img").src = vendor.image_url || FALLBACK_IMAGES[vendor.category] || FALLBACK_IMAGES.DEFAULT;
+      $("store-modal-img").src = FALLBACK_IMAGES[vendor.category] || FALLBACK_IMAGES.DEFAULT;
 
       const servicesContainer = $("store-modal-services");
       servicesContainer.replaceChildren();
