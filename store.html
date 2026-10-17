@@ -221,7 +221,7 @@
       try {
         const { data: vendor, error: vendorErr } = await supabase
           .from("vendors")
-          .select("id, name, category, store_image_url, created_at")
+          .select("id, name, category, store_image_url, phone_number, created_at")
           .eq("id", vendorId)
           .single();
 
@@ -422,14 +422,35 @@
 
         if (error) throw error;
 
-        alert(`Booking request sent for ${name}! ${vendorData.name} has received your appointment.`);
-        $("booking-modal").style.display = "none";
-        $("customer-name").value = "";
-        $("customer-phone").value = "";
+        const vendorShopName = vendorData ? vendorData.name : "the shop";
+        const rawVendorPhone = vendorData && vendorData.phone_number ? vendorData.phone_number : "27820000000"; 
+        const cleanVendorPhone = rawVendorPhone.replace(/[^0-9]/g, "");
+
+        const message = encodeURIComponent(
+          `Hi ${vendorShopName}! 👋 I just booked "${selectedService.title}" (R${selectedService.price.toFixed(2)}) on BOOK.NOW.\n\nMy Name: ${name}\nMy Phone: ${phone}\nPlease confirm my appointment!`
+        );
+
+        const whatsappUrl = `https://wa.me/${cleanVendorPhone}?text=${message}`;
+
+        const sheet = document.querySelector("#booking-modal .modal-sheet");
+        sheet.innerHTML = `
+          <div style="text-align: center; padding: 20px 0;">
+            <i class="ph ph-check-circle" style="font-size: 50px; color: var(--success); margin-bottom: 10px;"></i>
+            <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 800;">Booking Request Sent!</h3>
+            <p style="font-size: 13px; color: var(--muted); margin: 0 0 20px 0; line-height: 1.4;">
+              Your appointment with <strong>${vendorShopName}</strong> has been logged successfully. Click below to notify them instantly on WhatsApp!
+            </p>
+            <a href="${whatsappUrl}" target="_blank" class="btn-book" style="display: block; width: 100%; text-decoration: none; padding: 14px; font-size: 14px; background: #25d366; color: white; border-radius: 12px; font-weight: 700; margin-bottom: 10px;">
+              <i class="ph ph-whatsapp-logo" style="font-size: 18px; vertical-align: middle;"></i> Open WhatsApp to Confirm
+            </a>
+            <button onclick="location.reload()" style="background: none; border: none; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; padding: 8px;">
+              Done / Close
+            </button>
+          </div>
+        `;
 
       } catch (error) {
         alert("Booking failed: " + error.message);
-      } finally {
         button.disabled = false;
         button.textContent = "Confirm Booking";
       }
