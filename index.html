@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BOOK.NOW — Book Local Barbers, Salons & Spots</title>
+  <title>BOOK.NOW — Discover & Book Local Shops</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -21,10 +21,9 @@
       --muted: #64748b;
       --border: #e2e8f0;
       --success: #16a34a;
-      --success-bg: #f0fdf4;
-      --radius: 18px;
+      --radius: 20px;
       --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
-      --shadow-md: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
+      --shadow-md: 0 10px 30px -5px rgba(15, 23, 42, 0.08);
     }
 
     * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -32,7 +31,7 @@
 
     /* TOP NAVIGATION */
     .top-nav { 
-      background: rgba(255, 255, 255, 0.9); 
+      background: rgba(255, 255, 255, 0.95); 
       backdrop-filter: blur(12px);
       padding: 14px 20px; 
       border-bottom: 1px solid var(--border); 
@@ -44,8 +43,6 @@
       z-index: 30; 
     }
     .brand { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; color: var(--primary); letter-spacing: -0.5px; }
-    .nav-actions { display: flex; gap: 8px; align-items: center; }
-    .btn-nav-secondary { font-size: 12px; font-weight: 700; color: var(--text); text-decoration: none; background: #f1f5f9; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border); transition: all 0.2s; }
     .partner-link { font-size: 12px; font-weight: 700; color: #fff; text-decoration: none; background: var(--accent); padding: 8px 14px; border-radius: 10px; transition: background 0.2s; }
     .partner-link:hover { background: var(--accent-hover); }
 
@@ -68,40 +65,41 @@
     .filter-chip { background: var(--surface); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; color: var(--muted); transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
     .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 12px rgba(15,23,42,0.15); }
 
-    /* VENDOR CARDS */
-    .card-list { display: flex; flex-direction: column; gap: 18px; }
-    .vendor-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; padding: 18px; box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s; }
-    .vendor-card:hover { box-shadow: var(--shadow-md); }
-    
-    .vendor-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-    .vendor-meta { display: flex; flex-direction: column; gap: 2px; }
-    .vendor-title { font-size: 18px; font-weight: 800; margin: 0; color: var(--primary); letter-spacing: -0.3px; }
-    .vendor-subtitle { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); margin-top: 4px; }
-    .vendor-rating { display: inline-flex; align-items: center; gap: 3px; font-weight: 700; color: #d97706; }
+    /* STORE CARDS GRID */
+    .store-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+    .store-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s; }
+    .store-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
 
-    .vendor-category { font-size: 10px; font-weight: 800; background: #f1f5f9; color: var(--muted); padding: 4px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .store-cover { width: 100%; height: 160px; object-fit: cover; background: #e2e8f0; display: block; }
+    .store-body { padding: 16px; }
 
-    /* SERVICES SECTION INSIDE CARD */
-    .services-wrapper { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 8px; }
-    .service-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+    .store-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+    .store-title { font-size: 18px; font-weight: 800; margin: 0; color: var(--primary); letter-spacing: -0.3px; }
+    .store-category { font-size: 10px; font-weight: 800; background: #f1f5f9; color: var(--muted); padding: 4px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .store-meta { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+    .store-rating { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: #d97706; }
+
+    .btn-visit { width: 100%; background: #f1f5f9; color: var(--primary); border: 1px solid var(--border); padding: 10px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-visit:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    /* STORE MENU MODAL */
+    .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: flex-end; z-index: 100; }
+    .modal-sheet { background: #fff; width: 100%; max-width: 620px; padding: 24px; border-radius: 24px 24px 0 0; max-height: 85vh; overflow-y: auto; box-shadow: 0 -10px 30px rgba(0,0,0,0.15); }
+
+    .sheet-cover { width: 100%; height: 140px; object-fit: cover; border-radius: 16px; margin-bottom: 14px; }
+    .service-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
     .service-row:last-child { border-bottom: none; }
-    
-    .service-details { display: flex; flex-direction: column; }
     .service-info { font-size: 14px; font-weight: 700; color: var(--primary); }
-    .service-duration { font-size: 11px; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 4px; }
+    .service-duration { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
     .service-price-book { display: flex; align-items: center; gap: 12px; }
     .service-price { font-weight: 800; color: var(--primary); font-size: 15px; }
-    .btn-book { background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 6px rgba(37,99,235,0.2); }
-    .btn-book:hover { background: var(--accent-hover); transform: translateY(-1px); }
+    .btn-book { background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; }
 
-    /* MODAL */
-    .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: flex-end; z-index: 100; }
-    .modal-sheet { background: #fff; width: 100%; max-width: 600px; padding: 24px; border-radius: 24px 24px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.15); }
     .form-field { margin-bottom: 14px; }
-    .form-field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; }
     .form-field input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); font-size: 14px; outline: none; }
-    .form-field input:focus { border-color: var(--accent); }
 
     .empty-box { text-align: center; padding: 40px 16px; background: var(--surface); border-radius: 16px; border: 1px dashed var(--border); color: var(--muted); font-size: 14px; }
   </style>
@@ -114,22 +112,20 @@
       <i class="ph ph-calendar-check" style="font-size:24px; color: var(--accent);"></i>
       BOOK.NOW
     </div>
-    <div class="nav-actions">
-      <a href="vendor.html" class="partner-link">Partner Portal</a>
-    </div>
+    <a href="vendor.html" class="partner-link">Partner Portal</a>
   </div>
 
   <div class="container">
     <!-- HERO SECTION -->
     <div class="hero">
-      <div class="hero-badge"><i class="ph ph-sparkle"></i> Instant Local Booking</div>
-      <h1>Book Local Excellence</h1>
-      <p>Discover top-rated barbers, beauty salons, and spots near you.</p>
+      <div class="hero-badge"><i class="ph ph-sparkle"></i> Verified Local Vendors</div>
+      <h1>Explore Local Spots</h1>
+      <p>Discover top-rated barbershops, beauty salons, and braai spots.</p>
 
       <!-- SEARCH BAR -->
       <div class="search-box">
         <i class="ph ph-magnifying-glass"></i>
-        <input type="text" id="search-input" class="search-input" placeholder="Search barbers, cuts, or spots...">
+        <input type="text" id="search-input" class="search-input" placeholder="Search by shop name, service, or category...">
       </div>
     </div>
 
@@ -141,21 +137,34 @@
       <button class="filter-chip" id="filter-shisanyama"><i class="ph ph-fire"></i> Shisanyama</button>
     </div>
 
-    <!-- MARKETPLACE LISTING CONTAINER -->
-    <div id="marketplace-list" class="card-list">
-      <div class="empty-box">Connecting to BOOK.NOW...</div>
+    <!-- STORE GRID -->
+    <div id="store-grid" class="store-grid">
+      <div class="empty-box">Loading available stores...</div>
     </div>
   </div>
 
-  <!-- BOOKING MODAL -->
+  <!-- STORE DETAIL / MENU MODAL -->
+  <div id="store-modal" class="modal">
+    <div class="modal-sheet">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 id="store-modal-name" style="margin:0; font-size:20px; font-weight:800;">Business Name</h3>
+        <i class="ph ph-x-circle" id="close-store-modal" style="font-size:26px; color:var(--muted); cursor:pointer;"></i>
+      </div>
+      <img id="store-modal-img" src="" alt="Cover" class="sheet-cover">
+      <div style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:10px;">Services & Menu</div>
+      <div id="store-modal-services"></div>
+    </div>
+  </div>
+
+  <!-- BOOKING FORM MODAL -->
   <div id="booking-modal" class="modal">
     <div class="modal-sheet">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <div>
-          <span style="font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase;">Confirm Appointment</span>
-          <h3 id="modal-service-title" style="margin:2px 0 0 0; font-size:18px; font-weight:800;">Service Booking</h3>
+          <span style="font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase;">Complete Appointment</span>
+          <h3 id="booking-modal-title" style="margin:2px 0 0 0; font-size:18px; font-weight:800;">Service Title</h3>
         </div>
-        <i class="ph ph-x-circle" id="close-modal-btn" style="font-size:24px; color:var(--muted); cursor:pointer;"></i>
+        <i class="ph ph-x-circle" id="close-booking-modal" style="font-size:26px; color:var(--muted); cursor:pointer;"></i>
       </div>
       <div class="form-field">
         <label for="customer-name">Your Full Name</label>
@@ -181,11 +190,20 @@
     let selectedService = null;
     let booted = false;
 
+    // Default imagery for categories
+    const FALLBACK_IMAGES = {
+      BARBER: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80",
+      SALON: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80",
+      SHISANYAMA: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80",
+      DEFAULT: "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=800&q=80"
+    };
+
     const $ = id => document.getElementById(id);
 
     function bindEvents() {
-      $("close-modal-btn").addEventListener("click", closeModal);
-      
+      $("close-store-modal").addEventListener("click", () => $("store-modal").style.display = "none");
+      $("close-booking-modal").addEventListener("click", () => $("booking-modal").style.display = "none");
+
       $("filter-all").addEventListener("click", (e) => filterCategory("ALL", e.currentTarget));
       $("filter-barber").addEventListener("click", (e) => filterCategory("BARBER", e.currentTarget));
       $("filter-salon").addEventListener("click", (e) => filterCategory("SALON", e.currentTarget));
@@ -196,8 +214,8 @@
     }
 
     async function loadMarketplace() {
-      const container = $("marketplace-list");
-      container.innerHTML = '<div class="empty-box">Connecting to BOOK.NOW...</div>';
+      const container = $("store-grid");
+      container.innerHTML = '<div class="empty-box">Loading available stores...</div>';
 
       if (!window.supabase || !supabase) {
         container.textContent = "Unable to connect to database. Please refresh.";
@@ -207,7 +225,7 @@
       try {
         const { data: vendors, error } = await supabase
           .from("vendors")
-          .select("id, name, category, created_at")
+          .select("id, name, category, image_url, created_at")
           .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -236,7 +254,7 @@
         );
 
         allVendors = results;
-        renderVendors(allVendors);
+        renderStores(allVendors);
 
       } catch (error) {
         console.error("Marketplace error:", error);
@@ -248,99 +266,118 @@
       }
     }
 
-    function renderVendors(vendors) {
-      const container = $("marketplace-list");
+    function renderStores(vendors) {
+      const container = $("store-grid");
       container.replaceChildren();
 
       if (vendors.length === 0) {
-        container.innerHTML = '<div class="empty-box">No matching spots or services found.</div>';
+        container.innerHTML = '<div class="empty-box">No spots found matching your search.</div>';
         return;
       }
 
       vendors.forEach(v => {
         const card = document.createElement("div");
-        card.className = "vendor-card";
+        card.className = "store-card";
+
+        const img = document.createElement("img");
+        img.className = "store-cover";
+        img.src = v.image_url || FALLBACK_IMAGES[v.category] || FALLBACK_IMAGES.DEFAULT;
+        img.alt = v.name;
+
+        const body = document.createElement("div");
+        body.className = "store-body";
 
         const header = document.createElement("div");
-        header.className = "vendor-header";
-        
-        const meta = document.createElement("div");
-        meta.className = "vendor-meta";
+        header.className = "store-header";
 
         const title = document.createElement("h3");
-        title.className = "vendor-title";
+        title.className = "store-title";
         title.textContent = v.name || "Unnamed Business";
 
-        const subtitle = document.createElement("div");
-        subtitle.className = "vendor-subtitle";
-        subtitle.innerHTML = `
-          <span class="vendor-rating"><i class="ph-fill ph-star"></i> 5.0</span>
-          <span>•</span>
-          <span><i class="ph ph-map-pin"></i> Verified Partner</span>
-        `;
-
-        meta.append(title, subtitle);
-
         const category = document.createElement("span");
-        category.className = "vendor-category";
+        category.className = "store-category";
         category.textContent = v.category || "SPOT";
 
-        header.append(meta, category);
-        card.appendChild(header);
+        header.append(title, category);
 
-        const servicesBox = document.createElement("div");
-        servicesBox.className = "services-wrapper";
+        const meta = document.createElement("div");
+        meta.className = "store-meta";
+        meta.innerHTML = `
+          <span class="store-rating"><i class="ph-fill ph-star"></i> 5.0</span>
+          <span>•</span>
+          <span>${v.service_items.length} Service${v.service_items.length === 1 ? '' : 's'} Available</span>
+        `;
 
-        if (v.service_items && v.service_items.length > 0) {
-          v.service_items.forEach(s => {
-            const row = document.createElement("div");
-            row.className = "service-row";
+        const visitBtn = document.createElement("button");
+        visitBtn.className = "btn-visit";
+        visitBtn.innerHTML = `<i class="ph ph-storefront"></i> Visit Store`;
+        visitBtn.addEventListener("click", () => openStoreModal(v));
 
-            const details = document.createElement("div");
-            details.className = "service-details";
-
-            const info = document.createElement("div");
-            info.className = "service-info";
-            info.textContent = s.title;
-
-            const duration = document.createElement("div");
-            duration.className = "service-duration";
-            duration.innerHTML = `<i class="ph ph-clock"></i> 30 mins`;
-
-            details.append(info, duration);
-
-            const right = document.createElement("div");
-            right.className = "service-price-book";
-
-            const price = document.createElement("span");
-            price.className = "service-price";
-            price.textContent = `R${Number(s.price).toFixed(2)}`;
-
-            const bookBtn = document.createElement("button");
-            bookBtn.className = "btn-book";
-            bookBtn.textContent = "Book";
-            bookBtn.addEventListener("click", () => openBooking(v.id, s.id, s.title, s.price));
-
-            right.append(price, bookBtn);
-            row.append(details, right);
-            servicesBox.appendChild(row);
-          });
-        } else {
-          const emptyMsg = document.createElement("div");
-          emptyMsg.style.cssText = "font-size:12px; color:var(--muted); padding:10px 0;";
-          emptyMsg.textContent = "Services coming soon";
-          servicesBox.appendChild(emptyMsg);
-        }
-
-        card.appendChild(servicesBox);
+        body.append(header, meta, visitBtn);
+        card.append(img, body);
         container.appendChild(card);
       });
+    }
+
+    function openStoreModal(vendor) {
+      $("store-modal-name").textContent = vendor.name;
+      $("store-modal-img").src = vendor.image_url || FALLBACK_IMAGES[vendor.category] || FALLBACK_IMAGES.DEFAULT;
+
+      const servicesContainer = $("store-modal-services");
+      servicesContainer.replaceChildren();
+
+      if (vendor.service_items && vendor.service_items.length > 0) {
+        vendor.service_items.forEach(s => {
+          const row = document.createElement("div");
+          row.className = "service-row";
+
+          const details = document.createElement("div");
+          const info = document.createElement("div");
+          info.className = "service-info";
+          info.textContent = s.title;
+
+          const duration = document.createElement("div");
+          duration.className = "service-duration";
+          duration.textContent = "⏱️ ~30 mins";
+
+          details.append(info, duration);
+
+          const right = document.createElement("div");
+          right.className = "service-price-book";
+
+          const price = document.createElement("span");
+          price.className = "service-price";
+          price.textContent = `R${Number(s.price).toFixed(2)}`;
+
+          const bookBtn = document.createElement("button");
+          bookBtn.className = "btn-book";
+          bookBtn.textContent = "Book";
+          bookBtn.addEventListener("click", () => {
+            $("store-modal").style.display = "none";
+            openBookingModal(vendor.id, s.id, s.title, s.price);
+          });
+
+          right.append(price, bookBtn);
+          row.append(details, right);
+          servicesContainer.appendChild(row);
+        });
+      } else {
+        servicesContainer.innerHTML = '<div style="font-size:13px; color:var(--muted); padding:16px 0;">No services published by this vendor yet.</div>';
+      }
+
+      $("store-modal").style.display = "flex";
+    }
+
+    function openBookingModal(vendorId, serviceId, title, price) {
+      selectedService = { vendorId, serviceId, title, price };
+      $("booking-modal-title").textContent = `${title} (R${price.toFixed(2)})`;
+      $("booking-modal").style.display = "flex";
     }
 
     function handleSearch(e) {
       const term = e.target.value.toLowerCase().trim();
       if (!term) {
-        renderVendors(allVendors);
+        renderStores(allVendors);
         return;
       }
 
@@ -351,7 +388,7 @@
         return matchName || matchCategory || matchService;
       });
 
-      renderVendors(filtered);
+      renderStores(filtered);
     }
 
     function filterCategory(cat, btn) {
@@ -359,21 +396,11 @@
       btn.classList.add("active");
 
       if (cat === "ALL") {
-        renderVendors(allVendors);
+        renderStores(allVendors);
       } else {
         const filtered = allVendors.filter(v => v.category === cat);
-        renderVendors(filtered);
+        renderStores(filtered);
       }
-    }
-
-    function openBooking(vendorId, serviceId, title, price) {
-      selectedService = { vendorId, serviceId, title, price };
-      $("modal-service-title").textContent = `${title} (R${price.toFixed(2)})`;
-      $("booking-modal").style.display = "flex";
-    }
-
-    function closeModal() {
-      $("booking-modal").style.display = "none";
     }
 
     async function confirmBooking() {
@@ -402,8 +429,8 @@
 
         if (error) throw error;
 
-        alert(`Booking request sent for ${name}! The spot has received your appointment.`);
-        closeModal();
+        alert(`Booking request sent for ${name}! The shop has received your appointment.`);
+        $("booking-modal").style.display = "none";
         $("customer-name").value = "";
         $("customer-phone").value = "";
         selectedService = null;
