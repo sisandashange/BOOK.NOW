@@ -423,7 +423,8 @@ button:disabled{opacity:.6;cursor:not-allowed}
     $("save-biz-btn").addEventListener("click", saveBusiness);
     $("save-service-btn").addEventListener("click", saveService);
 
-    $("request-withdrawal-btn").addEventListener("click", () => {
+    // LIVE WITHDRAWAL REQUEST LOGIC
+    $("request-withdrawal-btn").addEventListener("click", async () => {
       const today = new Date().getDay(); // 3 = Wednesday, 5 = Friday
       const isAllowedDay = (today === 3 || today === 5);
 
@@ -431,7 +432,43 @@ button:disabled{opacity:.6;cursor:not-allowed}
         alert("🔒 Withdrawals are locked! Payouts can only be requested on Wednesdays and Fridays.");
         return;
       }
-      alert("Withdrawal request submitted successfully! Your funds will be processed.");
+
+      if (!activeVendor) return alert("Please select a business first.");
+
+      const btn = $("request-withdrawal-btn");
+      btn.disabled = true;
+      btn.textContent = "Submitting Request...";
+
+      try {
+        const { data: wallet, error: walletErr } = await db
+          .from("money_stores")
+          .select("id, balance")
+          .eq("vendor_id", activeVendor.id)
+          .single();
+
+        if (walletErr || !wallet || Number(wallet.balance) <= 0) {
+          throw new Error("You have no available balance to withdraw.");
+        }
+
+        const withdrawAmount = Number(wallet.balance);
+
+        const { error: reqErr } = await db
+          .from("withdrawal_requests")
+          .insert([{
+            vendor_id: activeVendor.id,
+            amount: withdrawAmount,
+            status: "PENDING"
+          }]);
+
+        if (reqErr) throw reqErr;
+
+        alert(`Success! Withdrawal request of R${withdrawAmount.toFixed(2)} has been sent to the Founder for processing.`);
+      } catch (err) {
+        alert("Withdrawal request failed: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Request Payout (Wed / Fri Only)";
+      }
     });
   }
 
