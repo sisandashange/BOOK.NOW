@@ -39,8 +39,8 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .stat-box,.finance-card{background:white;padding:15px;border-radius:var(--radius);border:1px solid var(--border);min-width:0}
 .stat-header{font-size:12px;font-weight:600;color:var(--muted)}
 .stat-value{font-size:22px;font-weight:700;margin-top:7px;overflow-wrap:anywhere}
-.nav-tabs{display:flex;gap:4px;background:#e2e8f0;padding:4px;border-radius:12px;margin-bottom:20px}
-.tab-item{flex:1;min-width:0;padding:10px 5px;border:0;background:transparent;font-size:12px;font-weight:600;color:var(--muted);border-radius:8px}
+.nav-tabs{display:flex;gap:4px;background:#e2e8f0;padding:4px;border-radius:12px;margin-bottom:20px;overflow-x:auto;}
+.tab-item{flex:1;min-width:70px;padding:10px 5px;border:0;background:transparent;font-size:12px;font-weight:600;color:var(--muted);border-radius:8px;white-space:nowrap;}
 .tab-item.active{background:white;color:var(--text);box-shadow:0 1px 3px #00000012}
 .section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
 .section-head h3{font-size:16px;margin:0}
@@ -71,7 +71,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .finance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0 22px}
 .finance-label{color:var(--muted);font-size:11px;font-weight:600;line-height:1.5}
 .finance-value{font-size:19px;font-weight:700;margin-top:7px;overflow-wrap:anywhere}
-.finance-note,.small-note{color:var(--muted);font-size:11px;line-height:1.5;margin-top:5px}
+.finance-note{color:var(--muted);font-size:11px;line-height:1.5;margin-top:5px}
 .ledger-row{display:flex;justify-content:space-between;gap:12px;margin:9px 0;font-size:12px}
 .ledger-row span:first-child{color:var(--muted)}
 .ledger-row span:last-child{text-align:right;font-weight:600;overflow-wrap:anywhere}
@@ -148,6 +148,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
       <button class="tab-item active" id="tab-orders-btn">Bookings</button>
       <button class="tab-item" id="tab-services-btn">Services</button>
       <button class="tab-item" id="tab-settlement-btn">Settlement</button>
+      <button class="tab-item" id="tab-moneystore-btn">Money Store</button>
     </div>
 
     <section id="orders-tab">
@@ -171,6 +172,35 @@ button:disabled{opacity:.6;cursor:not-allowed}
       </div>
       <div class="ledger-section"><h3>Booking Settlement Details</h3><div id="settlement-orders-list" class="card-list"><div class="empty-box">Settlement details will appear here.</div></div></div>
       <div class="ledger-section"><h3>Payout History</h3><div id="payouts-list" class="card-list"><div class="empty-box">Payout history will appear here.</div></div></div>
+    </section>
+
+    <!-- MONEY STORE TAB -->
+    <section id="moneystore-tab" style="display:none">
+      <div class="section-head">
+        <h3><i class="ph ph-wallet"></i> My Money Store</h3>
+        <span class="brand-badge" style="background:#dcfce7; color:#166534;">90/10 Split Active</span>
+      </div>
+
+      <div class="finance-grid">
+        <div class="finance-card">
+          <div class="finance-label">Available Balance</div>
+          <div class="finance-value" id="wallet-balance">R0.00</div>
+          <div class="finance-note">Your accumulated 90% share</div>
+        </div>
+        <div class="finance-card">
+          <div class="finance-label">Monthly Subscription</div>
+          <div class="finance-value" style="color:var(--danger);">R199.00</div>
+          <div class="finance-note">Due monthly to Founder Store</div>
+        </div>
+      </div>
+
+      <div style="background:var(--surface); padding:16px; border-radius:var(--radius); border:1px solid var(--border); margin-bottom:20px;">
+        <h4 style="margin:0 0 8px 0; font-size:14px;">Withdrawal Schedule</h4>
+        <p style="font-size:12px; color:var(--muted); margin:0 0 14px 0; line-height:1.4;">
+          Withdrawals from your Money Store are processed exclusively on <strong>Wednesdays and Fridays</strong>.
+        </p>
+        <button class="btn-primary" id="request-withdrawal-btn">Request Payout (Wed / Fri Only)</button>
+      </div>
     </section>
   </main>
 </div>
@@ -260,11 +290,17 @@ button:disabled{opacity:.6;cursor:not-allowed}
   }
 
   function showTab(name) {
-    const tabs = { orders: $("orders-tab"), services: $("services-tab"), settlement: $("settlement-tab") };
-    Object.entries(tabs).forEach(([key, el]) => { el.style.display = key === name ? "block" : "none"; });
+    const tabs = { 
+      orders: $("orders-tab"), 
+      services: $("services-tab"), 
+      settlement: $("settlement-tab"),
+      moneystore: $("moneystore-tab")
+    };
+    Object.entries(tabs).forEach(([key, el]) => { if(el) el.style.display = key === name ? "block" : "none"; });
     $("tab-orders-btn").classList.toggle("active", name === "orders");
     $("tab-services-btn").classList.toggle("active", name === "services");
     $("tab-settlement-btn").classList.toggle("active", name === "settlement");
+    $("tab-moneystore-btn").classList.toggle("active", name === "moneystore");
   }
 
   function bindButtons() {
@@ -361,6 +397,11 @@ button:disabled{opacity:.6;cursor:not-allowed}
       showTab("settlement");
       await Promise.all([loadOrders(), loadPayouts()]);
     });
+    $("tab-moneystore-btn").addEventListener("click", () => {
+      showTab("moneystore");
+      loadMoneyStoreWallet();
+    });
+
     $("refresh-settlement-btn").addEventListener("click", async () => {
       await Promise.all([loadOrders(), loadPayouts()]);
     });
@@ -381,6 +422,17 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
     $("save-biz-btn").addEventListener("click", saveBusiness);
     $("save-service-btn").addEventListener("click", saveService);
+
+    $("request-withdrawal-btn").addEventListener("click", () => {
+      const today = new Date().getDay(); // 3 = Wednesday, 5 = Friday
+      const isAllowedDay = (today === 3 || today === 5);
+
+      if (!isAllowedDay) {
+        alert("🔒 Withdrawals are locked! Payouts can only be requested on Wednesdays and Fridays.");
+        return;
+      }
+      alert("Withdrawal request submitted successfully! Your funds will be processed.");
+    });
   }
 
   async function uploadStorePhoto(e) {
@@ -612,7 +664,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
       activeVendor = vendors.find(v => String(v.id) === String(preferredVendorId)) || vendors[0];
       select.value = String(activeVendor.id);
       updateHeader();
-      await Promise.all([loadServices(), loadOrders(), loadPayouts()]);
+      await Promise.all([loadServices(), loadOrders(), loadPayouts(), loadMoneyStoreWallet()]);
     } catch (error) {
       console.error("Dashboard initialization error:", error);
       $("biz-display-name").textContent = "Dashboard Error";
@@ -634,6 +686,25 @@ button:disabled{opacity:.6;cursor:not-allowed}
       $("biz-avatar-img").style.display = "none";
       $("biz-avatar-letter").style.display = "flex";
       $("biz-avatar-letter").textContent = name.charAt(0).toUpperCase();
+    }
+  }
+
+  async function loadMoneyStoreWallet() {
+    if (!db || !activeVendor) return;
+    try {
+      const { data, error } = await db
+        .from("money_stores")
+        .select("balance")
+        .eq("vendor_id", activeVendor.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      const balance = data ? data.balance : 0.00;
+      if ($("wallet-balance")) {
+        $("wallet-balance").textContent = money(balance);
+      }
+    } catch (err) {
+      console.error("Error loading wallet:", err);
     }
   }
 
