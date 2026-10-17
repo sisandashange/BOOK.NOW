@@ -1,465 +1,979 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Store Front — BOOK.NOW</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOOK.NOW Partner Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --primary:#0f172a;--accent:#2563eb;--bg:#f8fafc;--surface:#fff;
+  --text:#0f172a;--muted:#64748b;--border:#e2e8f0;
+  --success:#16a34a;--success-bg:#f0fdf4;--warning-bg:#fffbeb;
+  --warning:#d97706;--danger:#dc2626;--danger-bg:#fef2f2;--radius:16px;
+}
+*{box-sizing:border-box;font-family:'Plus Jakarta Sans',sans-serif;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);padding-bottom:50px}
+button,input,select{font:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.6;cursor:not-allowed}
+#auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-card{background:white;padding:28px;border-radius:20px;border:1px solid var(--border);width:100%;max-width:400px}
+.auth-title{text-align:center;font-size:20px;font-weight:700;margin-bottom:6px}
+.auth-sub{text-align:center;font-size:13px;color:var(--muted);margin-bottom:24px}
+.top-nav{background:white;padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px;position:sticky;top:0;z-index:20}
+.brand{font-size:16px;font-weight:700;display:flex;align-items:center;gap:7px}
+.brand-badge{background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:3px 6px;border-radius:4px}
+.business-bar{background:white;padding:14px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:12px}
+.business-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.business-info{display:flex;align-items:center;gap:10px;min-width:0}
+.biz-avatar{width:42px;height:42px;border-radius:12px;object-fit:cover;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+.biz-name{font-weight:700;font-size:15px}
+.biz-type{font-size:12px;color:var(--muted);margin-top:2px}
+.store-photo-edit-box{display:flex;align-items:center;gap:10px;background:#f8fafc;padding:10px;border-radius:12px;border:1px solid var(--border);font-size:12px;}
+.container{padding:16px;max-width:760px;margin:auto}
+.stats-container{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.stat-box,.finance-card{background:white;padding:15px;border-radius:var(--radius);border:1px solid var(--border);min-width:0}
+.stat-header{font-size:12px;font-weight:600;color:var(--muted)}
+.stat-value{font-size:22px;font-weight:700;margin-top:7px;overflow-wrap:anywhere}
+.nav-tabs{display:flex;gap:4px;background:#e2e8f0;padding:4px;border-radius:12px;margin-bottom:20px}
+.tab-item{flex:1;min-width:0;padding:10px 5px;border:0;background:transparent;font-size:12px;font-weight:600;color:var(--muted);border-radius:8px}
+.tab-item.active{background:white;color:var(--text);box-shadow:0 1px 3px #00000012}
+.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.section-head h3{font-size:16px;margin:0}
+.btn-primary{background:var(--accent);color:white;border:0;padding:12px 14px;border-radius:10px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%}
+.card-list{display:flex;flex-direction:column;gap:12px}
+.order-card,.ledger-card{background:white;padding:15px;border-radius:14px;border:1px solid var(--border);overflow-wrap:anywhere}
+.order-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
+.order-title{font-weight:700;font-size:14px;overflow-wrap:anywhere}
+.order-time{font-size:12px;color:var(--muted);margin-top:4px}
+.order-price{font-weight:700;color:var(--success);font-size:16px;text-align:right;white-space:nowrap}
+.order-status{display:inline-block;padding:4px 9px;border-radius:6px;font-size:11px;font-weight:700;margin-top:6px}
+.status-pending{background:var(--warning-bg);color:var(--warning)}
+.status-confirmed{background:#e0f2fe;color:#0369a1}
+.status-completed{background:var(--success-bg);color:var(--success)}
+.status-cancelled,.status-failed{background:#fee2e2;color:#991b1b}
+.order-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)}
+.btn-action{padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;border:0}
+.btn-confirm{background:#0284c7;color:white}
+.btn-complete{background:var(--success);color:white}
+.btn-edit{background:#f1f5f9;color:var(--text);border:1px solid var(--border);}
+.modal{position:fixed;inset:0;background:#0f172a66;display:none;justify-content:center;align-items:flex-end;z-index:100;overflow-y:auto}
+.modal-sheet{background:white;width:100%;max-width:600px;padding:24px;border-radius:24px 24px 0 0;margin-top:auto}
+.form-field{margin-bottom:14px}
+.form-field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.form-field input,.form-field select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);font-size:14px}
+.empty-box{text-align:center;padding:32px 16px;background:white;border-radius:14px;border:1px dashed var(--border);color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.link-btn{color:var(--accent);cursor:pointer;font-weight:600;text-align:center;margin-top:14px;font-size:13px;display:block}
+.finance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0 22px}
+.finance-label{color:var(--muted);font-size:11px;font-weight:600;line-height:1.5}
+.finance-value{font-size:19px;font-weight:700;margin-top:7px;overflow-wrap:anywhere}
+.finance-note,.small-note{color:var(--muted);font-size:11px;line-height:1.5;margin-top:5px}
+.ledger-row{display:flex;justify-content:space-between;gap:12px;margin:9px 0;font-size:12px}
+.ledger-row span:first-child{color:var(--muted)}
+.ledger-row span:last-child{text-align:right;font-weight:600;overflow-wrap:anywhere}
+.ledger-section{margin-top:24px}
+.ledger-section h3{font-size:15px;margin:0 0 12px}
+.finance-disclaimer{background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:12px;border-radius:10px;font-size:12px;line-height:1.6;margin-bottom:16px}
 
-  <style>
-    :root {
-      --primary: #0f172a;
-      --accent: #2563eb;
-      --accent-hover: #1d4ed8;
-      --bg: #f8fafc;
-      --surface: #ffffff;
-      --text: #0f172a;
-      --muted: #64748b;
-      --border: #e2e8f0;
-      --success: #16a34a;
-      --danger: #dc2626;
-      --danger-bg: #fef2f2;
-      --radius: 16px;
-      --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
-      --shadow-md: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
-    }
+.image-preview-grid { display: flex; gap: 8px; margin-top: 8px; overflow-x: auto; padding-bottom: 4px; }
+.preview-thumb { width: 64px; height: 64px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); }
+.item-gallery { display: flex; gap: 6px; margin-top: 8px; }
+.item-thumb { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border); }
 
-    * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-    body { margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 80px; }
+.sale-badge { background: var(--danger-bg); color: var(--danger); font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; margin-left: 6px; text-transform: uppercase; }
+.old-price { text-decoration: line-through; color: var(--muted); font-size: 13px; margin-right: 6px; }
 
-    /* TOP NAVIGATION */
-    .top-nav { 
-      background: rgba(255, 255, 255, 0.95); 
-      backdrop-filter: blur(12px);
-      padding: 12px 16px; 
-      border-bottom: 1px solid var(--border); 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      position: sticky; 
-      top: 0; 
-      z-index: 30; 
-    }
-    .back-btn { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; color: var(--primary); font-size: 12px; font-weight: 700; background: #f1f5f9; padding: 6px 12px; border-radius: 8px; transition: background 0.2s; }
-    .back-btn:hover { background: #e2e8f0; }
-    .brand { font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 6px; color: var(--primary); letter-spacing: -0.5px; }
-
-    .container { padding: 14px 12px; max-width: 850px; margin: 0 auto; }
-
-    /* STORE HERO CARD */
-    .store-hero { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm); margin-bottom: 18px; }
-    .hero-banner { width: 100%; height: 180px; object-fit: cover; background: #e2e8f0; display: block; }
-    .hero-content { padding: 16px; }
-    .store-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-    .store-title { font-size: 20px; font-weight: 800; margin: 0; color: var(--primary); letter-spacing: -0.4px; }
-    .store-badge { font-size: 9px; font-weight: 800; background: #f1f5f9; color: var(--muted); padding: 3px 8px; border-radius: 5px; text-transform: uppercase; }
-    
-    .store-meta-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; font-size: 12px; color: var(--muted); }
-    .meta-item { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
-    .rating-item { color: #d97706; font-weight: 700; }
-
-    .section-title { font-size: 16px; font-weight: 800; margin: 0 0 12px 0; color: var(--primary); display: flex; align-items: center; gap: 6px; }
-
-    /* STRICT 2-COLUMN MENU GRID FOR ALL SCREENS */
-    .menu-grid { 
-      display: grid; 
-      grid-template-columns: repeat(2, minmax(0, 1fr)); 
-      gap: 10px; 
-    }
-
-    .menu-card { 
-      background: var(--surface); 
-      border-radius: var(--radius); 
-      border: 1px solid var(--border); 
-      overflow: hidden; 
-      box-shadow: var(--shadow-sm); 
-      display: flex; 
-      flex-direction: column; 
-      min-width: 0;
-      position: relative;
-    }
-
-    /* MENU IMAGE BOX */
-    .menu-img-wrapper { position: relative; width: 100%; aspect-ratio: 4 / 3; background: #f1f5f9; cursor: pointer; overflow: hidden; }
-    .menu-cover-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
-    .menu-card:hover .menu-cover-img { transform: scale(1.04); }
-
-    .zoom-overlay { position: absolute; top: 6px; right: 6px; background: rgba(15, 23, 42, 0.65); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; backdrop-filter: blur(4px); }
-
-    /* PROMO SALE BADGE */
-    .sale-tag { position: absolute; top: 6px; left: 6px; background: var(--danger); color: white; font-size: 9px; font-weight: 800; padding: 3px 6px; border-radius: 5px; text-transform: uppercase; z-index: 2; box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3); }
-
-    /* THUMBNAIL GALLERY STRIP */
-    .thumb-strip { display: flex; gap: 4px; padding: 6px 8px; background: #f8fafc; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
-    .thumb-strip::-webkit-scrollbar { display: none; }
-    .thumb-btn { width: 30px; height: 30px; border-radius: 6px; object-fit: cover; border: 2px solid transparent; cursor: pointer; opacity: 0.7; transition: all 0.2s; flex-shrink: 0; }
-    .thumb-btn.active, .thumb-btn:hover { border-color: var(--accent); opacity: 1; }
-
-    /* MENU CONTENT */
-    .menu-body { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; gap: 8px; min-width: 0; }
-    .menu-title { font-size: 13px; font-weight: 800; color: var(--primary); margin: 0 0 2px 0; letter-spacing: -0.2px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-    .menu-duration { font-size: 10px; font-weight: 600; color: var(--muted); display: inline-flex; align-items: center; gap: 3px; }
-
-    .menu-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; padding-top: 6px; border-top: 1px solid #f1f5f9; gap: 4px; }
-    
-    .price-container { display: flex; flex-direction: column; }
-    .menu-price { font-size: 13px; font-weight: 800; color: var(--primary); white-space: nowrap; }
-    .menu-price.sale-active { color: var(--danger); }
-    .original-price { font-size: 10px; font-weight: 600; color: var(--muted); text-decoration: line-through; }
-
-    .btn-book { background: var(--accent); color: white; border: none; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
-    .btn-book:hover { background: var(--accent-hover); }
-
-    /* FULL PICTURE LIGHTBOX MODAL */
-    .lightbox-modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(10px); display: none; justify-content: center; align-items: center; z-index: 200; padding: 16px; }
-    .lightbox-img { max-width: 92vw; max-height: 82vh; border-radius: 14px; object-fit: contain; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-    .lightbox-close { position: absolute; top: 16px; right: 16px; color: white; font-size: 28px; cursor: pointer; background: rgba(255,255,255,0.2); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
-
-    /* BOOKING FORM MODAL */
-    .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: flex-end; z-index: 100; }
-    .modal-sheet { background: #fff; width: 100%; max-width: 600px; padding: 20px; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.15); }
-    .form-field { margin-bottom: 12px; }
-    .form-field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; }
-    .form-field input { width: 100%; padding: 11px; border-radius: 10px; border: 1px solid var(--border); font-size: 14px; outline: none; }
-
-    .empty-box { text-align: center; padding: 36px 12px; background: var(--surface); border-radius: 14px; border: 1px dashed var(--border); color: var(--muted); font-size: 13px; grid-column: 1 / -1; }
-  </style>
+@media(max-width:400px){.container{padding:12px}.top-nav{padding:12px}.brand{font-size:13px}.finance-card{padding:11px}.finance-value{font-size:17px}.tab-item{font-size:11px}}
+</style>
 </head>
 <body>
 
-  <!-- TOP NAV -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="brand" style="justify-content:center;margin-bottom:16px"><i class="ph ph-storefront" style="font-size:26px;color:var(--accent)"></i> Partner Hub</div>
+    <div class="auth-title" id="auth-heading">Partner Login</div>
+    <div class="auth-sub" id="auth-subheading">Access your business dashboard securely</div>
+    <div class="form-field"><label for="auth-email">Email Address</label><input type="email" id="auth-email" autocomplete="email" placeholder="owner@business.co.za"></div>
+    <div class="form-field"><label for="auth-password">Password</label><input type="password" id="auth-password" autocomplete="current-password" placeholder="Password"></div>
+    <button class="btn-primary" id="auth-submit-btn">Sign In</button>
+    <span class="link-btn" id="toggle-auth-btn">Need an account? Register as Partner</span>
+  </div>
+</div>
+
+<div id="dashboard-screen" style="display:none">
   <div class="top-nav">
-    <a href="index.html" class="back-btn"><i class="ph ph-arrow-left"></i> All Spots</a>
-    <div class="brand">
-      <i class="ph ph-calendar-check" style="font-size:20px; color: var(--accent);"></i>
-      BOOK.NOW
+    <div class="brand"><i class="ph ph-storefront" style="font-size:22px;color:var(--accent)"></i> Partner Portal <span class="brand-badge">SECURE</span></div>
+    <div style="display:flex;gap:7px;align-items:center">
+      <button class="btn-primary" style="width:auto;padding:8px 10px;background:#f1f5f9;color:#0f172a" id="open-add-biz-btn"><i class="ph ph-plus"></i> Add Business</button>
+      <button class="btn-primary" style="width:auto;padding:8px 10px;background:#fee2e2;color:#991b1b" id="logout-btn" aria-label="Logout"><i class="ph ph-sign-out"></i></button>
     </div>
   </div>
 
-  <div class="container">
-    <!-- STORE HEADER HERO -->
-    <div id="store-hero-box" class="store-hero">
-      <div class="empty-box">Loading store info...</div>
-    </div>
-
-    <!-- SERVICES & MENU SECTION -->
-    <div class="section-title">
-      <i class="ph ph-squares-four" style="color:var(--accent);"></i> Services & Menu
-    </div>
-    
-    <!-- STRICT 2-COLUMN MENU GRID -->
-    <div id="services-menu-box" class="menu-grid">
-      <div class="empty-box">Loading menu items...</div>
-    </div>
-  </div>
-
-  <!-- LIGHTBOX FULL IMAGE VIEW MODAL -->
-  <div id="lightbox-modal" class="lightbox-modal">
-    <span class="lightbox-close" id="close-lightbox"><i class="ph ph-x"></i></span>
-    <img id="lightbox-img" class="lightbox-img" src="" alt="Full view">
-  </div>
-
-  <!-- BOOKING FORM MODAL -->
-  <div id="booking-modal" class="modal">
-    <div class="modal-sheet">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+  <div class="business-bar">
+    <div class="business-top">
+      <div class="business-info">
+        <img id="biz-avatar-img" class="biz-avatar" src="" alt="Store" style="display:none">
+        <div class="biz-avatar" id="biz-avatar-letter">N</div>
         <div>
-          <span style="font-size:10px; font-weight:700; color:var(--accent); text-transform:uppercase;">Instant Appointment</span>
-          <h3 id="modal-service-title" style="margin:2px 0 0 0; font-size:16px; font-weight:800;">Service</h3>
+          <div class="biz-name" id="biz-display-name">Loading Business...</div>
+          <div class="biz-type" id="biz-display-type">Verifying partner account</div>
         </div>
-        <i class="ph ph-x-circle" id="close-modal-btn" style="font-size:24px; color:var(--muted); cursor:pointer;"></i>
       </div>
-      <div class="form-field">
-        <label for="customer-name">Your Full Name</label>
-        <input type="text" id="customer-name" placeholder="e.g. Sipho Dlamini">
+      <select id="vendor-select" aria-label="Switch business" style="padding:7px;border-radius:8px;border:1px solid var(--border);max-width:45%;font-size:12px"><option value="">Switch Shop</option></select>
+    </div>
+
+    <!-- STORE PHOTO UPLOAD / EDIT BAR -->
+    <div class="store-photo-edit-box">
+      <i class="ph ph-image" style="font-size:18px;color:var(--accent);"></i>
+      <div style="flex-grow:1;">
+        <div style="font-weight:700;">Store Profile Picture</div>
+        <div style="color:var(--muted);font-size:11px;">Shown on marketplace & storefront hero</div>
       </div>
-      <div class="form-field">
-        <label for="customer-phone">Phone Number (WhatsApp)</label>
-        <input type="tel" id="customer-phone" placeholder="e.g. 082 123 4567">
-      </div>
-      <button class="btn-book" id="confirm-booking-btn" style="width:100%; padding:12px; font-size:13px; margin-top:6px;">Confirm Booking</button>
+      <input type="file" id="store-photo-input" accept="image/*" style="display:none">
+      <button class="btn-action btn-confirm" id="upload-store-photo-btn" style="padding:6px 12px;font-size:11px;">Change Photo</button>
     </div>
   </div>
 
-  <script>
-  (() => {
-    "use strict";
+  <main class="container">
+    <div class="stats-container">
+      <div class="stat-box"><div class="stat-header"><i class="ph ph-currency-circle-dollar"></i> Vendor Net Earnings</div><div class="stat-value" id="stat-revenue">R0.00</div></div>
+      <div class="stat-box"><div class="stat-header"><i class="ph ph-calendar-check"></i> Completed Bookings</div><div class="stat-value" id="stat-count">0</div></div>
+    </div>
 
-    const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
+    <div class="nav-tabs">
+      <button class="tab-item active" id="tab-orders-btn">Bookings</button>
+      <button class="tab-item" id="tab-services-btn">Services</button>
+      <button class="tab-item" id="tab-settlement-btn">Settlement</button>
+    </div>
 
-    let supabase = null;
-    let selectedService = null;
-    let vendorData = null;
+    <section id="orders-tab">
+      <div class="section-head"><h3>Live Appointments</h3></div>
+      <div id="orders-list" class="card-list"><div class="empty-box">No bookings received yet.</div></div>
+    </section>
 
-    const FALLBACK_IMAGES = {
-      BARBER: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80",
-      SALON: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80",
-      SHISANYAMA: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80",
-      DEFAULT: "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=800&q=80"
-    };
+    <section id="services-tab" style="display:none">
+      <div class="section-head"><h3>Services &amp; Menu</h3><button class="btn-primary" id="open-add-service-btn" style="width:auto;padding:8px 12px"><i class="ph ph-plus"></i> Add Service</button></div>
+      <div id="services-list" class="card-list"><div class="empty-box">No services added yet.</div></div>
+    </section>
 
-    const $ = id => document.getElementById(id);
+    <section id="settlement-tab" style="display:none">
+      <div class="section-head"><h3>Settlement Overview</h3><button class="btn-action btn-confirm" id="refresh-settlement-btn">Refresh</button></div>
+      <div class="finance-disclaimer">These figures are based on recorded booking fields. They are not proof of payment or a bank transfer.</div>
+      <div class="finance-grid">
+        <div class="finance-card"><div class="finance-label">Completed Booking Value</div><div class="finance-value" id="ledger-gross">R0.00</div><div class="finance-note">Gross value of completed bookings</div></div>
+        <div class="finance-card"><div class="finance-label">Platform Commission</div><div class="finance-value" id="ledger-commission">R0.00</div><div class="finance-note">Recorded commission on completed bookings</div></div>
+        <div class="finance-card"><div class="finance-label">Vendor Net Earnings</div><div class="finance-value" id="ledger-net">R0.00</div><div class="finance-note">Recorded net amount for completed bookings</div></div>
+        <div class="finance-card"><div class="finance-label">Online Balance Estimate</div><div class="finance-value" id="ledger-online-balance">R0.00</div><div class="finance-note">Paid online completed bookings not marked PAID_OUT</div></div>
+      </div>
+      <div class="ledger-section"><h3>Booking Settlement Details</h3><div id="settlement-orders-list" class="card-list"><div class="empty-box">Settlement details will appear here.</div></div></div>
+      <div class="ledger-section"><h3>Payout History</h3><div id="payouts-list" class="card-list"><div class="empty-box">Payout history will appear here.</div></div></div>
+    </section>
+  </main>
+</div>
 
-    function getVendorId() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get("id");
+<!-- MODAL: ADD / EDIT SERVICE WITH PROMOTIONAL SALE PRICING -->
+<div id="service-modal" class="modal">
+  <div class="modal-sheet">
+    <div class="section-head"><h3 id="modal-service-title-text">Add Service Offering</h3><button class="btn-action btn-muted" id="close-service-modal" aria-label="Close">✕</button></div>
+    <input type="hidden" id="editing-service-id" value="">
+    
+    <div class="form-field"><label for="service-title">Service Title</label><input type="text" id="service-title" placeholder="e.g. Fade Cut & Beard Trim" maxlength="150"></div>
+    <div class="form-field"><label for="service-price">Standard Price (ZAR)</label><input type="number" id="service-price" placeholder="e.g. 150" min="1" max="10000" step="0.01"></div>
+    
+    <div style="background:#f8fafc; border:1px solid var(--border); padding:14px; border-radius:12px; margin-bottom:14px;">
+      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:10px;"><i class="ph ph-tag"></i> Promotional Sale Pricing (Optional)</div>
+      <div class="form-field"><label for="service-sale-price">Special Sale Price (ZAR)</label><input type="number" id="service-sale-price" placeholder="e.g. 100" min="1" max="10000" step="0.01"></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="form-field"><label for="sale-start-date">Sale Start Date</label><input type="date" id="sale-start-date"></div>
+        <div class="form-field"><label for="sale-end-date">Sale End Date</label><input type="date" id="sale-end-date"></div>
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label for="service-photos">Menu Photos (Max 3)</label>
+      <input type="file" id="service-photos" accept="image/*" multiple>
+      <div style="font-size:11px; color:var(--muted); margin-top:4px;">Upload new photos to update existing ones</div>
+      <div id="image-preview-container" class="image-preview-grid"></div>
+    </div>
+
+    <button class="btn-primary" id="save-service-btn">Publish Service</button>
+  </div>
+</div>
+
+<div id="register-modal" class="modal">
+  <div class="modal-sheet">
+    <div class="section-head"><h3>Register New Business</h3><button class="btn-action btn-muted" id="close-register-modal" aria-label="Close">✕</button></div>
+    <div class="form-field"><label for="new-biz-name">Business Name</label><input type="text" id="new-biz-name" placeholder="e.g. Nzuzo Barbershop" maxlength="150"></div>
+    <div class="form-field"><label for="new-biz-category">Category</label><select id="new-biz-category"><option value="BARBER">Barbershop</option><option value="SALON">Hair &amp; Beauty Salon</option><option value="SHISANYAMA">Shisanyama / Braai Spot</option></select></div>
+    <button class="btn-primary" id="save-biz-btn">Save Business</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
+  let db = null, activeVendor = null, isSignUpMode = false, booted = false;
+  let selectedFiles = [];
+
+  const $ = id => document.getElementById(id);
+
+  function money(value) {
+    const n = Number(value);
+    return "R" + (Number.isFinite(n) ? n : 0).toFixed(2);
+  }
+
+  function setEmpty(id, message) {
+    const el = $(id);
+    if (!el) return;
+    el.replaceChildren();
+    const box = document.createElement("div");
+    box.className = "empty-box";
+    box.textContent = message;
+    el.appendChild(box);
+  }
+
+  function setButtonLoading(button, loading, text) {
+    if (!button) return;
+    button.disabled = loading;
+    button.textContent = text;
+  }
+
+  function openModal(id) {
+    const modal = $(id);
+    if (modal) {
+      modal.style.display = "flex";
+      document.body.style.overflow = "hidden";
+    }
+  }
+
+  function closeModal(id) {
+    const modal = $(id);
+    if (modal) modal.style.display = "none";
+    const open = ["register-modal", "service-modal"].some(m => $(m)?.style.display === "flex");
+    document.body.style.overflow = open ? "hidden" : "";
+  }
+
+  function showTab(name) {
+    const tabs = { orders: $("orders-tab"), services: $("services-tab"), settlement: $("settlement-tab") };
+    Object.entries(tabs).forEach(([key, el]) => { el.style.display = key === name ? "block" : "none"; });
+    $("tab-orders-btn").classList.toggle("active", name === "orders");
+    $("tab-services-btn").classList.toggle("active", name === "services");
+    $("tab-settlement-btn").classList.toggle("active", name === "settlement");
+  }
+
+  function bindButtons() {
+    $("upload-store-photo-btn").addEventListener("click", () => $("store-photo-input").click());
+    $("store-photo-input").addEventListener("change", uploadStorePhoto);
+
+    $("service-photos").addEventListener("change", (e) => {
+      const files = Array.from(e.target.files);
+      if (files.length > 3) {
+        alert("Maximum 3 photos allowed per menu item.");
+        e.target.value = "";
+        selectedFiles = [];
+        $("image-preview-container").replaceChildren();
+        return;
+      }
+      selectedFiles = files.slice(0, 3);
+      const container = $("image-preview-container");
+      container.replaceChildren();
+      selectedFiles.forEach(file => {
+        const img = document.createElement("img");
+        img.className = "preview-thumb";
+        img.src = URL.createObjectURL(file);
+        container.appendChild(img);
+      });
+    });
+
+    $("toggle-auth-btn").addEventListener("click", () => {
+      isSignUpMode = !isSignUpMode;
+      $("auth-heading").textContent = isSignUpMode ? "Register Partner Account" : "Partner Login";
+      $("auth-subheading").textContent = isSignUpMode ? "Create an account to register your shop" : "Access your business dashboard securely";
+      $("auth-submit-btn").textContent = isSignUpMode ? "Register Account" : "Sign In";
+      $("toggle-auth-btn").textContent = isSignUpMode ? "Already registered? Sign In" : "Need an account? Register as Partner";
+      $("auth-password").autocomplete = isSignUpMode ? "new-password" : "current-password";
+    });
+
+    $("auth-submit-btn").addEventListener("click", async () => {
+      const email = $("auth-email").value.trim();
+      const password = $("auth-password").value;
+      const button = $("auth-submit-btn");
+      if (!email || !password) return alert("Please enter both email and password.");
+      setButtonLoading(button, true, "Processing...");
+      try {
+        if (isSignUpMode) {
+          const { data, error } = await db.auth.signUp({ email, password });
+          if (error) throw error;
+          if (data.session) {
+            await showDashboard();
+          } else {
+            alert("Account created! Please check your email to sign in.");
+          }
+        } else {
+          const { error } = await db.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          await showDashboard();
+        }
+      } catch (error) {
+        alert("Authentication Error: " + error.message);
+      } finally {
+        setButtonLoading(button, false, isSignUpMode ? "Register Account" : "Sign In");
+      }
+    });
+
+    $("logout-btn").addEventListener("click", async () => {
+      try {
+        const { error } = await db.auth.signOut();
+        if (error) throw error;
+      } catch (error) {
+        alert("Could not sign out: " + error.message);
+      }
+      activeVendor = null;
+      $("dashboard-screen").style.display = "none";
+      $("auth-screen").style.display = "flex";
+      showTab("orders");
+    });
+
+    $("open-add-biz-btn").addEventListener("click", () => openModal("register-modal"));
+    $("close-register-modal").addEventListener("click", () => closeModal("register-modal"));
+    $("open-add-service-btn").addEventListener("click", () => {
+      if (!activeVendor) return alert("Please add or select a business first.");
+      resetServiceForm();
+      openModal("service-modal");
+    });
+    $("close-service-modal").addEventListener("click", () => closeModal("service-modal"));
+
+    ["register-modal", "service-modal"].forEach(id => {
+      $(id).addEventListener("click", event => {
+        if (event.target === $(id)) closeModal(id);
+      });
+    });
+
+    $("tab-orders-btn").addEventListener("click", () => showTab("orders"));
+    $("tab-services-btn").addEventListener("click", () => showTab("services"));
+    $("tab-settlement-btn").addEventListener("click", async () => {
+      showTab("settlement");
+      await Promise.all([loadOrders(), loadPayouts()]);
+    });
+    $("refresh-settlement-btn").addEventListener("click", async () => {
+      await Promise.all([loadOrders(), loadPayouts()]);
+    });
+
+    $("vendor-select").addEventListener("change", async event => {
+      const id = event.target.value;
+      if (!id || !db) return;
+      try {
+        const { data, error } = await db.from("vendors").select("*").eq("id", id).single();
+        if (error) throw error;
+        activeVendor = data;
+        updateHeader();
+        await Promise.all([loadServices(), loadOrders(), loadPayouts()]);
+      } catch (error) {
+        alert("Could not switch business: " + error.message);
+      }
+    });
+
+    $("save-biz-btn").addEventListener("click", saveBusiness);
+    $("save-service-btn").addEventListener("click", saveService);
+  }
+
+  async function uploadStorePhoto(e) {
+    const file = e.target.files[0];
+    if (!file || !activeVendor) return;
+
+    const btn = $("upload-store-photo-btn");
+    btn.disabled = true;
+    btn.textContent = "Uploading...";
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${activeVendor.id}/store_${Date.now()}.${fileExt}`;
+
+      const { error: uploadErr } = await db.storage
+        .from('menu-images')
+        .upload(fileName, file);
+
+      if (uploadErr) throw uploadErr;
+
+      const { data: urlData } = db.storage.from('menu-images').getPublicUrl(fileName);
+      const publicUrl = urlData.publicUrl;
+
+      const { error: updateErr } = await db.from('vendors')
+        .update({ store_image_url: publicUrl })
+        .eq('id', activeVendor.id);
+
+      if (updateErr) throw updateErr;
+
+      activeVendor.store_image_url = publicUrl;
+      updateHeader();
+      alert("Store picture updated successfully!");
+    } catch (err) {
+      alert("Could not upload store picture: " + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Change Photo";
+      e.target.value = "";
+    }
+  }
+
+  function resetServiceForm() {
+    $("editing-service-id").value = "";
+    $("modal-service-title-text").textContent = "Add Service Offering";
+    $("service-title").value = "";
+    $("service-price").value = "";
+    $("service-sale-price").value = "";
+    $("sale-start-date").value = "";
+    $("sale-end-date").value = "";
+    $("service-photos").value = "";
+    $("image-preview-container").replaceChildren();
+    selectedFiles = [];
+  }
+
+  function populateEditServiceForm(service) {
+    $("editing-service-id").value = service.id;
+    $("modal-service-title-text").textContent = "Edit Service Offering";
+    $("service-title").value = service.title || "";
+    $("service-price").value = service.price || "";
+    $("service-sale-price").value = service.sale_price || "";
+    $("sale-start-date").value = service.sale_start_date || "";
+    $("sale-end-date").value = service.sale_end_date || "";
+    
+    const container = $("image-preview-container");
+    container.replaceChildren();
+
+    if (service.image_urls && Array.isArray(service.image_urls)) {
+      service.image_urls.forEach(url => {
+        if (url) {
+          const img = document.createElement("img");
+          img.className = "preview-thumb";
+          img.src = url;
+          container.appendChild(img);
+        }
+      });
     }
 
-    async function loadStorePage() {
-      const vendorId = getVendorId();
-      if (!vendorId) {
-        $("store-hero-box").innerHTML = '<div class="empty-box">No store selected. <a href="index.html">Return to Marketplace</a></div>';
-        $("services-menu-box").style.display = "none";
+    selectedFiles = [];
+    openModal("service-modal");
+  }
+
+  async function saveBusiness() {
+    const button = $("save-biz-btn");
+    const name = $("new-biz-name").value.trim();
+    const category = $("new-biz-category").value;
+    if (!name) return alert("Please enter a business name.");
+    setButtonLoading(button, true, "Saving...");
+    try {
+      const { data: { user }, error: userError } = await db.auth.getUser();
+      if (userError) throw userError;
+      if (!user) throw new Error("Not authenticated.");
+      const { data, error } = await db.from("vendors")
+        .insert([{ name, category, owner_id: user.id }]).select().single();
+      if (error) throw error;
+      $("new-biz-name").value = "";
+      closeModal("register-modal");
+      await initDashboard(data.id);
+      alert("Business saved successfully!");
+    } catch (error) {
+      alert("Could not save business: " + error.message);
+    } finally {
+      setButtonLoading(button, false, "Save Business");
+    }
+  }
+
+  async function saveService() {
+    const button = $("save-service-btn");
+    if (!activeVendor) return alert("Please select a business first.");
+    
+    const serviceId = $("editing-service-id").value;
+    const title = $("service-title").value.trim();
+    const priceText = $("service-price").value.trim();
+    const price = Number(priceText);
+    
+    const salePriceText = $("service-sale-price").value.trim();
+    const salePrice = salePriceText ? Number(salePriceText) : null;
+    const saleStartDate = $("sale-start-date").value || null;
+    const saleEndDate = $("sale-end-date").value || null;
+
+    if (!title) return alert("Please enter a service title.");
+    if (!priceText || !Number.isFinite(price) || price < 1 || price > 10000) {
+      return alert("Standard price must be between R1 and R10,000.");
+    }
+
+    if (salePrice !== null && (salePrice >= price || salePrice < 1)) {
+      return alert("Sale price must be less than the standard price.");
+    }
+
+    setButtonLoading(button, true, "Publishing changes...");
+
+    try {
+      let uploadedUrls = [];
+
+      if (selectedFiles.length > 0) {
+        for (const file of selectedFiles) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${activeVendor.id}/${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+
+          const { error: storageErr } = await db.storage
+            .from('menu-images')
+            .upload(fileName, file);
+
+          if (!storageErr) {
+            const { data: urlData } = db.storage.from('menu-images').getPublicUrl(fileName);
+            if (urlData && urlData.publicUrl) uploadedUrls.push(urlData.publicUrl);
+          }
+        }
+      }
+
+      const payload = {
+        vendor_id: activeVendor.id,
+        title,
+        price,
+        sale_price: salePrice,
+        sale_start_date: saleStartDate,
+        sale_end_date: saleEndDate
+      };
+
+      if (uploadedUrls.length > 0) {
+        payload.image_urls = uploadedUrls;
+      }
+
+      if (serviceId) {
+        const { error } = await db.from("service_items").update(payload).eq("id", serviceId);
+        if (error) throw error;
+      } else {
+        if (uploadedUrls.length === 0) payload.image_urls = [];
+        const { error } = await db.from("service_items").insert([payload]);
+        if (error) throw error;
+      }
+
+      resetServiceForm();
+      closeModal("service-modal");
+      await loadServices();
+      alert("Service saved successfully!");
+    } catch (error) {
+      alert("Could not save service: " + error.message);
+    } finally {
+      setButtonLoading(button, false, "Publish Service");
+    }
+  }
+
+  async function showDashboard() {
+    $("auth-screen").style.display = "none";
+    $("dashboard-screen").style.display = "block";
+    await initDashboard();
+  }
+
+  async function initDashboard(preferredVendorId = null) {
+    if (!db) return;
+    $("biz-display-name").textContent = "Loading Business...";
+    $("biz-display-type").textContent = "Fetching your shops...";
+    try {
+      const { data: { user }, error: userError } = await db.auth.getUser();
+      if (userError) throw userError;
+      if (!user) throw new Error("No active user session.");
+      const { data: vendors, error } = await db.from("vendors").select("*")
+        .eq("owner_id", user.id).order("created_at", { ascending: false });
+      if (error) throw error;
+
+      const select = $("vendor-select");
+      select.replaceChildren();
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "Switch Shop";
+      select.appendChild(placeholder);
+
+      if (!vendors || vendors.length === 0) {
+        activeVendor = null;
+        $("biz-display-name").textContent = "No Business Found";
+        $("biz-display-type").textContent = "Tap '+ Add Business' above";
+        $("biz-avatar-letter").textContent = "N";
+        $("stat-revenue").textContent = "R0.00";
+        $("stat-count").textContent = "0";
+        ["ledger-gross", "ledger-commission", "ledger-net", "ledger-online-balance"].forEach(id => $(id).textContent = "R0.00");
+        setEmpty("services-list", "No services added yet.");
+        setEmpty("orders-list", "No bookings received yet.");
+        setEmpty("settlement-orders-list", "Select a business to view settlement details.");
+        setEmpty("payouts-list", "Select a business to view payout history.");
         return;
       }
 
-      try {
-        const { data: vendor, error: vendorErr } = await supabase
-          .from("vendors")
-          .select("id, name, category, created_at")
-          .eq("id", vendorId)
-          .single();
+      vendors.forEach(vendor => {
+        const option = document.createElement("option");
+        option.value = String(vendor.id);
+        option.textContent = vendor.name || "Unnamed Business";
+        select.appendChild(option);
+      });
+      activeVendor = vendors.find(v => String(v.id) === String(preferredVendorId)) || vendors[0];
+      select.value = String(activeVendor.id);
+      updateHeader();
+      await Promise.all([loadServices(), loadOrders(), loadPayouts()]);
+    } catch (error) {
+      console.error("Dashboard initialization error:", error);
+      $("biz-display-name").textContent = "Dashboard Error";
+      $("biz-display-type").textContent = error.message;
+    }
+  }
 
-        if (vendorErr || !vendor) throw new Error("Store details not found.");
-        vendorData = vendor;
+  function updateHeader() {
+    if (!activeVendor) return;
+    const name = activeVendor.name || "Unnamed Business";
+    $("biz-display-name").textContent = name;
+    $("biz-display-type").textContent = activeVendor.category || "Business";
+    
+    if (activeVendor.store_image_url) {
+      $("biz-avatar-img").src = activeVendor.store_image_url;
+      $("biz-avatar-img").style.display = "block";
+      $("biz-avatar-letter").style.display = "none";
+    } else {
+      $("biz-avatar-img").style.display = "none";
+      $("biz-avatar-letter").style.display = "flex";
+      $("biz-avatar-letter").textContent = name.charAt(0).toUpperCase();
+    }
+  }
 
-        const heroCover = FALLBACK_IMAGES[vendor.category] || FALLBACK_IMAGES.DEFAULT;
-        $("store-hero-box").innerHTML = `
-          <img src="${heroCover}" class="hero-banner" alt="${vendor.name}">
-          <div class="hero-content">
-            <div class="store-title-row">
-              <h1 class="store-title">${vendor.name}</h1>
-              <span class="store-badge">${vendor.category || 'SPOT'}</span>
-            </div>
-            <div class="store-meta-list">
-              <span class="meta-item rating-item"><i class="ph-fill ph-star"></i> 5.0 (24 reviews)</span>
-              <span class="meta-item"><i class="ph ph-map-pin"></i> Verified Location</span>
-              <span class="meta-item"><i class="ph ph-check-circle" style="color:var(--success);"></i> Open for Booking</span>
-            </div>
-          </div>
-        `;
+  async function loadServices() {
+    if (!db || !activeVendor) return;
+    setEmpty("services-list", "Loading services...");
+    try {
+      const { data, error } = await db.from("service_items").select("*")
+        .eq("vendor_id", activeVendor.id).order("created_at", { ascending: false });
+      if (error) throw error;
 
-        const { data: services, error: serviceErr } = await supabase
-          .from("service_items")
-          .select("*")
-          .eq("vendor_id", vendorId)
-          .order("created_at", { ascending: false });
+      const container = $("services-list");
+      container.replaceChildren();
+      if (!data || data.length === 0) {
+        setEmpty("services-list", "No services added yet. Click '+ Add Service' above.");
+        return;
+      }
 
-        if (serviceErr) throw serviceErr;
+      const today = new Date().toISOString().split("T")[0];
 
-        const menuBox = $("services-menu-box");
-        menuBox.replaceChildren();
+      data.forEach(service => {
+        const card = document.createElement("div");
+        card.className = "order-card";
 
-        if (!services || services.length === 0) {
-          menuBox.innerHTML = '<div class="empty-box">No menu items published by this store yet.</div>';
-          return;
+        const top = document.createElement("div");
+        top.style.cssText = "display:flex;justify-content:space-between;align-items:flex-start;gap:12px;";
+
+        const info = document.createElement("div");
+        const title = document.createElement("div");
+        title.className = "order-title";
+        title.textContent = service.title || "Untitled Service";
+
+        const hasActiveSale = service.sale_price && 
+          (!service.sale_start_date || service.sale_start_date <= today) &&
+          (!service.sale_end_date || service.sale_end_date >= today);
+
+        if (hasActiveSale) {
+          const badge = document.createElement("span");
+          badge.className = "sale-badge";
+          badge.textContent = "ON SALE";
+          title.appendChild(badge);
         }
 
-        const todayStr = new Date().toISOString().split("T")[0];
+        const status = document.createElement("div");
+        status.className = "order-time";
+        status.textContent = hasActiveSale 
+          ? `Promo active until ${service.sale_end_date || 'N/A'}` 
+          : "Active & Available";
 
-        services.forEach(s => {
-          let photos = [];
-          if (Array.isArray(s.image_urls) && s.image_urls.length > 0) {
-            photos = s.image_urls.filter(url => url && typeof url === 'string');
-          } else if (s.image_url && typeof s.image_url === 'string') {
-            photos = [s.image_url];
+        info.append(title, status);
+
+        const priceBox = document.createElement("div");
+        priceBox.style.textAlign = "right";
+
+        if (hasActiveSale) {
+          const oldP = document.createElement("span");
+          oldP.className = "old-price";
+          oldP.textContent = money(service.price);
+
+          const saleP = document.createElement("span");
+          saleP.className = "order-price";
+          saleP.textContent = money(service.sale_price);
+
+          priceBox.append(oldP, saleP);
+        } else {
+          const price = document.createElement("div");
+          price.className = "order-price";
+          price.textContent = money(service.price);
+          priceBox.appendChild(price);
+        }
+
+        top.append(info, priceBox);
+        card.appendChild(top);
+
+        if (service.image_urls && Array.isArray(service.image_urls) && service.image_urls.length > 0) {
+          const gallery = document.createElement("div");
+          gallery.className = "item-gallery";
+          service.image_urls.forEach(url => {
+            if (url) {
+              const img = document.createElement("img");
+              img.className = "item-thumb";
+              img.src = url;
+              gallery.appendChild(img);
+            }
+          });
+          card.appendChild(gallery);
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "order-actions";
+
+        const editBtn = document.createElement("button");
+        editBtn.className = "btn-action btn-edit";
+        editBtn.innerHTML = `<i class="ph ph-pencil-simple"></i> Edit Service & Sale`;
+        editBtn.addEventListener("click", () => populateEditServiceForm(service));
+
+        actions.appendChild(editBtn);
+        card.appendChild(actions);
+
+        container.appendChild(card);
+      });
+    } catch (error) {
+      console.error("Load services error:", error);
+      setEmpty("services-list", "Could not load services. Please try again.");
+    }
+  }
+
+  function renderSettlementOrders(orders) {
+    const container = $("settlement-orders-list");
+    container.replaceChildren();
+    if (!activeVendor || !orders || orders.length === 0) {
+      setEmpty("settlement-orders-list", "No booking settlement records yet.");
+      return;
+    }
+    orders.forEach(order => {
+      const card = document.createElement("div");
+      card.className = "ledger-card";
+      const heading = document.createElement("div");
+      heading.className = "order-top";
+      const title = document.createElement("div");
+      title.className = "order-title";
+      title.textContent = order.service_title || "Service booking";
+      const gross = document.createElement("div");
+      gross.className = "order-price";
+      gross.textContent = money(order.gross_amount);
+      heading.append(title, gross);
+      card.appendChild(heading);
+      const addRow = (label, value) => {
+        const row = document.createElement("div");
+        row.className = "ledger-row";
+        const left = document.createElement("span");
+        left.textContent = label;
+        const right = document.createElement("span");
+        right.textContent = value === null || value === undefined || value === "" ? "Not recorded" : String(value);
+        row.append(left, right);
+        card.appendChild(row);
+      };
+      addRow("Customer", order.customer_name || "Customer");
+      addRow("Booking status", String(order.status || "PENDING").replaceAll("_", " "));
+      addRow("Payment method", String(order.payment_method || "CASH").replaceAll("_", " "));
+      addRow("Payment status", String(order.payment_status || "UNPAID").replaceAll("_", " "));
+      addRow("Payout status", String(order.payout_status || "PENDING").replaceAll("_", " "));
+      addRow("Platform commission", money(order.platform_commission));
+      addRow("Vendor net", money(order.vendor_net_earnings));
+      container.appendChild(card);
+    });
+  }
+
+  async function loadPayouts() {
+    if (!db || !activeVendor) {
+      setEmpty("payouts-list", "Select a business to view payout history.");
+      return;
+    }
+    setEmpty("payouts-list", "Loading payout history...");
+    try {
+      const { data, error } = await db.from("payouts")
+        .select("id, amount, payment_method_used, reference_number, status, created_at")
+        .eq("vendor_id", activeVendor.id).order("created_at", { ascending: false });
+      if (error) throw error;
+      const container = $("payouts-list");
+      container.replaceChildren();
+      if (!data || data.length === 0) {
+        setEmpty("payouts-list", "No payout records yet.");
+        return;
+      }
+      data.forEach(payout => {
+        const card = document.createElement("div");
+        card.className = "ledger-card";
+        const heading = document.createElement("div");
+        heading.className = "order-top";
+        const title = document.createElement("div");
+        title.className = "order-title";
+        title.textContent = "Payout record";
+        const amount = document.createElement("div");
+        amount.className = "order-price";
+        amount.textContent = money(payout.amount);
+        heading.append(title, amount);
+        card.appendChild(heading);
+        const addRow = (label, value) => {
+          const row = document.createElement("div");
+          row.className = "ledger-row";
+          const left = document.createElement("span");
+          left.textContent = label;
+          const right = document.createElement("span");
+          right.textContent = value || "Not recorded";
+          row.append(left, right);
+          card.appendChild(row);
+        };
+        addRow("Status", String(payout.status || "PENDING").replaceAll("_", " "));
+        addRow("Method", payout.payment_method_used || "Not recorded");
+        addRow("Reference", payout.reference_number || "Not recorded");
+        const date = payout.created_at ? new Date(payout.created_at) : null;
+        addRow("Recorded", date && !Number.isNaN(date.getTime()) ? date.toLocaleString() : "Date unavailable");
+        container.appendChild(card);
+      });
+    } catch (error) {
+      console.error("Load payout history error:", error);
+      setEmpty("payouts-list", "Could not load payout history.");
+    }
+  }
+
+  async function loadOrders() {
+    if (!db || !activeVendor) {
+      setEmpty("orders-list", "Select or register a business to see bookings.");
+      setEmpty("settlement-orders-list", "Select a business to view settlement details.");
+      return;
+    }
+    setEmpty("orders-list", "Loading bookings...");
+    try {
+      const { data: orders, error } = await db.from("orders").select("*")
+        .eq("vendor_id", activeVendor.id).order("created_at", { ascending: false });
+      if (error) throw error;
+
+      let revenue = 0, completed = 0, completedGross = 0, completedCommission = 0, completedNet = 0, onlineBalanceEstimate = 0;
+      const container = $("orders-list");
+      container.replaceChildren();
+
+      if (!orders || orders.length === 0) {
+        setEmpty("orders-list", "No bookings received yet.");
+      } else {
+        orders.forEach(order => {
+          const statusText = String(order.status || "PENDING").toUpperCase();
+          const gross = Number(order.gross_amount || 0);
+          const net = Number(order.vendor_net_earnings || 0);
+          const commission = Number(order.platform_commission ?? (gross - net));
+
+          if (statusText === "COMPLETED") {
+            completed++;
+            revenue += net;
+            completedGross += gross;
+            completedCommission += commission;
+            completedNet += net;
+            const method = String(order.payment_method || "CASH").toUpperCase();
+            const paymentStatus = String(order.payment_status || "UNPAID").toUpperCase();
+            const payoutStatus = String(order.payout_status || "PENDING").toUpperCase();
+            if (method === "ONLINE" && ["PAID", "SETTLED"].includes(paymentStatus) && payoutStatus !== "PAID_OUT") {
+              onlineBalanceEstimate += net;
+            }
           }
-
-          const defaultImg = photos.length > 0 ? photos[0] : (FALLBACK_IMAGES[vendor.category] || FALLBACK_IMAGES.DEFAULT);
-
-          // PROMOTIONAL SALE CHECK
-          const hasValidSalePrice = s.sale_price !== null && s.sale_price !== undefined && Number(s.sale_price) > 0 && Number(s.sale_price) < Number(s.price);
-          const isAfterStart = !s.sale_start_date || s.sale_start_date <= todayStr;
-          const isBeforeEnd = !s.sale_end_date || s.sale_end_date >= todayStr;
-          const isOnSale = hasValidSalePrice && isAfterStart && isBeforeEnd;
-
-          const activePrice = isOnSale ? Number(s.sale_price) : Number(s.price);
 
           const card = document.createElement("div");
-          card.className = "menu-card";
+          card.className = "order-card";
+          const top = document.createElement("div");
+          top.className = "order-top";
+          const left = document.createElement("div");
+          const title = document.createElement("div");
+          title.className = "order-title";
+          title.textContent = order.customer_name
+            ? `${order.customer_name}${order.customer_phone ? " (" + order.customer_phone + ")" : ""}`
+            : "Customer Booking";
+          const time = document.createElement("div");
+          time.className = "order-time";
+          const date = order.created_at ? new Date(order.created_at) : null;
+          time.textContent = date && !Number.isNaN(date.getTime()) ? date.toLocaleString() : "Date unavailable";
+          const status = document.createElement("div");
+          status.className = "order-status status-" + statusText.toLowerCase();
+          status.textContent = statusText;
+          left.append(title, time, status);
 
-          // SALE TAG IF ACTIVE
-          if (isOnSale) {
-            const saleTag = document.createElement("div");
-            saleTag.className = "sale-tag";
-            saleTag.textContent = "ON SALE";
-            card.appendChild(saleTag);
+          const right = document.createElement("div");
+          const price = document.createElement("div");
+          price.className = "order-price";
+          price.textContent = money(order.gross_amount);
+          const netSub = document.createElement("div");
+          netSub.style.cssText = "font-size:11px;color:var(--muted);text-align:right;margin-top:3px;";
+          netSub.textContent = "Net: " + money(order.vendor_net_earnings);
+          right.append(price, netSub);
+          top.append(left, right);
+          card.appendChild(top);
+
+          if (statusText !== "COMPLETED" && statusText !== "CANCELLED") {
+            const actions = document.createElement("div");
+            actions.className = "order-actions";
+            if (statusText === "PENDING") {
+              const confirmBtn = document.createElement("button");
+              confirmBtn.className = "btn-action btn-confirm";
+              confirmBtn.textContent = "Confirm Booking";
+              confirmBtn.addEventListener("click", () => updateOrderStatus(order.id, "CONFIRMED"));
+              actions.appendChild(confirmBtn);
+            }
+            const completeBtn = document.createElement("button");
+            completeBtn.className = "btn-action btn-complete";
+            completeBtn.textContent = "Mark Completed";
+            completeBtn.addEventListener("click", () => updateOrderStatus(order.id, "COMPLETED"));
+            actions.appendChild(completeBtn);
+            card.appendChild(actions);
           }
-
-          // COVER IMAGE BOX WITH CLICK TO ZOOM
-          const imgWrapper = document.createElement("div");
-          imgWrapper.className = "menu-img-wrapper";
-          
-          const coverImg = document.createElement("img");
-          coverImg.className = "menu-cover-img";
-          coverImg.src = defaultImg;
-          coverImg.alt = s.title;
-
-          const zoomIcon = document.createElement("div");
-          zoomIcon.className = "zoom-overlay";
-          zoomIcon.innerHTML = `<i class="ph ph-arrows-out-simple"></i>`;
-
-          imgWrapper.append(coverImg, zoomIcon);
-          imgWrapper.addEventListener("click", () => openLightbox(coverImg.src));
-
-          card.appendChild(imgWrapper);
-
-          // THUMBNAIL STRIP (If multiple photos exist)
-          if (photos.length > 1) {
-            const strip = document.createElement("div");
-            strip.className = "thumb-strip";
-
-            photos.forEach((photoUrl, idx) => {
-              const thumb = document.createElement("img");
-              thumb.className = `thumb-btn ${idx === 0 ? 'active' : ''}`;
-              thumb.src = photoUrl;
-              thumb.alt = "Thumbnail";
-
-              thumb.addEventListener("click", (e) => {
-                e.stopPropagation();
-                coverImg.src = photoUrl;
-                strip.querySelectorAll(".thumb-btn").forEach(btn => btn.classList.remove("active"));
-                thumb.classList.add("active");
-              });
-
-              strip.appendChild(thumb);
-            });
-
-            card.appendChild(strip);
-          }
-
-          // MENU CARD CONTENT
-          const body = document.createElement("div");
-          body.className = "menu-body";
-
-          const topInfo = document.createElement("div");
-          const title = document.createElement("h3");
-          title.className = "menu-title";
-          title.textContent = s.title;
-
-          const duration = document.createElement("div");
-          duration.className = "menu-duration";
-          duration.innerHTML = `<i class="ph ph-clock"></i> ~30 mins`;
-
-          topInfo.append(title, duration);
-
-          const footer = document.createElement("div");
-          footer.className = "menu-footer";
-
-          const priceContainer = document.createElement("div");
-          priceContainer.className = "price-container";
-
-          if (isOnSale) {
-            const origPrice = document.createElement("span");
-            origPrice.className = "original-price";
-            origPrice.textContent = `R${Number(s.price).toFixed(2)}`;
-
-            const salePrice = document.createElement("span");
-            salePrice.className = "menu-price sale-active";
-            salePrice.textContent = `R${activePrice.toFixed(2)}`;
-
-            priceContainer.append(origPrice, salePrice);
-          } else {
-            const normalPrice = document.createElement("span");
-            normalPrice.className = "menu-price";
-            normalPrice.textContent = `R${activePrice.toFixed(2)}`;
-
-            priceContainer.appendChild(normalPrice);
-          }
-
-          const bookBtn = document.createElement("button");
-          bookBtn.className = "btn-book";
-          bookBtn.textContent = "Book";
-          bookBtn.addEventListener("click", () => openBookingModal(s.id, s.title, activePrice));
-
-          footer.append(priceContainer, bookBtn);
-          body.append(topInfo, footer);
-          card.appendChild(body);
-
-          menuBox.appendChild(card);
+          container.appendChild(card);
         });
-
-      } catch (err) {
-        console.error("Store load error:", err);
-        $("store-hero-box").innerHTML = `<div class="empty-box">Error loading store: ${err.message}</div>`;
       }
+
+      $("stat-revenue").textContent = money(revenue);
+      $("stat-count").textContent = String(completed);
+      $("ledger-gross").textContent = money(completedGross);
+      $("ledger-commission").textContent = money(completedCommission);
+      $("ledger-net").textContent = money(completedNet);
+      $("ledger-online-balance").textContent = money(onlineBalanceEstimate);
+      renderSettlementOrders(orders || []);
+    } catch (error) {
+      console.error("Load bookings error:", error);
+      setEmpty("orders-list", "Could not load bookings: " + error.message);
+      setEmpty("settlement-orders-list", "Could not load settlement details.");
+      ["stat-revenue","ledger-gross","ledger-commission","ledger-net","ledger-online-balance"].forEach(id => $(id).textContent = "R0.00");
+      $("stat-count").textContent = "0";
     }
+  }
 
-    function openLightbox(imageSrc) {
-      $("lightbox-img").src = imageSrc;
-      $("lightbox-modal").style.display = "flex";
+  async function updateOrderStatus(orderId, newStatus) {
+    if (!db) return;
+    try {
+      const { error } = await db.from("orders").update({ status: newStatus }).eq("id", orderId);
+      if (error) throw error;
+      await loadOrders();
+    } catch (error) {
+      alert("Could not update booking status: " + error.message);
     }
+  }
 
-    function openBookingModal(serviceId, title, price) {
-      selectedService = { vendorId: vendorData.id, serviceId, title, price };
-      $("modal-service-title").textContent = `${title} (R${price.toFixed(2)})`;
-      $("booking-modal").style.display = "flex";
+  async function boot() {
+    if (booted) return;
+    booted = true;
+    try {
+      if (!window.supabase) throw new Error("Supabase library did not load.");
+      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      bindButtons();
+      const { data: { session }, error } = await db.auth.getSession();
+      if (error) throw error;
+      if (session) await showDashboard();
+    } catch (error) {
+      console.error("Boot error:", error);
+      alert("Could not start Partner Portal: " + error.message);
     }
+  }
 
-    async function confirmBooking() {
-      const name = $("customer-name").value.trim();
-      const phone = $("customer-phone").value.trim();
-      const button = $("confirm-booking-btn");
-
-      if (!name || !phone) return alert("Please enter your name and phone number.");
-      if (!selectedService) return;
-
-      button.disabled = true;
-      button.textContent = "Submitting...";
-
-      try {
-        const grossAmount = selectedService.price;
-        const netEarnings = grossAmount * 0.90;
-
-        const { error } = await supabase.from("orders").insert([{
-          vendor_id: selectedService.vendorId,
-          gross_amount: grossAmount,
-          vendor_net_earnings: netEarnings,
-          status: "PENDING",
-          customer_name: name,
-          customer_phone: phone
-        }]);
-
-        if (error) throw error;
-
-        alert(`Booking request sent for ${name}! ${vendorData.name} has received your appointment.`);
-        $("booking-modal").style.display = "none";
-        $("customer-name").value = "";
-        $("customer-phone").value = "";
-
-      } catch (error) {
-        alert("Booking failed: " + error.message);
-      } finally {
-        button.disabled = false;
-        button.textContent = "Confirm Booking";
-      }
-    }
-
-    function init() {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-      // Event Bindings
-      $("close-modal-btn").addEventListener("click", () => $("booking-modal").style.display = "none");
-      $("confirm-booking-btn").addEventListener("click", confirmBooking);
-      $("close-lightbox").addEventListener("click", () => $("lightbox-modal").style.display = "none");
-      $("lightbox-modal").addEventListener("click", (e) => {
-        if (e.target === $("lightbox-modal")) $("lightbox-modal").style.display = "none";
-      });
-
-      loadStorePage();
-    }
-
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", init, { once: true });
-    } else {
-      init();
-    }
-  })();
-  </script>
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot, { once:true });
+  } else {
+    boot();
+  }
+})();
+</script>
 </body>
 </html>
