@@ -14,65 +14,124 @@
     :root {
       --primary: #0f172a;
       --accent: #2563eb;
+      --accent-hover: #1d4ed8;
       --bg: #f8fafc;
       --surface: #ffffff;
       --text: #0f172a;
       --muted: #64748b;
       --border: #e2e8f0;
       --success: #16a34a;
-      --warning: #d97706;
+      --danger: #dc2626;
       --radius: 16px;
+      --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
     }
 
-    * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-    body { margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 60px; }
+    * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 80px; }
 
-    .top-bar { background: var(--surface); padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; sticky; top:0; z-index: 10; }
-    .brand { font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+    /* TOP BAR & SWITCHER */
+    .top-bar { background: var(--surface); padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 30; }
+    .brand { font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 6px; color: var(--primary); }
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+    .btn-top { background: #f1f5f9; border: 1px solid var(--border); color: var(--primary); padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+    .btn-top.primary { background: var(--accent); color: white; border-color: var(--accent); }
 
-    .container { max-width: 900px; margin: 0 auto; padding: 16px; }
+    .container { padding: 14px 12px; max-width: 850px; margin: 0 auto; }
 
-    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
-    .stat-card { background: var(--surface); border: 1px solid var(--border); padding: 16px; border-radius: var(--radius); }
-    .stat-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-    .stat-val { font-size: 22px; font-weight: 800; color: var(--primary); margin-top: 4px; }
+    /* VENDOR SWITCHER CARD */
+    .vendor-switch-card { background: var(--surface); padding: 12px 16px; border-radius: var(--radius); border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; box-shadow: var(--shadow-sm); }
+    .vendor-info { display: flex; align-items: center; gap: 10px; }
+    .vendor-avatar { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; background: #e2e8f0; }
+    .vendor-select { padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; font-weight: 700; background: #f8fafc; outline: none; }
 
-    .sub-card { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-    .sub-title { font-size: 13px; font-weight: 800; color: #1e40af; }
-    .sub-desc { font-size: 11px; color: #3b82f6; margin-top: 2px; }
+    /* PROFILE PICTURE BANNER */
+    .profile-banner-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
 
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
-    .card-title { font-size: 15px; font-weight: 800; margin: 0 0 12px 0; display: flex; justify-content: space-between; align-items: center; }
+    /* SUBSCRIPTION BANNER */
+    .sub-card { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius); padding: 12px 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+    .sub-title { font-size: 12px; font-weight: 800; color: #1e40af; }
+    .sub-desc { font-size: 10px; color: #3b82f6; margin-top: 2px; }
 
-    .order-item { border: 1px solid var(--border); padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; background: #fafafa; }
-    .order-user { font-size: 13px; font-weight: 800; color: var(--primary); }
-    .order-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .badge { font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; }
+    /* STATS GRID */
+    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); padding: 14px; border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+    .stat-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .stat-val { font-size: 20px; font-weight: 800; color: var(--primary); margin-top: 2px; }
+
+    /* TAB NAVIGATION */
+    .tabs-nav { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none; }
+    .tabs-nav::-webkit-scrollbar { display: none; }
+    .tab-btn { background: var(--surface); border: 1px solid var(--border); padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+    .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    /* TAB PANELS */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 14px; box-shadow: var(--shadow-sm); }
+    .card-title { font-size: 14px; font-weight: 800; margin: 0 0 10px 0; display: flex; justify-content: space-between; align-items: center; color: var(--primary); }
+
+    .order-item { border: 1px solid var(--border); padding: 10px; border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; background: #fafafa; }
+    .badge { font-size: 9px; font-weight: 800; padding: 3px 6px; border-radius: 5px; text-transform: uppercase; }
     .badge-pending { background: #fef3c7; color: #b45309; }
     .badge-completed { background: #dcfce7; color: #15803d; }
 
-    .btn { background: var(--accent); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+    .form-field { margin-bottom: 10px; }
+    .form-field label { display: block; font-size: 10px; font-weight: 700; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; }
+    .form-field input, .form-field select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; outline: none; }
+
+    .btn { background: var(--accent); color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; }
     .btn-success { background: var(--success); }
+    .btn-danger { background: var(--danger); }
   </style>
 </head>
 <body>
 
+  <!-- TOP BAR -->
   <div class="top-bar">
     <div class="brand">
-      <i class="ph ph-storefront" style="font-size:22px; color:var(--accent);"></i> Partner Portal
+      <i class="ph ph-storefront" style="font-size:20px; color:var(--accent);"></i> Partner Portal
     </div>
-    <span class="badge badge-completed">100% Direct Payout</span>
+    <div class="top-actions">
+      <a href="index.html" class="btn-top"><i class="ph ph-globe"></i> Marketplace</a>
+    </div>
   </div>
 
   <div class="container">
-    
+
+    <!-- VENDOR SWITCHER BAR -->
+    <div class="vendor-switch-card">
+      <div class="vendor-info">
+        <img id="vendor-avatar-preview" src="" class="vendor-avatar" alt="Logo">
+        <div>
+          <select id="vendor-selector" class="vendor-select" onchange="switchActiveVendor(this.value)">
+            <option value="">Loading businesses...</option>
+          </select>
+          <div style="font-size: 10px; color: var(--muted); margin-top: 2px;" id="vendor-category-label">Select Business</div>
+        </div>
+      </div>
+      <button class="btn-top primary" onclick="alert('To add a new business, please contact support.')"><i class="ph ph-plus"></i> Add Business</button>
+    </div>
+
     <!-- SUBSCRIPTION STATUS BANNER -->
     <div class="sub-card">
       <div>
-        <div class="sub-title"><i class="ph ph-check-circle"></i> Subscription Active (R299/month)</div>
-        <div class="sub-desc">You keep 100% of all booking revenues. Next billing date: 1st of next month.</div>
+        <div class="sub-title"><i class="ph ph-check-circle"></i> R299/Month Subscription Active</div>
+        <div class="sub-desc">You keep 100% of all customer booking payments directly.</div>
       </div>
-      <button class="btn" onclick="alert('Subscription is active and up to date!')">Status</button>
+      <button class="btn" onclick="alert('Subscription is active and fully paid.')" style="background: white; color: var(--accent); border: 1px solid #bfdbfe;">Status</button>
+    </div>
+
+    <!-- STORE PROFILE PICTURE CARD -->
+    <div class="profile-banner-card">
+      <div>
+        <div style="font-size: 13px; font-weight: 800; color: var(--primary);">Store Hero Banner & Logo</div>
+        <div style="font-size: 11px; color: var(--muted);">Shown on marketplace & storefront hero cards.</div>
+      </div>
+      <div>
+        <input type="file" id="store-img-file" accept="image/*" style="display:none;" onchange="uploadStorePhoto(this)">
+        <button class="btn-top" onclick="$('store-img-file').click()"><i class="ph ph-image"></i> Change Photo</button>
+      </div>
     </div>
 
     <!-- METRICS -->
@@ -87,41 +146,168 @@
       </div>
     </div>
 
-    <!-- LIVE APPOINTMENTS -->
-    <div class="card">
-      <div class="card-title">
-        <span>Live Appointments</span>
-        <i class="ph ph-calendar" style="color:var(--muted);"></i>
+    <!-- NAVIGATION TABS -->
+    <div class="tabs-nav">
+      <button class="tab-btn active" onclick="switchTab('bookings')">Bookings</button>
+      <button class="tab-btn" onclick="switchTab('services')">Services & Menu</button>
+      <button class="tab-btn" onclick="switchTab('settlement')">Settlement</button>
+      <button class="tab-btn" onclick="switchTab('money')">Money Store</button>
+    </div>
+
+    <!-- TAB 1: BOOKINGS -->
+    <div id="panel-bookings" class="tab-panel active">
+      <div class="card">
+        <div class="card-title">
+          <span>Live Appointments</span>
+          <i class="ph ph-calendar" style="color:var(--muted);"></i>
+        </div>
+        <div id="orders-list">Loading appointments...</div>
       </div>
-      <div id="orders-list">Loading appointments...</div>
+    </div>
+
+    <!-- TAB 2: SERVICES & MENU -->
+    <div id="panel-services" class="tab-panel">
+      <div class="card">
+        <div class="card-title">
+          <span>Add Service / Menu Item</span>
+          <i class="ph ph-plus-circle" style="color:var(--accent);"></i>
+        </div>
+        <div class="form-field">
+          <label>Service Title</label>
+          <input type="text" id="srv-title" placeholder="e.g. High Fade & Beard Trim">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div class="form-field">
+            <label>Price (R)</label>
+            <input type="number" id="srv-price" placeholder="150">
+          </div>
+          <div class="form-field">
+            <label>Sale Price (Optional)</label>
+            <input type="number" id="srv-sale-price" placeholder="120">
+          </div>
+        </div>
+        <div class="form-field">
+          <label>Service Photo / Image URL</label>
+          <input type="url" id="srv-image-url" placeholder="https://images.unsplash.com/photo-...">
+        </div>
+        <button class="btn" onclick="createServiceItem()" style="width:100%; padding: 10px;">Publish Service Item</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span>Active Store Menu</span></div>
+        <div id="services-list">Loading services...</div>
+      </div>
+    </div>
+
+    <!-- TAB 3: SETTLEMENT -->
+    <div id="panel-settlement" class="tab-panel">
+      <div class="card">
+        <div class="card-title"><span>Direct Payout Settlement</span></div>
+        <p style="font-size: 12px; color: var(--muted); line-height: 1.4;">
+          All customer payments (EFT or Cash) route <strong>100% directly to your business account</strong>. You do not need to request payout withdrawals from the platform because you receive funds immediately at the point of payment.
+        </p>
+      </div>
+    </div>
+
+    <!-- TAB 4: MONEY STORE -->
+    <div id="panel-money" class="tab-panel">
+      <div class="card">
+        <div class="card-title"><span>Money Store & Ledger</span></div>
+        <div style="background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid var(--border);">
+          <div style="font-size: 11px; font-weight: 700; color: var(--muted);">Current Balance Wallet</div>
+          <div style="font-size: 24px; font-weight: 800; color: var(--primary); margin: 4px 0;" id="wallet-balance">R0.00</div>
+          <div style="font-size: 11px; color: var(--success); font-weight: 700;"><i class="ph ph-check-circle"></i> 100% Payout Retention Active</div>
+        </div>
+      </div>
     </div>
 
   </div>
 
   <script>
+  (() => {
+    "use strict";
+
     const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
     const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    async function loadPartnerData() {
+    let currentVendorId = null;
+    let allVendors = [];
+
+    const $ = id => document.getElementById(id);
+
+    window.switchTab = function(tabName) {
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      
+      $("panel-" + tabName).classList.add("active");
+      event.currentTarget.classList.add("active");
+    };
+
+    async function initPartnerPortal() {
       try {
-        const { data: orders, error } = await supabase
-          .from("orders")
+        const { data: vendors, error } = await supabase
+          .from("vendors")
           .select("*")
           .order("created_at", { ascending: false });
 
         if (error) throw error;
+        allVendors = vendors || [];
 
-        let totalRev = 0;
-        let completedCount = 0;
-        const list = document.getElementById("orders-list");
-        list.innerHTML = "";
+        const selector = $("vendor-selector");
+        selector.innerHTML = "";
 
-        if (!orders || orders.length === 0) {
-          list.innerHTML = '<div style="font-size:12px; color:var(--muted); text-align:center; padding:16px;">No appointments logged yet.</div>';
+        if (allVendors.length === 0) {
+          selector.innerHTML = '<option value="">No businesses found</option>';
           return;
         }
 
+        allVendors.forEach(v => {
+          const opt = document.createElement("option");
+          opt.value = v.id;
+          opt.textContent = `${v.name} (${v.category || 'SPOT'})`;
+          selector.appendChild(opt);
+        });
+
+        currentVendorId = allVendors[0].id;
+        selector.value = currentVendorId;
+
+        loadActiveVendorData();
+
+      } catch (err) {
+        console.error("Init error:", err);
+      }
+    }
+
+    window.switchActiveVendor = function(id) {
+      currentVendorId = id;
+      loadActiveVendorData();
+    };
+
+    async function loadActiveVendorData() {
+      if (!currentVendorId) return;
+
+      const vendor = allVendors.find(v => v.id === currentVendorId);
+      if (vendor) {
+        $("vendor-avatar-preview").src = vendor.store_image_url || "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=200&q=80";
+        $("vendor-category-label").textContent = vendor.category || 'BUSINESS';
+      }
+
+      // Load Orders for this vendor
+      const { data: orders } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("vendor_id", currentVendorId)
+        .order("created_at", { ascending: false });
+
+      let totalRev = 0;
+      let completedCount = 0;
+      const list = $("orders-list");
+      list.innerHTML = "";
+
+      if (!orders || orders.length === 0) {
+        list.innerHTML = '<div style="font-size:12px; color:var(--muted); text-align:center; padding:16px;">No bookings for this business yet.</div>';
+      } else {
         orders.forEach(o => {
           if (o.status === "COMPLETED") {
             totalRev += Number(o.gross_amount || 0);
@@ -132,8 +318,8 @@
           item.className = "order-item";
           item.innerHTML = `
             <div>
-              <div class="order-user">${o.customer_name || 'Customer'} (${o.customer_phone || 'N/A'})</div>
-              <div class="order-meta">${new Date(o.created_at).toLocaleString()} • Method: ${o.payment_method || 'EFT'}</div>
+              <div style="font-size:13px; font-weight:800; color:var(--primary);">${o.customer_name || 'Customer'} (${o.customer_phone || 'N/A'})</div>
+              <div style="font-size:11px; color:var(--muted); margin-top:2px;">${new Date(o.created_at).toLocaleString()} • ${o.payment_method || 'EFT'}</div>
               <span class="badge ${o.status === 'COMPLETED' ? 'badge-completed' : 'badge-pending'}" style="margin-top:4px; display:inline-block;">${o.status}</span>
             </div>
             <div style="text-align:right;">
@@ -143,26 +329,112 @@
           `;
           list.appendChild(item);
         });
-
-        document.getElementById("total-revenue").textContent = `R${totalRev.toFixed(2)}`;
-        document.getElementById("completed-count").textContent = completedCount;
-
-      } catch (err) {
-        console.error("Error loading partner portal:", err);
       }
+
+      $("total-revenue").textContent = `R${totalRev.toFixed(2)}`;
+      $("completed-count").textContent = completedCount;
+      $("wallet-balance").textContent = `R${totalRev.toFixed(2)}`;
+
+      // Load Services Menu
+      loadVendorServices();
     }
 
-    async function completeOrder(orderId) {
+    async function loadVendorServices() {
+      const { data: services } = await supabase
+        .from("service_items")
+        .select("*")
+        .eq("vendor_id", currentVendorId)
+        .order("created_at", { ascending: false });
+
+      const sList = $("services-list");
+      sList.innerHTML = "";
+
+      if (!services || services.length === 0) {
+        sList.innerHTML = '<div style="font-size:12px; color:var(--muted); text-align:center; padding:12px;">No services added yet.</div>';
+        return;
+      }
+
+      services.forEach(s => {
+        const row = document.createElement("div");
+        row.className = "order-item";
+        row.innerHTML = `
+          <div>
+            <div style="font-size:13px; font-weight:800; color:var(--primary);">${s.title}</div>
+            <div style="font-size:11px; color:var(--muted);">Price: R${Number(s.price).toFixed(2)} ${s.sale_price ? `(Sale: R${Number(s.sale_price).toFixed(2)})` : ''}</div>
+          </div>
+          <button class="btn btn-danger" onclick="deleteService('${s.id}')">Delete</button>
+        `;
+        sList.appendChild(row);
+      });
+    }
+
+    window.completeOrder = async function(orderId) {
       const { error } = await supabase
         .from("orders")
         .update({ status: "COMPLETED", payment_status: "PAID" })
         .eq("id", orderId);
 
-      if (error) alert("Error completing booking: " + error.message);
-      else loadPartnerData();
-    }
+      if (error) alert("Error completing order: " + error.message);
+      else loadActiveVendorData();
+    };
 
-    document.addEventListener("DOMContentLoaded", loadPartnerData);
+    window.createServiceItem = async function() {
+      const title = $("srv-title").value.trim();
+      const price = Number($("srv-price").value);
+      const salePrice = $("srv-sale-price").value ? Number($("srv-sale-price").value) : null;
+      const imageUrl = $("srv-image-url").value.trim();
+
+      if (!title || !price) return alert("Please provide a service title and price.");
+
+      const { error } = await supabase.from("service_items").insert([{
+        vendor_id: currentVendorId,
+        title,
+        price,
+        sale_price: salePrice,
+        image_url: imageUrl || null
+      }]);
+
+      if (error) alert("Error adding service: " + error.message);
+      else {
+        $("srv-title").value = "";
+        $("srv-price").value = "";
+        $("srv-sale-price").value = "";
+        $("srv-image-url").value = "";
+        loadVendorServices();
+        alert("Service added successfully!");
+      }
+    };
+
+    window.deleteService = async function(srvId) {
+      if (!confirm("Are you sure you want to delete this service?")) return;
+      const { error } = await supabase.from("service_items").delete().eq("id", srvId);
+      if (error) alert("Error deleting service: " + error.message);
+      else loadVendorServices();
+    };
+
+    window.uploadStorePhoto = async function(input) {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      const reader = new FileReader();
+
+      reader.onload = async function(e) {
+        const base64Img = e.target.result;
+        const { error } = await supabase
+          .from("vendors")
+          .update({ store_image_url: base64Img })
+          .eq("id", currentVendorId);
+
+        if (error) alert("Error updating banner: " + error.message);
+        else {
+          alert("Store banner updated successfully!");
+          loadActiveVendorData();
+        }
+      };
+      reader.readAsDataURL(file);
+    };
+
+    document.addEventListener("DOMContentLoaded", initPartnerPortal);
+  })();
   </script>
 </body>
 </html>
