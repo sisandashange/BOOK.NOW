@@ -221,14 +221,14 @@
       try {
         const { data: vendor, error: vendorErr } = await supabase
           .from("vendors")
-          .select("id, name, category, created_at")
+          .select("id, name, category, store_image_url, created_at")
           .eq("id", vendorId)
           .single();
 
         if (vendorErr || !vendor) throw new Error("Store details not found.");
         vendorData = vendor;
 
-        const heroCover = FALLBACK_IMAGES[vendor.category] || FALLBACK_IMAGES.DEFAULT;
+        const heroCover = vendor.store_image_url || FALLBACK_IMAGES[vendor.category] || FALLBACK_IMAGES.DEFAULT;
         $("store-hero-box").innerHTML = `
           <img src="${heroCover}" class="hero-banner" alt="${vendor.name}">
           <div class="hero-content">
@@ -272,7 +272,6 @@
 
           const defaultImg = photos.length > 0 ? photos[0] : (FALLBACK_IMAGES[vendor.category] || FALLBACK_IMAGES.DEFAULT);
 
-          // PROMOTIONAL SALE CHECK
           const hasValidSalePrice = s.sale_price !== null && s.sale_price !== undefined && Number(s.sale_price) > 0 && Number(s.sale_price) < Number(s.price);
           const isAfterStart = !s.sale_start_date || s.sale_start_date <= todayStr;
           const isBeforeEnd = !s.sale_end_date || s.sale_end_date >= todayStr;
@@ -283,7 +282,6 @@
           const card = document.createElement("div");
           card.className = "menu-card";
 
-          // SALE TAG IF ACTIVE
           if (isOnSale) {
             const saleTag = document.createElement("div");
             saleTag.className = "sale-tag";
@@ -291,7 +289,6 @@
             card.appendChild(saleTag);
           }
 
-          // COVER IMAGE BOX WITH CLICK TO ZOOM
           const imgWrapper = document.createElement("div");
           imgWrapper.className = "menu-img-wrapper";
           
@@ -309,7 +306,6 @@
 
           card.appendChild(imgWrapper);
 
-          // THUMBNAIL STRIP (If multiple photos exist)
           if (photos.length > 1) {
             const strip = document.createElement("div");
             strip.className = "thumb-strip";
@@ -333,7 +329,6 @@
             card.appendChild(strip);
           }
 
-          // MENU CARD CONTENT
           const body = document.createElement("div");
           body.className = "menu-body";
 
@@ -443,7 +438,6 @@
     function init() {
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-      // Event Bindings
       $("close-modal-btn").addEventListener("click", () => $("booking-modal").style.display = "none");
       $("confirm-booking-btn").addEventListener("click", confirmBooking);
       $("close-lightbox").addEventListener("click", () => $("lightbox-modal").style.display = "none");
