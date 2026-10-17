@@ -68,13 +68,13 @@
     /* 2-COLUMN STORE GRID */
     .store-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
     @media (max-width: 580px) {
-      .store-grid { grid-template-columns: 1fr; } /* Fallback to 1 column on very small phones */
+      .store-grid { grid-template-columns: 1fr; }
     }
 
     .store-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; padding: 16px; text-align: center; }
     .store-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
 
-    /* CLEAN CIRCULAR STORE PHOTO */
+    /* CIRCULAR STORE AVATAR */
     .store-avatar-container { display: flex; justify-content: center; margin-bottom: 12px; }
     .store-avatar { width: 75px; height: 75px; border-radius: 50%; object-fit: cover; border: 3px solid #f1f5f9; box-shadow: 0 4px 12px rgba(0,0,0,0.08); background: #e2e8f0; }
 
@@ -86,26 +86,8 @@
     .store-meta { display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); margin-bottom: 14px; }
     .store-rating { display: inline-flex; align-items: center; gap: 3px; font-weight: 700; color: #d97706; }
 
-    .btn-visit { width: 100%; background: #f1f5f9; color: var(--primary); border: 1px solid var(--border); padding: 9px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-visit { width: 100%; background: #f1f5f9; color: var(--primary); border: 1px solid var(--border); padding: 9px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; }
     .btn-visit:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
-
-    /* STORE MENU MODAL */
-    .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: flex-end; z-index: 100; }
-    .modal-sheet { background: #fff; width: 100%; max-width: 620px; padding: 24px; border-radius: 24px 24px 0 0; max-height: 85vh; overflow-y: auto; box-shadow: 0 -10px 30px rgba(0,0,0,0.15); }
-
-    .sheet-cover { width: 100%; height: 140px; object-fit: cover; border-radius: 16px; margin-bottom: 14px; }
-    .service-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
-    .service-row:last-child { border-bottom: none; }
-    .service-info { font-size: 14px; font-weight: 700; color: var(--primary); }
-    .service-duration { font-size: 11px; color: var(--muted); margin-top: 2px; }
-
-    .service-price-book { display: flex; align-items: center; gap: 12px; }
-    .service-price { font-weight: 800; color: var(--primary); font-size: 15px; }
-    .btn-book { background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; }
-
-    .form-field { margin-bottom: 14px; }
-    .form-field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; }
-    .form-field input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); font-size: 14px; outline: none; }
 
     .empty-box { text-align: center; padding: 40px 16px; background: var(--surface); border-radius: 16px; border: 1px dashed var(--border); color: var(--muted); font-size: 14px; grid-column: 1 / -1; }
   </style>
@@ -149,41 +131,6 @@
     </div>
   </div>
 
-  <!-- STORE DETAIL / MENU MODAL -->
-  <div id="store-modal" class="modal">
-    <div class="modal-sheet">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <h3 id="store-modal-name" style="margin:0; font-size:20px; font-weight:800;">Business Name</h3>
-        <i class="ph ph-x-circle" id="close-store-modal" style="font-size:26px; color:var(--muted); cursor:pointer;"></i>
-      </div>
-      <img id="store-modal-img" src="" alt="Cover" class="sheet-cover">
-      <div style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:10px;">Services & Menu</div>
-      <div id="store-modal-services"></div>
-    </div>
-  </div>
-
-  <!-- BOOKING FORM MODAL -->
-  <div id="booking-modal" class="modal">
-    <div class="modal-sheet">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-        <div>
-          <span style="font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase;">Complete Appointment</span>
-          <h3 id="booking-modal-title" style="margin:2px 0 0 0; font-size:18px; font-weight:800;">Service Title</h3>
-        </div>
-        <i class="ph ph-x-circle" id="close-booking-modal" style="font-size:26px; color:var(--muted); cursor:pointer;"></i>
-      </div>
-      <div class="form-field">
-        <label for="customer-name">Your Full Name</label>
-        <input type="text" id="customer-name" placeholder="e.g. Sipho Dlamini">
-      </div>
-      <div class="form-field">
-        <label for="customer-phone">Phone Number (WhatsApp)</label>
-        <input type="tel" id="customer-phone" placeholder="e.g. 082 123 4567">
-      </div>
-      <button class="btn-book" id="confirm-booking-btn" style="width:100%; padding:14px; font-size:14px; margin-top:8px;">Confirm Booking</button>
-    </div>
-  </div>
-
   <script>
   (() => {
     "use strict";
@@ -193,7 +140,6 @@
     
     let supabase = null;
     let allVendors = [];
-    let selectedService = null;
     let booted = false;
 
     const FALLBACK_IMAGES = {
@@ -206,16 +152,12 @@
     const $ = id => document.getElementById(id);
 
     function bindEvents() {
-      $("close-store-modal").addEventListener("click", () => $("store-modal").style.display = "none");
-      $("close-booking-modal").addEventListener("click", () => $("booking-modal").style.display = "none");
-
       $("filter-all").addEventListener("click", (e) => filterCategory("ALL", e.currentTarget));
       $("filter-barber").addEventListener("click", (e) => filterCategory("BARBER", e.currentTarget));
       $("filter-salon").addEventListener("click", (e) => filterCategory("SALON", e.currentTarget));
       $("filter-shisanyama").addEventListener("click", (e) => filterCategory("SHISANYAMA", e.currentTarget));
 
       $("search-input").addEventListener("input", handleSearch);
-      $("confirm-booking-btn").addEventListener("click", confirmBooking);
     }
 
     async function loadMarketplace() {
@@ -316,70 +258,16 @@
 
         topContent.append(title, category, meta);
 
-        const visitBtn = document.createElement("button");
+        // VISIT STORE BUTTON — DIRECT NAVIGATION TO store.html?id=VENDOR_ID
+        const visitBtn = document.createElement("a");
         visitBtn.className = "btn-visit";
+        visitBtn.href = `store.html?id=${v.id}`;
         visitBtn.innerHTML = `<i class="ph ph-storefront"></i> Visit Store`;
-        visitBtn.addEventListener("click", () => openStoreModal(v));
 
         body.append(topContent, visitBtn);
         card.append(avatarContainer, body);
         container.appendChild(card);
       });
-    }
-
-    function openStoreModal(vendor) {
-      $("store-modal-name").textContent = vendor.name;
-      $("store-modal-img").src = FALLBACK_IMAGES[vendor.category] || FALLBACK_IMAGES.DEFAULT;
-
-      const servicesContainer = $("store-modal-services");
-      servicesContainer.replaceChildren();
-
-      if (vendor.service_items && vendor.service_items.length > 0) {
-        vendor.service_items.forEach(s => {
-          const row = document.createElement("div");
-          row.className = "service-row";
-
-          const details = document.createElement("div");
-          const info = document.createElement("div");
-          info.className = "service-info";
-          info.textContent = s.title;
-
-          const duration = document.createElement("div");
-          duration.className = "service-duration";
-          duration.textContent = "⏱️ ~30 mins";
-
-          details.append(info, duration);
-
-          const right = document.createElement("div");
-          right.className = "service-price-book";
-
-          const price = document.createElement("span");
-          price.className = "service-price";
-          price.textContent = `R${Number(s.price).toFixed(2)}`;
-
-          const bookBtn = document.createElement("button");
-          bookBtn.className = "btn-book";
-          bookBtn.textContent = "Book";
-          bookBtn.addEventListener("click", () => {
-            $("store-modal").style.display = "none";
-            openBookingModal(vendor.id, s.id, s.title, s.price);
-          });
-
-          right.append(price, bookBtn);
-          row.append(details, right);
-          servicesContainer.appendChild(row);
-        });
-      } else {
-        servicesContainer.innerHTML = '<div style="font-size:13px; color:var(--muted); padding:16px 0;">No services published by this vendor yet.</div>';
-      }
-
-      $("store-modal").style.display = "flex";
-    }
-
-    function openBookingModal(vendorId, serviceId, title, price) {
-      selectedService = { vendorId, serviceId, title, price };
-      $("booking-modal-title").textContent = `${title} (R${price.toFixed(2)})`;
-      $("booking-modal").style.display = "flex";
     }
 
     function handleSearch(e) {
@@ -408,47 +296,6 @@
       } else {
         const filtered = allVendors.filter(v => v.category === cat);
         renderStores(filtered);
-      }
-    }
-
-    async function confirmBooking() {
-      const name = $("customer-name").value.trim();
-      const phone = $("customer-phone").value.trim();
-      const button = $("confirm-booking-btn");
-
-      if (!name || !phone) return alert("Please enter your name and phone number.");
-      if (!selectedService) return;
-
-      button.disabled = true;
-      button.textContent = "Submitting...";
-
-      try {
-        const grossAmount = selectedService.price;
-        const netEarnings = grossAmount * 0.90;
-
-        const { error } = await supabase.from("orders").insert([{
-          vendor_id: selectedService.vendorId,
-          gross_amount: grossAmount,
-          vendor_net_earnings: netEarnings,
-          status: "PENDING",
-          customer_name: name,
-          customer_phone: phone
-        }]);
-
-        if (error) throw error;
-
-        alert(`Booking request sent for ${name}! The shop has received your appointment.`);
-        $("booking-modal").style.display = "none";
-        $("customer-name").value = "";
-        $("customer-phone").value = "";
-        selectedService = null;
-
-      } catch (error) {
-        console.error("Booking error:", error);
-        alert("Could not submit booking: " + error.message);
-      } finally {
-        button.disabled = false;
-        button.textContent = "Confirm Booking";
       }
     }
 
