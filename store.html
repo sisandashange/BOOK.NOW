@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Store Front — BOOK.NOW</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --primary: #0f172a;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --success: #16a34a;
+      --radius: 20px;
+      --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
+      --shadow-md: 0 10px 30px -5px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 80px; }
+
+    /* TOP NAVIGATION */
+    .top-nav { 
+      background: rgba(255, 255, 255, 0.95); 
+      backdrop-filter: blur(12px);
+      padding: 14px 20px; 
+      border-bottom: 1px solid var(--border); 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      position: sticky; 
+      top: 0; 
+      z-index: 30; 
+    }
+    .back-btn { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--primary); font-size: 13px; font-weight: 700; background: #f1f5f9; padding: 8px 14px; border-radius: 10px; }
+    .brand { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; color: var(--primary); letter-spacing: -0.5px; }
+
+    .container { padding: 20px 16px; max-width: 680px; margin: 0 auto; }
+
+    /* STORE HERO CARD */
+    .store-hero { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm); margin-bottom: 24px; }
+    .hero-banner { width: 100%; height: 200px; object-fit: cover; background: #e2e8f0; display: block; }
+    .hero-content { padding: 20px; }
+    .store-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .store-title { font-size: 22px; font-weight: 800; margin: 0; color: var(--primary); letter-spacing: -0.5px; }
+    .store-badge { font-size: 10px; font-weight: 800; background: #f1f5f9; color: var(--muted); padding: 4px 10px; border-radius: 6px; text-transform: uppercase; }
+    
+    .store-meta-list { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+    .meta-item { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
+    .rating-item { color: #d97706; font-weight: 700; }
+
+    /* MENU SECTION */
+    .section-title { font-size: 16px; font-weight: 800; margin: 0 0 14px 0; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+    
+    .menu-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 8px 20px; box-shadow: var(--shadow-sm); }
+    .service-item { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid #f1f5f9; }
+    .service-item:last-child { border-bottom: none; }
+    
+    .service-details { display: flex; flex-direction: column; gap: 3px; }
+    .service-title { font-size: 15px; font-weight: 700; color: var(--primary); }
+    .service-duration { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+
+    .service-action { display: flex; align-items: center; gap: 14px; }
+    .service-price { font-size: 16px; font-weight: 800; color: var(--primary); }
+    .btn-book { background: var(--accent); color: white; border: none; padding: 9px 18px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+    .btn-book:hover { background: var(--accent-hover); }
+
+    /* BOOKING MODAL SHEET */
+    .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: flex-end; z-index: 100; }
+    .modal-sheet { background: #fff; width: 100%; max-width: 600px; padding: 24px; border-radius: 24px 24px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.15); }
+    .form-field { margin-bottom: 14px; }
+    .form-field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; }
+    .form-field input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); font-size: 14px; outline: none; }
+
+    .empty-box { text-align: center; padding: 40px 16px; background: var(--surface); border-radius: 16px; border: 1px dashed var(--border); color: var(--muted); font-size: 14px; }
+  </style>
+</head>
+<body>
+
+  <!-- TOP NAV -->
+  <div class="top-nav">
+    <a href="index.html" class="back-btn"><i class="ph ph-arrow-left"></i> All Spots</a>
+    <div class="brand">
+      <i class="ph ph-calendar-check" style="font-size:22px; color: var(--accent);"></i>
+      BOOK.NOW
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- STORE HEADER -->
+    <div id="store-hero-box" class="store-hero">
+      <div class="empty-box">Loading store...</div>
+    </div>
+
+    <!-- SERVICES MENU -->
+    <div class="section-title">
+      <i class="ph ph-list-checks" style="color:var(--accent);"></i> Services & Menu
+    </div>
+    
+    <div id="services-menu-box" class="menu-card">
+      <div class="empty-box">Loading menu...</div>
+    </div>
+  </div>
+
+  <!-- BOOKING FORM MODAL -->
+  <div id="booking-modal" class="modal">
+    <div class="modal-sheet">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <div>
+          <span style="font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase;">Instant Booking</span>
+          <h3 id="modal-service-title" style="margin:2px 0 0 0; font-size:18px; font-weight:800;">Service</h3>
+        </div>
+        <i class="ph ph-x-circle" id="close-modal-btn" style="font-size:26px; color:var(--muted); cursor:pointer;"></i>
+      </div>
+      <div class="form-field">
+        <label for="customer-name">Your Full Name</label>
+        <input type="text" id="customer-name" placeholder="e.g. Sipho Dlamini">
+      </div>
+      <div class="form-field">
+        <label for="customer-phone">Phone Number (WhatsApp)</label>
+        <input type="tel" id="customer-phone" placeholder="e.g. 082 123 4567">
+      </div>
+      <button class="btn-book" id="confirm-booking-btn" style="width:100%; padding:14px; font-size:14px; margin-top:8px;">Confirm Appointment</button>
+    </div>
+  </div>
+
+  <script>
+  (() => {
+    "use strict";
+
+    const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
+
+    let supabase = null;
+    let selectedService = null;
+    let vendorData = null;
+
+    const FALLBACK_IMAGES = {
+      BARBER: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80",
+      SALON: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80",
+      SHISANYAMA: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80",
+      DEFAULT: "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=800&q=80"
+    };
+
+    const $ = id => document.getElementById(id);
+
+    // Get vendor ID from URL parameters (e.g., store.html?id=123)
+    function getVendorId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("id");
+    }
+
+    async function loadStorePage() {
+      const vendorId = getVendorId();
+      if (!vendorId) {
+        $("store-hero-box").innerHTML = '<div class="empty-box">No store selected. <a href="index.html">Return to Marketplace</a></div>';
+        $("services-menu-box").style.display = "none";
+        return;
+      }
+
+      try {
+        // Fetch Store Details
+        const { data: vendor, error: vendorErr } = await supabase
+          .from("vendors")
+          .select("id, name, category, created_at")
+          .eq("id", vendorId)
+          .single();
+
+        if (vendorErr || !vendor) throw new Error("Store not found.");
+        vendorData = vendor;
+
+        // Render Hero Header
+        const heroCover = FALLBACK_IMAGES[vendor.category] || FALLBACK_IMAGES.DEFAULT;
+        $("store-hero-box").innerHTML = `
+          <img src="${heroCover}" class="hero-banner" alt="${vendor.name}">
+          <div class="hero-content">
+            <div class="store-title-row">
+              <h1 class="store-title">${vendor.name}</h1>
+              <span class="store-badge">${vendor.category || 'SPOT'}</span>
+            </div>
+            <div class="store-meta-list">
+              <span class="meta-item rating-item"><i class="ph-fill ph-star"></i> 5.0 (24 reviews)</span>
+              <span class="meta-item"><i class="ph ph-map-pin"></i> Verified Location</span>
+              <span class="meta-item"><i class="ph ph-check-circle" style="color:var(--success);"></i> Open for Booking</span>
+            </div>
+          </div>
+        `;
+
+        // Fetch Store Services
+        const { data: services, error: serviceErr } = await supabase
+          .from("service_items")
+          .select("*")
+          .eq("vendor_id", vendorId)
+          .order("created_at", { ascending: false });
+
+        if (serviceErr) throw serviceErr;
+
+        const menuBox = $("services-menu-box");
+        menuBox.replaceChildren();
+
+        if (!services || services.length === 0) {
+          menuBox.innerHTML = '<div class="empty-box">No services published by this vendor yet.</div>';
+          return;
+        }
+
+        services.forEach(s => {
+          const item = document.createElement("div");
+          item.className = "service-item";
+
+          const details = document.createElement("div");
+          details.className = "service-details";
+
+          const title = document.createElement("div");
+          title.className = "service-title";
+          title.textContent = s.title;
+
+          const duration = document.createElement("div");
+          duration.className = "service-duration";
+          duration.innerHTML = `<i class="ph ph-clock"></i> 30 mins`;
+
+          details.append(title, duration);
+
+          const action = document.createElement("div");
+          action.className = "service-action";
+
+          const price = document.createElement("div");
+          price.className = "service-price";
+          price.textContent = `R${Number(s.price).toFixed(2)}`;
+
+          const bookBtn = document.createElement("button");
+          bookBtn.className = "btn-book";
+          bookBtn.textContent = "Book";
+          bookBtn.addEventListener("click", () => openBookingModal(s.id, s.title, s.price));
+
+          action.append(price, bookBtn);
+          item.append(details, action);
+          menuBox.appendChild(item);
+        });
+
+      } catch (err) {
+        console.error("Store error:", err);
+        $("store-hero-box").innerHTML = `<div class="empty-box">Error loading store: ${err.message}</div>`;
+      }
+    }
+
+    function openBookingModal(serviceId, title, price) {
+      selectedService = { vendorId: vendorData.id, serviceId, title, price };
+      $("modal-service-title").textContent = `${title} (R${price.toFixed(2)})`;
+      $("booking-modal").style.display = "flex";
+    }
+
+    async function confirmBooking() {
+      const name = $("customer-name").value.trim();
+      const phone = $("customer-phone").value.trim();
+      const button = $("confirm-booking-btn");
+
+      if (!name || !phone) return alert("Please enter your name and phone number.");
+      if (!selectedService) return;
+
+      button.disabled = true;
+      button.textContent = "Submitting...";
+
+      try {
+        const grossAmount = selectedService.price;
+        const netEarnings = grossAmount * 0.90;
+
+        const { error } = await supabase.from("orders").insert([{
+          vendor_id: selectedService.vendorId,
+          gross_amount: grossAmount,
+          vendor_net_earnings: netEarnings,
+          status: "PENDING",
+          customer_name: name,
+          customer_phone: phone
+        }]);
+
+        if (error) throw error;
+
+        alert(`Booking request sent for ${name}! ${vendorData.name} has received your appointment.`);
+        $("booking-modal").style.display = "none";
+        $("customer-name").value = "";
+        $("customer-phone").value = "";
+
+      } catch (error) {
+        alert("Booking failed: " + error.message);
+      } finally {
+        button.disabled = false;
+        button.textContent = "Confirm Appointment";
+      }
+    }
+
+    function init() {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      $("close-modal-btn").addEventListener("click", () => $("booking-modal").style.display = "none");
+      $("confirm-booking-btn").addEventListener("click", confirmBooking);
+      loadStorePage();
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", init, { once: true });
+    } else {
+      init();
+    }
+  })();
+  </script>
+</body>
+</html>
