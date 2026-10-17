@@ -172,7 +172,7 @@
       try {
         const { data: vendors, error } = await supabase
           .from("vendors")
-          .select("id, name, category, created_at")
+          .select("id, name, category, store_image_url, created_at")
           .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -185,13 +185,13 @@
 
         const results = await Promise.all(
           vendors.map(async vendor => {
-            const { data: services, error: serviceError } =
+            const { data: services, error: serviceErr } =
               await supabase
                 .from("service_items")
                 .select("id, vendor_id, title, price")
                 .eq("vendor_id", vendor.id);
 
-            if (serviceError) throw serviceError;
+            if (serviceErr) throw serviceErr;
 
             return {
               ...vendor,
@@ -226,13 +226,12 @@
         const card = document.createElement("div");
         card.className = "store-card";
 
-        // Circular Avatar Container
         const avatarContainer = document.createElement("div");
         avatarContainer.className = "store-avatar-container";
 
         const img = document.createElement("img");
         img.className = "store-avatar";
-        img.src = FALLBACK_IMAGES[v.category] || FALLBACK_IMAGES.DEFAULT;
+        img.src = v.store_image_url || FALLBACK_IMAGES[v.category] || FALLBACK_IMAGES.DEFAULT;
         img.alt = v.name;
         avatarContainer.appendChild(img);
 
@@ -258,7 +257,6 @@
 
         topContent.append(title, category, meta);
 
-        // VISIT STORE BUTTON — DIRECT NAVIGATION TO store.html?id=VENDOR_ID
         const visitBtn = document.createElement("a");
         visitBtn.className = "btn-visit";
         visitBtn.href = `store.html?id=${v.id}`;
