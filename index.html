@@ -46,7 +46,7 @@
     .partner-link { font-size: 12px; font-weight: 700; color: #fff; text-decoration: none; background: var(--accent); padding: 8px 14px; border-radius: 10px; transition: background 0.2s; }
     .partner-link:hover { background: var(--accent-hover); }
 
-    .container { padding: 20px 16px; max-width: 680px; margin: 0 auto; }
+    .container { padding: 20px 16px; max-width: 850px; margin: 0 auto; }
 
     /* HERO & SEARCH */
     .hero { margin-bottom: 20px; }
@@ -65,22 +65,28 @@
     .filter-chip { background: var(--surface); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; color: var(--muted); transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
     .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 12px rgba(15,23,42,0.15); }
 
-    /* STORE CARDS GRID */
-    .store-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
-    .store-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s; }
+    /* 2-COLUMN STORE GRID */
+    .store-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    @media (max-width: 580px) {
+      .store-grid { grid-template-columns: 1fr; } /* Fallback to 1 column on very small phones */
+    }
+
+    .store-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; padding: 16px; text-align: center; }
     .store-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
 
-    .store-cover { width: 100%; height: 160px; object-fit: cover; background: #e2e8f0; display: block; }
-    .store-body { padding: 16px; }
+    /* CLEAN CIRCULAR STORE PHOTO */
+    .store-avatar-container { display: flex; justify-content: center; margin-bottom: 12px; }
+    .store-avatar { width: 75px; height: 75px; border-radius: 50%; object-fit: cover; border: 3px solid #f1f5f9; box-shadow: 0 4px 12px rgba(0,0,0,0.08); background: #e2e8f0; }
 
-    .store-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
-    .store-title { font-size: 18px; font-weight: 800; margin: 0; color: var(--primary); letter-spacing: -0.3px; }
-    .store-category { font-size: 10px; font-weight: 800; background: #f1f5f9; color: var(--muted); padding: 4px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .store-body { display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
 
-    .store-meta { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--muted); margin-bottom: 16px; }
-    .store-rating { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: #d97706; }
+    .store-title { font-size: 16px; font-weight: 800; margin: 0 0 4px 0; color: var(--primary); letter-spacing: -0.3px; }
+    .store-category { display: inline-block; font-size: 9px; font-weight: 800; background: #f1f5f9; color: var(--muted); padding: 3px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
 
-    .btn-visit { width: 100%; background: #f1f5f9; color: var(--primary); border: 1px solid var(--border); padding: 10px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .store-meta { display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); margin-bottom: 14px; }
+    .store-rating { display: inline-flex; align-items: center; gap: 3px; font-weight: 700; color: #d97706; }
+
+    .btn-visit { width: 100%; background: #f1f5f9; color: var(--primary); border: 1px solid var(--border); padding: 9px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
     .btn-visit:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
 
     /* STORE MENU MODAL */
@@ -101,7 +107,7 @@
     .form-field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; }
     .form-field input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); font-size: 14px; outline: none; }
 
-    .empty-box { text-align: center; padding: 40px 16px; background: var(--surface); border-radius: 16px; border: 1px dashed var(--border); color: var(--muted); font-size: 14px; }
+    .empty-box { text-align: center; padding: 40px 16px; background: var(--surface); border-radius: 16px; border: 1px dashed var(--border); color: var(--muted); font-size: 14px; grid-column: 1 / -1; }
   </style>
 </head>
 <body>
@@ -137,7 +143,7 @@
       <button class="filter-chip" id="filter-shisanyama"><i class="ph ph-fire"></i> Shisanyama</button>
     </div>
 
-    <!-- STORE GRID -->
+    <!-- STORE GRID (2 COLUMNS) -->
     <div id="store-grid" class="store-grid">
       <div class="empty-box">Loading available stores...</div>
     </div>
@@ -190,7 +196,6 @@
     let selectedService = null;
     let booted = false;
 
-    // High-resolution category imagery
     const FALLBACK_IMAGES = {
       BARBER: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80",
       SALON: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80",
@@ -223,7 +228,6 @@
       }
 
       try {
-        // Query existing columns safely
         const { data: vendors, error } = await supabase
           .from("vendors")
           .select("id, name, category, created_at")
@@ -280,17 +284,20 @@
         const card = document.createElement("div");
         card.className = "store-card";
 
+        // Circular Avatar Container
+        const avatarContainer = document.createElement("div");
+        avatarContainer.className = "store-avatar-container";
+
         const img = document.createElement("img");
-        img.className = "store-cover";
+        img.className = "store-avatar";
         img.src = FALLBACK_IMAGES[v.category] || FALLBACK_IMAGES.DEFAULT;
         img.alt = v.name;
+        avatarContainer.appendChild(img);
 
         const body = document.createElement("div");
         body.className = "store-body";
 
-        const header = document.createElement("div");
-        header.className = "store-header";
-
+        const topContent = document.createElement("div");
         const title = document.createElement("h3");
         title.className = "store-title";
         title.textContent = v.name || "Unnamed Business";
@@ -299,23 +306,23 @@
         category.className = "store-category";
         category.textContent = v.category || "SPOT";
 
-        header.append(title, category);
-
         const meta = document.createElement("div");
         meta.className = "store-meta";
         meta.innerHTML = `
           <span class="store-rating"><i class="ph-fill ph-star"></i> 5.0</span>
           <span>•</span>
-          <span>${v.service_items.length} Service${v.service_items.length === 1 ? '' : 's'} Available</span>
+          <span>${v.service_items.length} Svc</span>
         `;
+
+        topContent.append(title, category, meta);
 
         const visitBtn = document.createElement("button");
         visitBtn.className = "btn-visit";
         visitBtn.innerHTML = `<i class="ph ph-storefront"></i> Visit Store`;
         visitBtn.addEventListener("click", () => openStoreModal(v));
 
-        body.append(header, meta, visitBtn);
-        card.append(img, body);
+        body.append(topContent, visitBtn);
+        card.append(avatarContainer, body);
         container.appendChild(card);
       });
     }
