@@ -75,6 +75,13 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .ledger-section{margin-top:24px}
 .ledger-section h3{font-size:15px;margin:0 0 12px}
 .finance-disclaimer{background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:12px;border-radius:10px;font-size:12px;line-height:1.6;margin-bottom:16px}
+
+/* IMAGE PREVIEW STYLES */
+.image-preview-grid { display: flex; gap: 8px; margin-top: 8px; overflow-x: auto; padding-bottom: 4px; }
+.preview-thumb { width: 64px; height: 64px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); }
+.item-gallery { display: flex; gap: 6px; margin-top: 8px; }
+.item-thumb { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border); }
+
 @media(max-width:400px){.container{padding:12px}.top-nav{padding:12px}.brand{font-size:13px}.finance-card{padding:11px}.finance-value{font-size:17px}.tab-item{font-size:11px}}
 </style>
 </head>
@@ -123,13 +130,13 @@ button:disabled{opacity:.6;cursor:not-allowed}
     </section>
 
     <section id="services-tab" style="display:none">
-      <div class="section-head"><h3>Services &amp; Prices</h3><button class="btn-primary" id="open-add-service-btn" style="width:auto;padding:8px 12px"><i class="ph ph-plus"></i> Add Service</button></div>
+      <div class="section-head"><h3>Services &amp; Menu</h3><button class="btn-primary" id="open-add-service-btn" style="width:auto;padding:8px 12px"><i class="ph ph-plus"></i> Add Service</button></div>
       <div id="services-list" class="card-list"><div class="empty-box">No services added yet.</div></div>
     </section>
 
     <section id="settlement-tab" style="display:none">
       <div class="section-head"><h3>Settlement Overview</h3><button class="btn-action btn-confirm" id="refresh-settlement-btn">Refresh</button></div>
-      <div class="finance-disclaimer">These figures are based on recorded booking fields. They are not proof of payment or a bank transfer. This portal cannot create payouts or mark them as paid.</div>
+      <div class="finance-disclaimer">These figures are based on recorded booking fields. They are not proof of payment or a bank transfer.</div>
       <div class="finance-grid">
         <div class="finance-card"><div class="finance-label">Completed Booking Value</div><div class="finance-value" id="ledger-gross">R0.00</div><div class="finance-note">Gross value of completed bookings</div></div>
         <div class="finance-card"><div class="finance-label">Platform Commission</div><div class="finance-value" id="ledger-commission">R0.00</div><div class="finance-note">Recorded commission on completed bookings</div></div>
@@ -142,11 +149,21 @@ button:disabled{opacity:.6;cursor:not-allowed}
   </main>
 </div>
 
+<!-- MODAL: ADD SERVICE WITH PHOTO UPLOAD -->
 <div id="service-modal" class="modal">
   <div class="modal-sheet">
     <div class="section-head"><h3>Add Service Offering</h3><button class="btn-action btn-muted" id="close-service-modal" aria-label="Close">✕</button></div>
     <div class="form-field"><label for="service-title">Service Title</label><input type="text" id="service-title" placeholder="e.g. Fade Cut & Beard Trim" maxlength="150"></div>
     <div class="form-field"><label for="service-price">Price (ZAR)</label><input type="number" id="service-price" placeholder="e.g. 150" min="1" max="10000" step="0.01"></div>
+    
+    <!-- PHOTO UPLOAD INPUT (MAX 3 PHOTOS) -->
+    <div class="form-field">
+      <label for="service-photos">Menu Photos (Max 3)</label>
+      <input type="file" id="service-photos" accept="image/*" multiple>
+      <div style="font-size:11px; color:var(--muted); margin-top:4px;">Upload up to 3 photos for this service</div>
+      <div id="image-preview-container" class="image-preview-grid"></div>
+    </div>
+
     <button class="btn-primary" id="save-service-btn">Publish Service</button>
   </div>
 </div>
@@ -166,6 +183,8 @@ button:disabled{opacity:.6;cursor:not-allowed}
   const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
   const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
   let db = null, activeVendor = null, isSignUpMode = false, booted = false;
+  let selectedFiles = [];
+
   const $ = id => document.getElementById(id);
 
   function money(value) {
@@ -213,6 +232,27 @@ button:disabled{opacity:.6;cursor:not-allowed}
   }
 
   function bindButtons() {
+    // Handle File Selection with 3 File Limit
+    $("service-photos").addEventListener("change", (e) => {
+      const files = Array.from(e.target.files);
+      if (files.length > 3) {
+        alert("Maximum 3 photos allowed per menu item.");
+        e.target.value = "";
+        selectedFiles = [];
+        $("image-preview-container").replaceChildren();
+        return;
+      }
+      selectedFiles = files.slice(0, 3);
+      const container = $("image-preview-container");
+      container.replaceChildren();
+      selectedFiles.forEach(file => {
+        const img = document.createElement("img");
+        img.className = "preview-thumb";
+        img.src = URL.createObjectURL(file);
+        container.appendChild(img);
+      });
+    });
+
     $("toggle-auth-btn").addEventListener("click", () => {
       isSignUpMode = !isSignUpMode;
       $("auth-heading").textContent = isSignUpMode ? "Register Partner Account" : "Partner Login";
@@ -235,7 +275,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
           if (data.session) {
             await showDashboard();
           } else {
-            alert("Account created. If email confirmation is enabled, check your email before signing in.");
+            alert("Account created! Please check your email to sign in.");
           }
         } else {
           const { error } = await db.auth.signInWithPassword({ email, password });
@@ -338,13 +378,45 @@ button:disabled{opacity:.6;cursor:not-allowed}
     if (!priceText || !Number.isFinite(price) || price < 1 || price > 10000) {
       return alert("Price must be between R1 and R10,000.");
     }
-    setButtonLoading(button, true, "Publishing...");
+
+    setButtonLoading(button, true, "Uploading photos & publishing...");
+
     try {
+      const uploadedUrls = [];
+
+      // Upload up to 3 selected photos to Supabase Storage
+      for (const file of selectedFiles) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${activeVendor.id}/${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+
+        const { data: storageData, error: storageErr } = await db.storage
+          .from('menu-images')
+          .upload(fileName, file);
+
+        if (storageErr) {
+          console.warn("Storage upload warning:", storageErr);
+        } else {
+          const { data: { publicUrl } } = db.storage.from('menu-images').getPublicUrl(fileName);
+          uploadedUrls.push(publicUrl);
+        }
+      }
+
       const { error } = await db.from("service_items")
-        .insert([{ vendor_id: activeVendor.id, title, price }]);
+        .insert([{ 
+          vendor_id: activeVendor.id, 
+          title, 
+          price,
+          image_urls: uploadedUrls 
+        }]);
+
       if (error) throw error;
+
       $("service-title").value = "";
       $("service-price").value = "";
+      $("service-photos").value = "";
+      $("image-preview-container").replaceChildren();
+      selectedFiles = [];
+
       closeModal("service-modal");
       await loadServices();
       alert("Service published successfully!");
@@ -436,19 +508,41 @@ button:disabled{opacity:.6;cursor:not-allowed}
       data.forEach(service => {
         const card = document.createElement("div");
         card.className = "order-card";
-        card.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:12px;";
+
+        const top = document.createElement("div");
+        top.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:12px;";
+
         const info = document.createElement("div");
         const title = document.createElement("div");
         title.className = "order-title";
         title.textContent = service.title || "Untitled Service";
+
         const status = document.createElement("div");
         status.className = "order-time";
         status.textContent = "Active & Available";
+
+        info.append(title, status);
+
         const price = document.createElement("div");
         price.className = "order-price";
         price.textContent = money(service.price);
-        info.append(title, status);
-        card.append(info, price);
+
+        top.append(info, price);
+        card.appendChild(top);
+
+        // Render Photo Gallery Thumbnails if photos exist
+        if (service.image_urls && service.image_urls.length > 0) {
+          const gallery = document.createElement("div");
+          gallery.className = "item-gallery";
+          service.image_urls.forEach(url => {
+            const img = document.createElement("img");
+            img.className = "item-thumb";
+            img.src = url;
+            gallery.appendChild(img);
+          });
+          card.appendChild(gallery);
+        }
+
         container.appendChild(card);
       });
     } catch (error) {
@@ -547,7 +641,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
       });
     } catch (error) {
       console.error("Load payout history error:", error);
-      setEmpty("payouts-list", "Could not load payout history. Check payout table permissions and try again.");
+      setEmpty("payouts-list", "Could not load payout history.");
     }
   }
 
@@ -672,7 +766,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
     if (booted) return;
     booted = true;
     try {
-      if (!window.supabase) throw new Error("Supabase library did not load. Check your internet connection and reload.");
+      if (!window.supabase) throw new Error("Supabase library did not load.");
       db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       bindButtons();
       const { data: { session }, error } = await db.auth.getSession();
