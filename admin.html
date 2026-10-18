@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Portal — BOOK.NOW Founder</title>
+<title>BOOK.NOW Founder Control Panel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -18,7 +18,7 @@
 }
 *{box-sizing:border-box;font-family:'Plus Jakarta Sans',sans-serif;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--bg);color:var(--text);padding-bottom:50px}
-button,input{font:inherit}
+button,input,select{font:inherit}
 button{cursor:pointer}
 button:disabled{opacity:.6;cursor:not-allowed}
 
@@ -26,20 +26,37 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .auth-card{background:white;padding:28px;border-radius:20px;border:1px solid var(--border);width:100%;max-width:400px}
 .auth-title{text-align:center;font-size:20px;font-weight:700;margin-bottom:6px}
 .auth-sub{text-align:center;font-size:13px;color:var(--muted);margin-bottom:24px}
+
 .top-nav{background:white;padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:20}
 .brand{font-size:16px;font-weight:800;display:flex;align-items:center;gap:7px;color:var(--primary)}
-.container{padding:16px;max-width:900px;margin:auto}
+.container{padding:16px;max-width:850px;margin:auto}
+
+.stats-container{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.stat-box{background:white;padding:15px;border-radius:var(--radius);border:1px solid var(--border);min-width:0}
+.stat-header{font-size:12px;font-weight:600;color:var(--muted)}
+.stat-value{font-size:22px;font-weight:700;margin-top:7px;overflow-wrap:anywhere}
+
+.nav-tabs{display:flex;gap:4px;background:#e2e8f0;padding:4px;border-radius:12px;margin-bottom:20px}
+.tab-item{flex:1;padding:10px;border:0;background:transparent;font-size:12px;font-weight:600;color:var(--muted);border-radius:8px;text-align:center}
+.tab-item.active{background:white;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+
 .section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 .section-head h3{font-size:16px;margin:0}
-.btn-primary{background:var(--accent);color:white;border:0;padding:12px 14px;border-radius:10px;font-size:13px;font-weight:600;width:100%}
+.btn-primary{background:var(--accent);color:white;border:0;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+
 .card-list{display:flex;flex-direction:column;gap:12px}
-.vendor-card{background:white;padding:16px;border-radius:14px;border:1px solid var(--border);display:flex;flex-direction:column;gap:10px}
-.vendor-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.vendor-title{font-weight:800;font-size:15px}
-.vendor-meta{font-size:12px;color:var(--muted);margin-top:2px}
-.status-badge{padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;display:inline-block}
+.vendor-card,.order-card{background:white;padding:15px;border-radius:14px;border:1px solid var(--border);overflow-wrap:anywhere}
+.vendor-top,.order-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.vendor-title,.order-title{font-weight:800;font-size:14px}
+.vendor-meta,.order-time{font-size:12px;color:var(--muted);margin-top:4px}
+.order-price{font-weight:700;color:var(--success);font-size:16px;text-align:right}
+
+.status-badge{padding:4px 9px;border-radius:6px;font-size:11px;font-weight:700;display:inline-block}
 .status-active{background:var(--success-bg);color:var(--success)}
 .status-pending{background:var(--warning-bg);color:var(--warning)}
+.status-completed{background:var(--success-bg);color:var(--success)}
+
+.ref-pill{background:#eff6ff;color:var(--accent);font-family:monospace;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;border:1px solid #bfdbfe;display:inline-block;margin-top:4px}
 .form-field{margin-bottom:14px}
 .form-field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
 .form-field input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);font-size:14px}
@@ -52,27 +69,45 @@ button:disabled{opacity:.6;cursor:not-allowed}
   <div class="auth-card">
     <div class="brand" style="justify-content:center;margin-bottom:16px"><i class="ph ph-shield-check" style="font-size:26px;color:var(--accent)"></i> Founder Admin</div>
     <div class="auth-title">Admin Login</div>
-    <div class="auth-sub">Enter founder credentials to manage vendors</div>
-    <div class="form-field"><label for="admin-email">Email Address</label><input type="email" id="admin-email" placeholder="founder@booknow.co.za"></div>
+    <div class="auth-sub">Enter founder credentials to manage platform</div>
+    <div class="form-field"><label for="admin-email">Email Address</label><input type="email" id="admin-email" placeholder="Mfanarhshange43@gmail.com"></div>
     <div class="form-field"><label for="admin-password">Password</label><input type="password" id="admin-password" placeholder="Password"></div>
-    <button class="btn-primary" id="admin-login-btn">Sign In to Admin</button>
+    <button class="btn-primary" id="admin-login-btn" style="width:100%;">Sign In to Control Panel</button>
   </div>
 </div>
 
 <div id="admin-dashboard" style="display:none">
   <div class="top-nav">
     <div class="brand"><i class="ph ph-shield-check" style="font-size:20px;color:var(--accent)"></i> BOOK.NOW Founder Control Panel</div>
-    <button class="btn-primary" style="width:auto;padding:8px 12px;background:#fee2e2;color:#991b1b" id="admin-logout-btn">Sign Out</button>
+    <button class="btn-primary" style="background:#fee2e2;color:#991b1b;padding:8px 12px;" id="admin-logout-btn"><i class="ph ph-sign-out"></i> Sign Out</button>
   </div>
 
   <main class="container">
-    <div class="section-head">
-      <h3>All Registered Vendors &amp; Subscriptions</h3>
-      <button class="btn-primary" style="width:auto;padding:8px 12px;" onclick="loadVendorsList()">Refresh List</button>
+    <div class="stats-container">
+      <div class="stat-box"><div class="stat-header"><i class="ph ph-storefront"></i> Total Registered Shops</div><div class="stat-value" id="stat-shops">0</div></div>
+      <div class="stat-box"><div class="stat-header"><i class="ph ph-calendar-check"></i> Total Platform Bookings</div><div class="stat-value" id="stat-bookings">R0.00</div></div>
     </div>
-    <div id="vendors-admin-list" class="card-list">
-      <div class="empty-box">Loading vendors...</div>
+
+    <div class="nav-tabs">
+      <button class="tab-item active" id="tab-vendors-btn">Vendors &amp; Approvals</button>
+      <button class="tab-item" id="tab-orders-btn">Platform Orders</button>
     </div>
+
+    <section id="vendors-section">
+      <div class="section-head">
+        <h3>Registered Vendors &amp; Subscriptions</h3>
+        <button class="btn-primary" onclick="loadAdminData()"><i class="ph ph-arrows-clockwise"></i> Refresh</button>
+      </div>
+      <div id="vendors-admin-list" class="card-list"><div class="empty-box">Loading vendors...</div></div>
+    </section>
+
+    <section id="orders-section" style="display:none">
+      <div class="section-head">
+        <h3>All Customer Bookings (Live Platform Feed)</h3>
+        <button class="btn-primary" onclick="loadAdminData()"><i class="ph ph-arrows-clockwise"></i> Refresh</button>
+      </div>
+      <div id="orders-admin-list" class="card-list"><div class="empty-box">Loading bookings...</div></div>
+    </section>
   </main>
 </div>
 
@@ -85,8 +120,23 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
   const $ = id => document.getElementById(id);
 
+  function money(value) {
+    const n = Number(value);
+    return "R" + (Number.isFinite(n) ? n : 0).toFixed(2);
+  }
+
+  function showTab(name) {
+    $("vendors-section").style.display = name === "vendors" ? "block" : "none";
+    $("orders-section").style.display = name === "orders" ? "block" : "none";
+    $("tab-vendors-btn").classList.toggle("active", name === "vendors");
+    $("tab-orders-btn").classList.toggle("active", name === "orders");
+  }
+
   async function boot() {
     db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    $("tab-vendors-btn").addEventListener("click", () => showTab("vendors"));
+    $("tab-orders-btn").addEventListener("click", () => showTab("orders"));
 
     $("admin-login-btn").addEventListener("click", async () => {
       const email = $("admin-email").value.trim();
@@ -112,64 +162,89 @@ button:disabled{opacity:.6;cursor:not-allowed}
     if (session) {
       $("auth-screen").style.display = "none";
       $("admin-dashboard").style.display = "block";
-      loadVendorsList();
+      loadAdminData();
     }
   }
 
-  window.loadVendorsList = async function() {
-    const container = $("vendors-admin-list");
-    container.replaceChildren();
+  window.loadAdminData = async function() {
+    // 1. Load Vendors
+    const { data: vendors, error: vErr } = await db.from("vendors").select("*").order("created_at", { ascending: false });
+    const vContainer = $("vendors-admin-list");
+    vContainer.replaceChildren();
 
-    const { data: vendors, error } = await db
-      .from("vendors")
-      .select("*")
-      .order("created_at", { ascending: false });
+    if (vErr || !vendors || vendors.length === 0) {
+      vContainer.innerHTML = `<div class="empty-box">No vendors registered yet.</div>`;
+      $("stat-shops").textContent = "0";
+    } else {
+      $("stat-shops").textContent = String(vendors.length);
+      vendors.forEach(v => {
+        const card = document.createElement("div");
+        card.className = "vendor-card";
+        const status = v.subscription_status || "PENDING_APPROVAL";
+        const expires = v.subscription_expires_at ? new Date(v.subscription_expires_at).toLocaleDateString() : "Not Activated";
+        const ref = v.pending_payment_ref || "N/A";
+        const popLink = v.pop_receipt_url ? `<a href="${v.pop_receipt_url}" target="_blank" style="color:var(--accent); font-weight:700; text-decoration:none;"><i class="ph ph-file-arrow-down"></i> View Proof of Payment (POP)</a>` : `<span style="color:var(--muted);">No POP uploaded yet</span>`;
 
-    if (error) {
-      container.innerHTML = `<div class="empty-box">Error loading vendors: ${error.message}</div>`;
-      return;
+        card.innerHTML = `
+          <div class="vendor-top">
+            <div>
+              <div class="vendor-title">${v.name} (${v.category || 'STORE'})</div>
+              <div class="vendor-meta">Owner: ${v.owner_id}</div>
+              <div><span class="ref-pill">REF: ${ref}</span></div>
+              <div class="vendor-meta" style="margin-top:6px;">Subscription Expires: <strong>${expires}</strong></div>
+            </div>
+            <div>
+              <span class="status-badge status-${status === 'ACTIVE' ? 'active' : 'pending'}">${status}</span>
+            </div>
+          </div>
+          <div style="background:#f8fafc; padding:12px; border-radius:10px; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; margin-top:8px;">
+            <div>${popLink}</div>
+            <button class="btn-primary" onclick="approveVendor('${v.id}')" style="background:var(--success);">
+              ✓ Approve Store (1 Month Active)
+            </button>
+          </div>
+        `;
+        vContainer.appendChild(card);
+      });
     }
 
-    if (!vendors || vendors.length === 0) {
-      container.innerHTML = `<div class="empty-box">No vendors registered yet.</div>`;
-      return;
+    // 2. Load Orders
+    const { data: orders, error: oErr } = await db.from("orders").select("*").order("created_at", { ascending: false });
+    const oContainer = $("orders-admin-list");
+    oContainer.replaceChildren();
+
+    if (oErr || !orders || orders.length === 0) {
+      oContainer.innerHTML = `<div class="empty-box">No customer bookings across platform yet.</div>`;
+      $("stat-bookings").textContent = "R0.00";
+    } else {
+      let totalGross = 0;
+      orders.forEach(o => {
+        if (o.status === "COMPLETED") totalGross += Number(o.gross_amount || 0);
+      });
+      $("stat-bookings").textContent = money(totalGross);
+
+      orders.forEach(o => {
+        const card = document.createElement("div");
+        card.className = "order-card";
+        const statusText = String(o.status || "PENDING").toUpperCase();
+
+        card.innerHTML = `
+          <div class="order-top">
+            <div>
+              <div class="order-title">${o.customer_name || 'Customer'} (${o.customer_phone || 'N/A'})</div>
+              <div class="order-time">${o.created_at ? new Date(o.created_at).toLocaleString() : ''}</div>
+              <span class="ref-pill">REF: ${o.payment_ref || 'N/A'}</span>
+              <span class="status-badge status-${statusText === 'COMPLETED' ? 'completed' : 'pending'}" style="margin-left:6px;">${statusText}</span>
+            </div>
+            <div class="order-price">${money(o.gross_amount)}</div>
+          </div>
+        `;
+        oContainer.appendChild(card);
+      });
     }
-
-    vendors.forEach(v => {
-      const card = document.createElement("div");
-      card.className = "vendor-card";
-
-      const status = v.subscription_status || "PENDING_APPROVAL";
-      const expires = v.subscription_expires_at ? new Date(v.subscription_expires_at).toLocaleDateString() : "Not Activated";
-      const ref = v.pending_payment_ref || "N/A";
-      const popLink = v.pop_receipt_url ? `<a href="${v.pop_receipt_url}" target="_blank" style="color:var(--accent); font-weight:700; text-decoration:none;"><i class="ph ph-file-arrow-down"></i> View Proof of Payment</a>` : `<span style="color:var(--muted);">No POP uploaded yet</span>`;
-
-      card.innerHTML = `
-        <div class="vendor-top">
-          <div>
-            <div class="vendor-title">${v.name} (${v.category || 'STORE'})</div>
-            <div class="vendor-meta">Owner ID: ${v.owner_id}</div>
-            <div class="vendor-meta">Payment Ref: <code style="background:#f1f5f9; padding:2px 6px; border-radius:4px; font-weight:700;">${ref}</code></div>
-            <div class="vendor-meta">Subscription Expires: <strong>${expires}</strong></div>
-          </div>
-          <div>
-            <span class="status-badge status-${status === 'ACTIVE' ? 'active' : 'pending'}">${status}</span>
-          </div>
-        </div>
-
-        <div style="background:#f8fafc; padding:10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; font-size:12px;">
-          <div>${popLink}</div>
-          <button class="btn-primary" onclick="approveVendor('${v.id}')" style="width:auto; padding:8px 14px; background:var(--success);">
-            ✓ Approve Store (1 Month Active)
-          </button>
-        </div>
-      `;
-      container.appendChild(card);
-    });
   };
 
   window.approveVendor = async function(vendorId) {
-    // Set status to ACTIVE and grant exactly 1 month from today
     const expiryDate = new Date();
     expiryDate.setMonth(expiryDate.getMonth() + 1);
 
@@ -184,8 +259,8 @@ button:disabled{opacity:.6;cursor:not-allowed}
     if (error) {
       alert("Error approving vendor: " + error.message);
     } else {
-      alert("Vendor approved successfully! Store is now unlocked and live.");
-      loadVendorsList();
+      alert("Vendor approved successfully! Store is now unlocked and live for customers.");
+      loadAdminData();
     }
   };
 
