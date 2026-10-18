@@ -81,7 +81,7 @@
 
     .menu-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; padding-top: 6px; border-top: 1px solid #f1f5f9; gap: 4px; }
     .price-container { display: flex; flex-direction: column; }
-    .menu-price { font-size: 13px; font-weight: 800; color: var(--success); white-space: nowrap; }
+    .menu-price { font-size: 13px; font-weight: 800; color: var(--danger); white-space: nowrap; }
     .original-price { font-size: 10px; font-weight: 600; color: var(--muted); text-decoration: line-through; }
 
     .btn-book { background: var(--accent); color: white; border: none; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
@@ -290,7 +290,7 @@
 
         const { data: services, error: serviceErr } = await supabase
           .from("service_items")
-          .select("*")
+          .select("id, store_id, title, price, sale_price, sale_start_date, sale_end_date, image_urls, created_at")
           .eq("store_id", storeId)
           .order("created_at", { ascending: false });
 
@@ -406,6 +406,7 @@
           } else {
             const normalPrice = document.createElement("span");
             normalPrice.className = "menu-price";
+            normalPrice.style.color = "var(--primary)";
             normalPrice.textContent = `R${activePrice.toFixed(2)}`;
 
             priceContainer.appendChild(normalPrice);
@@ -453,9 +454,6 @@
 
       try {
         const paymentRef = generatePaymentRef();
-        const grossAmount = selectedService.price;
-        const netEarnings = grossAmount;
-        const commission = 0.00;
 
         const todayStart = new Date().toISOString().split("T")[0] + "T00:00:00.000Z";
         const { data: todayBookings } = await supabase
@@ -463,7 +461,7 @@
           .select("id")
           .eq("store_id", selectedService.storeId)
           .gte("created_at", todayStart)
-          .neq("status", "CANCELLED");
+          .neq("status", "cancelled");
 
         const queueNumber = (todayBookings ? todayBookings.length : 0) + 1;
 
