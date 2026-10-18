@@ -119,12 +119,13 @@
       <div class="empty-box">Loading store info...</div>
     </div>
 
-    <div class="section-title">
-      <i class="ph ph-squares-four" style="color:var(--accent);"></i> Services & Menu
-    </div>
-
-    <div id="services-menu-box" class="menu-grid">
-      <div class="empty-box">Loading menu items...</div>
+    <div id="services-section-container">
+      <div class="section-title">
+        <i class="ph ph-squares-four" style="color:var(--accent);"></i> Services & Menu
+      </div>
+      <div id="services-menu-box" class="menu-grid">
+        <div class="empty-box">Loading menu items...</div>
+      </div>
     </div>
   </div>
 
@@ -358,7 +359,8 @@
       const storeId = getStoreId();
       if (!storeId) {
         $("store-hero-box").innerHTML = '<div class="empty-box">No store selected. <a href="index.html">Return to Marketplace</a></div>';
-        $("services-menu-box").style.display = "none";
+        const sectionContainer = $("services-section-container");
+        if (sectionContainer) sectionContainer.style.display = "none";
         return;
       }
 
@@ -373,6 +375,7 @@
         storeData = store;
 
         const availability = getStoreBookingAvailability(store);
+        const sectionContainer = $("services-section-container");
 
         if (!availability.open) {
           $("store-hero-box").innerHTML = `
@@ -389,9 +392,11 @@
               </a>
             </div>`;
 
-          $("services-menu-box").replaceChildren();
+          if (sectionContainer) sectionContainer.style.display = "none";
           return;
         }
+
+        if (sectionContainer) sectionContainer.style.display = "block";
 
         const heroCover = store.store_image_url || FALLBACK_IMAGES[store.category] || FALLBACK_IMAGES.DEFAULT;
         $("store-hero-box").innerHTML = `
@@ -547,6 +552,8 @@
       } catch (err) {
         console.error("Store load error:", err);
         $("store-hero-box").innerHTML = `<div class="empty-box">Error loading store: ${escapeHTML(err.message)}</div>`;
+        const sectionContainer = $("services-section-container");
+        if (sectionContainer) sectionContainer.style.display = "none";
       }
     }
 
