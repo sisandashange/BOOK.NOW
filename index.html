@@ -3,12 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Find and book local barbershops, beauty salons and shisanyama spots near you.">
+  <meta name="theme-color" content="#0f172a">
+  <meta property="og:title" content="BOOK.NOW — Discover & Book Local Shops">
+  <meta property="og:description" content="Find and book local barbershops, beauty salons and shisanyama spots.">
   <title>BOOK.NOW — Discover & Book Local Shops</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 
   <style>
     :root {
@@ -21,70 +26,51 @@
       --muted: #64748b;
       --border: #e2e8f0;
       --success: #16a34a;
+      --danger: #dc2626;
       --radius: 20px;
       --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
       --shadow-md: 0 10px 30px -5px rgba(15, 23, 42, 0.08);
     }
 
     * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-    body { margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 70px; }
+    body { margin: 0; padding: 0 0 70px; background: var(--bg); color: var(--text); }
 
-    /* TOP NAVIGATION */
-    .top-nav { 
-      background: rgba(255, 255, 255, 0.95); 
-      backdrop-filter: blur(12px);
-      padding: 14px 20px; 
-      border-bottom: 1px solid var(--border); 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      position: sticky; 
-      top: 0; 
-      z-index: 30; 
-    }
+    .top-nav { background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 30; }
     .brand { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; color: var(--primary); letter-spacing: -0.5px; }
     .partner-link { font-size: 12px; font-weight: 700; color: #fff; text-decoration: none; background: var(--accent); padding: 8px 14px; border-radius: 10px; transition: background 0.2s; }
     .partner-link:hover { background: var(--accent-hover); }
+    a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
     .container { padding: 20px 16px; max-width: 850px; margin: 0 auto; }
 
-    /* HERO & SEARCH */
     .hero { margin-bottom: 20px; }
     .hero-badge { display: inline-flex; align-items: center; gap: 6px; background: #eff6ff; color: var(--accent); font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; margin-bottom: 10px; text-transform: uppercase; }
-    .hero h1 { font-size: 26px; font-weight: 800; margin: 0 0 6px 0; letter-spacing: -0.8px; color: var(--primary); }
-    .hero p { font-size: 14px; color: var(--muted); margin: 0 0 16px 0; line-height: 1.4; }
+    .hero h1 { font-size: 26px; font-weight: 800; margin: 0 0 6px; letter-spacing: -0.8px; color: var(--primary); }
+    .hero p { font-size: 14px; color: var(--muted); margin: 0 0 16px; line-height: 1.4; }
 
     .search-box { position: relative; margin-bottom: 16px; }
     .search-box i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--muted); }
     .search-input { width: 100%; padding: 12px 14px 12px 42px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface); font-size: 14px; outline: none; box-shadow: var(--shadow-sm); transition: border 0.2s; }
     .search-input:focus { border-color: var(--accent); }
 
-    /* FILTER CHIPS */
     .filter-bar { display: flex; gap: 8px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
     .filter-bar::-webkit-scrollbar { display: none; }
     .filter-chip { background: var(--surface); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; color: var(--muted); transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
-    .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 12px rgba(15,23,42,0.15); }
+    .filter-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 4px 12px rgba(15,23,42,0.15); }
 
-    /* 2-COLUMN STORE GRID */
     .store-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-    @media (max-width: 580px) {
-      .store-grid { grid-template-columns: 1fr; }
-    }
+    @media (max-width: 580px) { .store-grid { grid-template-columns: 1fr; } }
 
     .store-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; padding: 16px; text-align: center; }
     .store-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
-
-    /* CIRCULAR STORE AVATAR */
     .store-avatar-container { display: flex; justify-content: center; margin-bottom: 12px; }
     .store-avatar { width: 75px; height: 75px; border-radius: 50%; object-fit: cover; border: 3px solid #f1f5f9; box-shadow: 0 4px 12px rgba(0,0,0,0.08); background: #e2e8f0; }
-
     .store-body { display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
-
-    .store-title { font-size: 16px; font-weight: 800; margin: 0 0 4px 0; color: var(--primary); letter-spacing: -0.3px; }
+    .store-title { font-size: 16px; font-weight: 800; margin: 0 0 4px; color: var(--primary); letter-spacing: -0.3px; }
     .store-category { display: inline-block; font-size: 9px; font-weight: 800; background: #f1f5f9; color: var(--muted); padding: 3px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-
     .store-meta { display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); margin-bottom: 14px; }
-    .store-rating { display: inline-flex; align-items: center; gap: 3px; font-weight: 700; color: #d97706; }
+    .status-open { color: var(--success); font-weight: 700; }
+    .status-closed { color: var(--danger); font-weight: 700; }
 
     .btn-visit { width: 100%; background: #f1f5f9; color: var(--primary); border: 1px solid var(--border); padding: 9px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; }
     .btn-visit:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
@@ -94,7 +80,6 @@
 </head>
 <body>
 
-  <!-- TOP NAV -->
   <div class="top-nav">
     <div class="brand">
       <i class="ph ph-calendar-check" style="font-size:24px; color: var(--accent);"></i>
@@ -103,33 +88,29 @@
     <a href="vendor.html" class="partner-link">Partner Portal</a>
   </div>
 
-  <div class="container">
-    <!-- HERO SECTION -->
+  <main class="container">
     <div class="hero">
       <div class="hero-badge"><i class="ph ph-sparkle"></i> Verified Local Vendors</div>
       <h1>Explore Local Spots</h1>
-      <p>Discover top-rated barbershops, beauty salons, and braai spots.</p>
+      <p>Find and book barbershops, beauty salons, and braai spots near you.</p>
 
-      <!-- SEARCH BAR -->
       <div class="search-box">
-        <i class="ph ph-magnifying-glass"></i>
-        <input type="text" id="search-input" class="search-input" placeholder="Search by shop name, service, or category...">
+        <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+        <input type="search" id="search-input" class="search-input" aria-label="Search shops" placeholder="Search by shop name, service, or category...">
       </div>
     </div>
 
-    <!-- CATEGORY FILTER CHIPS -->
-    <div class="filter-bar">
-      <button class="filter-chip active" id="filter-all"><i class="ph ph-squares-four"></i> All Spots</button>
-      <button class="filter-chip" id="filter-barber"><i class="ph ph-scissors"></i> Barbershops</button>
-      <button class="filter-chip" id="filter-salon"><i class="ph ph-sparkles"></i> Salons</button>
-      <button class="filter-chip" id="filter-shisanyama"><i class="ph ph-fire"></i> Shisanyama</button>
+    <div class="filter-bar" role="group" aria-label="Filter by category">
+      <button class="filter-chip active" data-cat="ALL" aria-pressed="true"><i class="ph ph-squares-four"></i> All Spots</button>
+      <button class="filter-chip" data-cat="BARBER" aria-pressed="false"><i class="ph ph-scissors"></i> Barbershops</button>
+      <button class="filter-chip" data-cat="SALON" aria-pressed="false"><i class="ph ph-sparkles"></i> Salons</button>
+      <button class="filter-chip" data-cat="SHISANYAMA" aria-pressed="false"><i class="ph ph-fire"></i> Shisanyama</button>
     </div>
 
-    <!-- STORE GRID (2 COLUMNS) -->
-    <div id="store-grid" class="store-grid">
+    <div id="store-grid" class="store-grid" aria-live="polite">
       <div class="empty-box">Loading available stores...</div>
     </div>
-  </div>
+  </main>
 
   <script>
   (() => {
@@ -138,168 +119,184 @@
     const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
     const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
 
-    let supabase = null;
+    let db = null;
     let allStores = [];
+    let activeCat = "ALL";
     let booted = false;
 
     const FALLBACK_IMAGES = {
-      BARBER: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80",
-      SALON: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80",
-      SHISANYAMA: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80",
-      DEFAULT: "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=800&q=80"
+      BARBER: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=200&q=70",
+      SALON: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=200&q=70",
+      SHISANYAMA: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=200&q=70",
+      DEFAULT: "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=200&q=70"
     };
+
+    const CATEGORY_LABELS = { BARBER: "Barbershop", SALON: "Salon", SHISANYAMA: "Shisanyama" };
 
     const $ = id => document.getElementById(id);
 
-    function bindEvents() {
-      $("filter-all").addEventListener("click", (e) => filterCategory("ALL", e.currentTarget));
-      $("filter-barber").addEventListener("click", (e) => filterCategory("BARBER", e.currentTarget));
-      $("filter-salon").addEventListener("click", (e) => filterCategory("SALON", e.currentTarget));
-      $("filter-shisanyama").addEventListener("click", (e) => filterCategory("SHISANYAMA", e.currentTarget));
-
-      $("search-input").addEventListener("input", handleSearch);
+    // Works whether the database stores "BARBER" or "Barbershop", etc.
+    function normalizeCategory(raw) {
+      const c = (raw || "").toLowerCase();
+      if (c.includes("barber")) return "BARBER";
+      if (c.includes("salon") || c.includes("beauty")) return "SALON";
+      if (c.includes("shisanyama") || c.includes("braai")) return "SHISANYAMA";
+      return "OTHER";
     }
 
-        async function loadMarketplace() {
-      const container = $("store-grid");
-      container.textContent = "Loading available stores...";
+    // Returns true (open), false (closed) or null (unknown)
+    function isOpenNow(s) {
+      if (s.manual_status === "CLOSED") return false;
+      const now = new Date();
+      const today = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+      if (s.holiday_start_date && s.holiday_end_date && today >= s.holiday_start_date && today <= s.holiday_end_date) return false;
+      if (!s.opening_time || !s.closing_time) return null;
+      const hhmm = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+      return hhmm >= s.opening_time.slice(0, 5) && hhmm < s.closing_time.slice(0, 5);
+    }
 
-      if (!window.supabase || !supabase) {
-        container.textContent = "Unable to connect to database. Please refresh.";
+    function showMessage(text) {
+      const box = document.createElement("div");
+      box.className = "empty-box";
+      box.textContent = text;
+      $("store-grid").replaceChildren(box);
+    }
+
+    async function loadMarketplace() {
+      showMessage("Loading available stores...");
+
+      if (!window.supabase || !db) {
+        showMessage("Couldn't connect. Check your internet and refresh the page.");
         return;
       }
 
       try {
-        // Fetch stores ordered by creation date
-        const { data: stores, error } = await supabase
+        // One request: stores plus their services
+        const { data, error } = await db
           .from("stores")
-          .select("id, store_name, category, store_image_url, created_at, status, subscription_expires_at")
+          .select("id, store_name, category, store_image_url, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, service_items(id, title)")
+          .eq("status", "active")
           .order("created_at", { ascending: false });
 
         if (error) throw error;
 
-        if (!stores || stores.length === 0) {
-          allStores = [];
-          container.innerHTML = '<div class="empty-box">No active stores available right now. Please check again later.</div>';
-          return;
-        }
+        allStores = (data || []).map(s => ({
+          ...s,
+          cat: normalizeCategory(s.category),
+          service_items: s.service_items || []
+        }));
 
-        const results = await Promise.all(
-          stores.map(async store => {
-            const { data: services, error: serviceErr } = await supabase
-              .from("service_items")
-              .select("id, store_id, title, price")
-              .eq("store_id", store.id);
-
-            if (serviceErr) {
-              console.warn("Could not load services for store:", store.id, serviceErr);
-            }
-
-            return {
-              ...store,
-              service_items: services || []
-            };
-          })
-        );
-
-        allStores = results;
-        renderStores(allStores);
-
-      } catch (error) {
-        console.error("Marketplace error:", error);
-        container.replaceChildren();
-
-        const message = document.createElement("div");
-        message.className = "empty-box";
-        message.textContent = "Unable to load stores: " + error.message;
-
-        container.appendChild(message);
+        applyFilters();
+      } catch (err) {
+        console.error("Marketplace error:", err);
+        showMessage("Couldn't load stores. Refresh the page to try again.");
       }
     }
 
-
     function renderStores(stores) {
       const container = $("store-grid");
-      container.replaceChildren();
 
       if (stores.length === 0) {
-        container.innerHTML = '<div class="empty-box">No spots found matching your search.</div>';
+        showMessage(allStores.length === 0
+          ? "No shops are listed yet. Check back soon."
+          : "No shops match your search. Try a different word or category.");
         return;
       }
 
-      stores.forEach(s => {
+      const cards = stores.map(s => {
         const card = document.createElement("div");
         card.className = "store-card";
 
         const avatarContainer = document.createElement("div");
         avatarContainer.className = "store-avatar-container";
-
         const img = document.createElement("img");
         img.className = "store-avatar";
-        img.src = s.store_image_url || FALLBACK_IMAGES[s.category] || FALLBACK_IMAGES.DEFAULT;
-        img.alt = s.store_name;
+        img.loading = "lazy";
+        img.width = 75;
+        img.height = 75;
+        img.alt = s.store_name || "Shop photo";
+        img.src = s.store_image_url || FALLBACK_IMAGES[s.cat] || FALLBACK_IMAGES.DEFAULT;
+        img.onerror = () => { img.onerror = null; img.src = FALLBACK_IMAGES.DEFAULT; };
         avatarContainer.appendChild(img);
 
-        const body = document.createElement("div");
-        body.className = "store-body";
-
-        const topContent = document.createElement("div");
         const title = document.createElement("h3");
         title.className = "store-title";
         title.textContent = s.store_name || "Unnamed Business";
 
         const category = document.createElement("span");
         category.className = "store-category";
-        category.textContent = s.category || "SPOT";
+        category.textContent = CATEGORY_LABELS[s.cat] || s.category || "Local spot";
 
         const meta = document.createElement("div");
         meta.className = "store-meta";
-        meta.innerHTML = `
-          <span class="store-rating"><i class="ph-fill ph-star"></i> 5.0</span>
-          <span>•</span>
-          <span>${s.service_items.length} Svc</span>
-        `;
+        const count = s.service_items.length;
+        const services = document.createElement("span");
+        services.textContent = count + (count === 1 ? " service" : " services");
+        meta.appendChild(services);
 
-        topContent.append(title, category, meta);
+        const open = isOpenNow(s);
+        if (open !== null) {
+          const dot = document.createElement("span");
+          dot.textContent = "•";
+          const state = document.createElement("span");
+          state.className = open ? "status-open" : "status-closed";
+          state.textContent = open ? "Open now" : "Closed";
+          meta.append(dot, state);
+        }
+
+        const top = document.createElement("div");
+        top.append(title, category, meta);
 
         const visitBtn = document.createElement("a");
         visitBtn.className = "btn-visit";
-        visitBtn.href = `store.html?id=${s.id}`;
-        visitBtn.innerHTML = `<i class="ph ph-storefront"></i> Visit Store`;
+        visitBtn.href = "store.html?id=" + encodeURIComponent(s.id);
+        const icon = document.createElement("i");
+        icon.className = "ph ph-storefront";
+        visitBtn.append(icon, " View and book");
 
-        body.append(topContent, visitBtn);
+        const body = document.createElement("div");
+        body.className = "store-body";
+        body.append(top, visitBtn);
+
         card.append(avatarContainer, body);
-        container.appendChild(card);
+        return card;
       });
+
+      container.replaceChildren(...cards);
     }
 
-    function handleSearch(e) {
-      const term = e.target.value.toLowerCase().trim();
-      if (!term) {
-        renderStores(allStores);
-        return;
-      }
+    // Search and category filter work together
+    function applyFilters() {
+      const term = $("search-input").value.toLowerCase().trim();
 
       const filtered = allStores.filter(s => {
-        const matchName = (s.store_name || "").toLowerCase().includes(term);
-        const matchCategory = (s.category || "").toLowerCase().includes(term);
-        const matchService = s.service_items.some(item => item.title.toLowerCase().includes(term));
-        return matchName || matchCategory || matchService;
+        if (activeCat !== "ALL" && s.cat !== activeCat) return false;
+        if (!term) return true;
+        const haystack = [s.store_name, s.category, CATEGORY_LABELS[s.cat], ...s.service_items.map(i => i.title)];
+        return haystack.some(t => (t || "").toLowerCase().includes(term));
       });
 
       renderStores(filtered);
     }
 
-    function filterCategory(cat, btn) {
-      document.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
-      btn.classList.add("active");
+    function bindEvents() {
+      document.querySelectorAll(".filter-chip").forEach(chip => {
+        chip.addEventListener("click", () => {
+          activeCat = chip.dataset.cat;
+          document.querySelectorAll(".filter-chip").forEach(c => {
+            const on = c === chip;
+            c.classList.toggle("active", on);
+            c.setAttribute("aria-pressed", String(on));
+          });
+          applyFilters();
+        });
+      });
 
-      if (cat === "ALL") {
-        renderStores(allStores);
-      } else {
-        const filtered = allStores.filter(s => s.category === cat);
-        renderStores(filtered);
-      }
+      let timer;
+      $("search-input").addEventListener("input", () => {
+        clearTimeout(timer);
+        timer = setTimeout(applyFilters, 150);
+      });
     }
 
     function boot() {
@@ -307,12 +304,12 @@
       booted = true;
 
       try {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        bindEvents();
-        loadMarketplace();
+        db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       } catch (e) {
         console.error("Boot error:", e);
       }
+      bindEvents();
+      loadMarketplace();
     }
 
     if (document.readyState === "loading") {
