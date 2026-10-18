@@ -792,52 +792,51 @@ button:disabled{opacity:.6;cursor:not-allowed}
   }
 
   async function saveVendorBankDetails() {
-  if (!activeVendor) return;
+    if (!activeVendor) return;
 
-  const button = $("save-bank-btn");
-  const bankVal = $("bank-select").value;
-  const account_holder = $("account-holder").value.trim();
-  const account_number = $("account-number").value.trim();
-  const branch_code = $("branch-code").value.trim();
+    const button = $("save-bank-btn");
+    const bankVal = $("bank-select").value;
+    const account_holder = $("account-holder").value.trim();
+    const account_number = $("account-number").value.trim();
+    const branch_code = $("branch-code").value.trim();
 
-  if (!bankVal || !account_number) {
-    alert("Please select your bank and enter your account number.");
-    return;
+    if (!bankVal || !account_number) {
+      alert("Please select your bank and enter your account number.");
+      return;
+    }
+
+    const bank_name = bankVal.split("|")[0];
+
+    setButtonLoading(button, true, "Saving Bank Details...");
+
+    try {
+      const { error } = await db
+        .from("stores")
+        .update({
+          bank_name,
+          account_holder,
+          account_name: account_holder,
+          account_number,
+          branch_code,
+          updated_at: new Date()
+        })
+        .eq("id", activeVendor.id);
+
+      if (error) throw error;
+
+      activeVendor.bank_name = bank_name;
+      activeVendor.account_holder = account_holder;
+      activeVendor.account_name = account_holder;
+      activeVendor.account_number = account_number;
+      activeVendor.branch_code = branch_code;
+
+      alert("Bank details saved securely!");
+    } catch (error) {
+      alert("Error saving bank details: " + error.message);
+    } finally {
+      setButtonLoading(button, false, "Save Verified Bank Details");
+    }
   }
-
-  const bank_name = bankVal.split("|")[0];
-
-  setButtonLoading(button, true, "Saving Bank Details...");
-
-  try {
-    const { error } = await db
-      .from("stores")
-      .update({
-        bank_name,
-        account_holder,
-        account_name: account_holder,
-        account_number,
-        branch_code,
-        updated_at: new Date()
-      })
-      .eq("id", activeVendor.id);
-
-    if (error) throw error;
-
-    activeVendor.bank_name = bank_name;
-    activeVendor.account_holder = account_holder;
-    activeVendor.account_name = account_holder;
-    activeVendor.account_number = account_number;
-    activeVendor.branch_code = branch_code;
-
-    alert("Bank details saved securely!");
-  } catch (error) {
-    alert("Error saving bank details: " + error.message);
-  } finally {
-    setButtonLoading(button, false, "Save Verified Bank Details");
-  }
-}
-
 
   function openQrScanner() {
     if (!activeVendor) {
@@ -880,25 +879,25 @@ button:disabled{opacity:.6;cursor:not-allowed}
     closeModal("qr-scanner-modal");
   }
 
-  async function verifyScannedReceipt(scannedOrderId) {
+  async function verifyScannedReceipt(scannedBookingId) {
     $("scan-result-status").textContent =
       "Verifying live queue & receipt reference...";
 
     try {
-      const { data: order, error } = await db
-        .from("orders")
+      const { data: booking, error } = await db
+        .from("bookings")
         .select("*")
-        .eq("id", scannedOrderId)
+        .eq("id", scannedBookingId)
         .eq("store_id", activeVendor.id)
         .single();
 
-      if (error || !order) {
+      if (error || !booking) {
         $("scan-result-status").textContent = "Invalid receipt or booking.";
         $("scan-result-status").style.color = "var(--danger)";
         return;
       }
 
-      if (order.status === "COMPLETED") {
+      if (booking.status === "completed") {
         $("scan-result-status").textContent =
           "This booking has already been completed.";
         $("scan-result-status").style.color = "var(--warning)";
@@ -908,15 +907,15 @@ button:disabled{opacity:.6;cursor:not-allowed}
       const todayStart =
         new Date().toISOString().split("T")[0] + "T00:00:00.000Z";
 
-      const { data: aheadOrders } = await db
-        .from("orders")
+      const { data: aheadBookings } = await db
+        .from("bookings")
         .select("customer_name")
         .eq("store_id", activeVendor.id)
-        .eq("status", "PENDING")
+        .eq("status", "pending")
         .gte("created_at", todayStart)
-        .lt("created_at", order.created_at);
+        .lt("created_at", booking.created_at);
 
-      const aheadCount = aheadOrders ? aheadOrders.length : 0;
+      const aheadCount = aheadBookings ? aheadBookings.length : 0;
 
       const queueMsg = aheadCount === 0
         ? "Next in line!"
@@ -937,11 +936,11 @@ button:disabled{opacity:.6;cursor:not-allowed}
       const customer = document.createElement("div");
       customer.style.fontSize = "12px";
       customer.textContent =
-        `Customer: ${order.customer_name || "N/A"} (${order.customer_phone || "N/A"})`;
+        `Customer: ${booking.customer_name || "N/A"} (${booking.customer_phone || "N/A"})`;
 
       const ref = document.createElement("div");
       ref.style.cssText = "font-size:12px;margin-top:4px;";
-      ref.textContent = "Payment Ref: " + (order.payment_ref || "N/A");
+      ref.textContent = "Payment Ref: " + (booking.payment_ref || "N/A");
 
       const queue = document.createElement("div");
       queue.style.cssText =
@@ -953,7 +952,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
       complete.style.cssText = "background:#16a34a;margin-top:10px;";
       complete.textContent = "Confirm Payment & Complete";
       complete.addEventListener("click", () => {
-        confirmAndCompleteOrder(order.id);
+        confirmAndCompleteBooking(booking.id);
       });
 
       box.append(heading, customer, ref, queue, complete);
@@ -964,16 +963,16 @@ button:disabled{opacity:.6;cursor:not-allowed}
     }
   }
 
-  window.confirmAndCompleteOrder = async function(orderId) {
+  window.confirmAndCompleteBooking = async function(bookingId) {
     if (!activeVendor) return;
 
     const { error } = await db
-      .from("orders")
+      .from("bookings")
       .update({
-        status: "COMPLETED",
+        status: "completed",
         payment_status: "PAID"
       })
-      .eq("id", orderId)
+      .eq("id", bookingId)
       .eq("store_id", activeVendor.id);
 
     if (error) {
@@ -1416,16 +1415,32 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
     try {
       const { data, error } = await db
-        .from("orders")
-        .select("gross_amount")
+        .from("bookings")
+        .select("id")
         .eq("store_id", activeVendor.id)
-        .eq("status", "COMPLETED");
+        .eq("status", "completed");
 
       if (error) throw error;
 
-      const totalEarned = data
-        ? data.reduce((sum, item) => sum + Number(item.gross_amount || 0), 0)
-        : 0;
+      // Fetch service items to compute earned amount if needed, or query join. Here we compute from bookings.
+      // Let's fetch bookings with service items or compute from service price.
+      const { data: bookingsData, error: bErr } = await db
+        .from("bookings")
+        .select("service_id, service_items(price, sale_price)")
+        .eq("store_id", activeVendor.id)
+        .eq("status", "completed");
+
+      if (bErr) throw bErr;
+
+      let totalEarned = 0;
+      if (bookingsData) {
+        bookingsData.forEach(b => {
+          if (b.service_items) {
+            const price = Number(b.service_items.sale_price || b.service_items.price || 0);
+            totalEarned += price;
+          }
+        });
+      }
 
       if ($("wallet-balance")) {
         $("wallet-balance").textContent = money(totalEarned);
@@ -1443,7 +1458,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
     try {
       const { data, error } = await db
         .from("service_items")
-        .select("*")
+        .select("id, store_id, title, price, sale_price, sale_start_date, sale_end_date, image_urls, created_at")
         .eq("store_id", activeVendor.id)
         .order("created_at", { ascending: false });
 
@@ -1476,7 +1491,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
         title.className = "order-title";
         title.textContent = service.title || "Untitled Service";
 
-        const hasActiveSale = Boolean(service.sale_price) &&
+        const hasActiveSale = Boolean(service.sale_price) && Number(service.sale_price) > 0 && Number(service.sale_price) < Number(service.price) &&
           (!service.sale_start_date || service.sale_start_date <= today) &&
           (!service.sale_end_date || service.sale_end_date >= today);
 
@@ -1555,16 +1570,16 @@ button:disabled{opacity:.6;cursor:not-allowed}
     }
   }
 
-  function renderSettlementOrders(orders) {
+  function renderSettlementBookings(bookings) {
     const container = $("settlement-orders-list");
     container.replaceChildren();
 
-    if (!activeVendor || !orders || orders.length === 0) {
+    if (!activeVendor || !bookings || bookings.length === 0) {
       setEmpty("settlement-orders-list", "No booking settlement records yet.");
       return;
     }
 
-    orders.forEach(order => {
+    bookings.forEach(booking => {
       const card = document.createElement("div");
       card.className = "ledger-card";
 
@@ -1573,13 +1588,14 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
       const title = document.createElement("div");
       title.className = "order-title";
-      title.textContent = order.customer_name
-        ? `${order.customer_name} — ${order.customer_phone || ""}`
+      title.textContent = booking.customer_name
+        ? `${booking.customer_name} — ${booking.customer_phone || ""}`
         : "Service booking";
 
+      const amountVal = booking.service_items ? (booking.service_items.sale_price || booking.service_items.price || 0) : 0;
       const gross = document.createElement("div");
       gross.className = "order-price";
-      gross.textContent = money(order.gross_amount);
+      gross.textContent = money(amountVal);
 
       heading.append(title, gross);
       card.appendChild(heading);
@@ -1600,22 +1616,22 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
       addRow(
         "Booking status",
-        String(order.status || "PENDING").replaceAll("_", " ")
+        String(booking.status || "pending").replaceAll("_", " ")
       );
 
-      addRow("Payment ref", order.payment_ref || "N/A");
+      addRow("Payment ref", booking.payment_ref || "N/A");
 
       addRow(
         "Payment method",
-        String(order.payment_method || "EFT").replaceAll("_", " ")
+        String(booking.payment_method || "EFT").replaceAll("_", " ")
       );
 
       addRow(
         "Payment status",
-        String(order.payment_status || "UNPAID").replaceAll("_", " ")
+        String(booking.payment_status || "UNPAID").replaceAll("_", " ")
       );
 
-      addRow("Vendor net earnings", money(order.gross_amount));
+      addRow("Vendor net earnings", money(amountVal));
 
       container.appendChild(card);
     });
@@ -1625,9 +1641,9 @@ button:disabled{opacity:.6;cursor:not-allowed}
     if (!db || !activeVendor) return;
 
     try {
-      const { data: orders, error } = await db
-        .from("orders")
-        .select("*")
+      const { data: bookings, error } = await db
+        .from("bookings")
+        .select("*, service_items(title, price, sale_price)")
         .eq("store_id", activeVendor.id)
         .order("created_at", { ascending: false });
 
@@ -1641,19 +1657,19 @@ button:disabled{opacity:.6;cursor:not-allowed}
       const container = $("orders-list");
       container.replaceChildren();
 
-      if (!orders || orders.length === 0) {
+      if (!bookings || bookings.length === 0) {
         setEmpty("orders-list", "No bookings received yet.");
       } else {
-        orders.forEach(order => {
-          const statusText = String(order.status || "PENDING").toUpperCase();
-          const gross = Number(order.gross_amount || 0);
+        bookings.forEach(booking => {
+          const statusText = String(booking.status || "pending").toUpperCase();
+          const amountVal = booking.service_items ? Number(booking.service_items.sale_price || booking.service_items.price || 0) : 0;
 
           if (statusText === "COMPLETED") {
-            revenue += gross;
-            completedGross += gross;
+            revenue += amountVal;
+            completedGross += amountVal;
 
-            if (String(order.payment_method || "EFT").toUpperCase() === "EFT") {
-              eftBalanceEstimate += gross;
+            if (String(booking.payment_method || "EFT").toUpperCase() === "EFT") {
+              eftBalanceEstimate += amountVal;
             }
           } else if (
             statusText === "PENDING" ||
@@ -1672,14 +1688,15 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
           const title = document.createElement("div");
           title.className = "order-title";
-          title.textContent = order.customer_name
-            ? `${order.customer_name} (${order.customer_phone || "N/A"})`
-            : "Customer Booking";
+          const serviceTitle = booking.service_items ? booking.service_items.title : "Service Appointment";
+          title.textContent = booking.customer_name
+            ? `${booking.customer_name} (${booking.customer_phone || "N/A"}) — ${serviceTitle}`
+            : serviceTitle;
 
           const time = document.createElement("div");
           time.className = "order-time";
 
-          const date = order.created_at ? new Date(order.created_at) : null;
+          const date = booking.created_at ? new Date(booking.created_at) : null;
 
           time.textContent =
             date && !Number.isNaN(date.getTime())
@@ -1693,19 +1710,19 @@ button:disabled{opacity:.6;cursor:not-allowed}
           const refPill = document.createElement("span");
           refPill.className = "ref-pill";
           refPill.style.marginLeft = "6px";
-          refPill.textContent = `REF: ${order.payment_ref || "N/A"}`;
+          refPill.textContent = `REF: ${booking.payment_ref || "N/A"}`;
 
           const queuePill = document.createElement("span");
           queuePill.className = "queue-pill";
           queuePill.style.marginLeft = "4px";
-          queuePill.textContent = `QUEUE #${order.queue_number || "1"}`;
+          queuePill.textContent = `QUEUE #${booking.queue_number || "1"}`;
 
           left.append(title, time, status, refPill, queuePill);
 
           const right = document.createElement("div");
           const price = document.createElement("div");
           price.className = "order-price";
-          price.textContent = money(order.gross_amount);
+          price.textContent = money(amountVal);
 
           right.appendChild(price);
           top.append(left, right);
@@ -1723,7 +1740,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
               confirmButton.className = "btn-action btn-confirm";
               confirmButton.textContent = "Confirm Booking";
               confirmButton.addEventListener("click", () => {
-                updateOrderStatus(order.id, "CONFIRMED");
+                updateBookingStatus(booking.id, "confirmed");
               });
 
               actions.appendChild(confirmButton);
@@ -1733,7 +1750,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
             completeButton.className = "btn-action btn-complete";
             completeButton.textContent = "Mark Completed";
             completeButton.addEventListener("click", () => {
-              updateOrderStatus(order.id, "COMPLETED");
+              updateBookingStatus(booking.id, "completed");
             });
 
             actions.appendChild(completeButton);
@@ -1750,23 +1767,23 @@ button:disabled{opacity:.6;cursor:not-allowed}
       $("ledger-net").textContent = money(completedGross);
       $("ledger-eft-balance").textContent = money(eftBalanceEstimate);
 
-      renderSettlementOrders(orders || []);
+      renderSettlementBookings(bookings || []);
     } catch (error) {
       console.error("Load bookings error:", error);
     }
   }
 
-  async function updateOrderStatus(orderId, newStatus) {
+  async function updateBookingStatus(bookingId, newStatus) {
     if (!db || !activeVendor) return;
 
     try {
       const { error } = await db
-        .from("orders")
+        .from("bookings")
         .update({
           status: newStatus,
           payment_status: "PAID"
         })
-        .eq("id", orderId)
+        .eq("id", bookingId)
         .eq("store_id", activeVendor.id);
 
       if (error) throw error;
