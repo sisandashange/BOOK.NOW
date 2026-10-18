@@ -165,10 +165,10 @@
 
       <div id="eft-details-container" style="background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 12px; font-size: 12px;">
         <div style="font-weight: 700; color: var(--primary); margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
-          <i class="ph ph-shield-check" style="color: var(--success); font-size: 16px;"></i> Unique Reference Generated
+          <i class="ph ph-shield-check" style="color: var(--success); font-size: 16px;"></i> Verified Vendor Banking
         </div>
         <p style="margin: 0; color: var(--muted); line-height: 1.4; font-size: 11px;">
-          Click confirm to get your unique payment reference number. Use this reference when doing Instant EFT or sending WhatsApp proof of payment to the shop!
+          Your order generates a unique reference code. You will see this shop's official bank details and reference on the next screen!
         </p>
       </div>
 
@@ -251,7 +251,7 @@
       try {
         const { data: vendor, error: vendorErr } = await supabase
           .from("vendors")
-          .select("id, name, category, store_image_url, phone_number, created_at")
+          .select("id, name, category, store_image_url, phone_number, bank_name, account_holder, account_number, branch_code, created_at")
           .eq("id", vendorId)
           .single();
 
@@ -473,6 +473,12 @@
         const rawVendorPhone = vendorData && vendorData.phone_number ? vendorData.phone_number : "27820000000"; 
         const cleanVendorPhone = rawVendorPhone.replace(/[^0-9]/g, "");
 
+        // Dynamically get vendor bank details for this specific store
+        const bankName = vendorData && vendorData.bank_name ? vendorData.bank_name : "Request on WhatsApp";
+        const accHolder = vendorData && vendorData.account_holder ? vendorData.account_holder : vendorShopName;
+        const accNumber = vendorData && vendorData.account_number ? vendorData.account_number : "Contact Shop";
+        const branchCode = vendorData && vendorData.branch_code ? vendorData.branch_code : "N/A";
+
         const paymentNote = selectedPaymentMethod === "EFT" 
           ? `💳 Direct Instant EFT (Ref: ${paymentRef})` 
           : `💵 Pay Cash at store (Ref: ${paymentRef})`;
@@ -491,14 +497,21 @@
               QUEUE POSITION: #${queueNumber} FOR TODAY
             </div>
 
-            <div style="background: #f8fafc; border: 1px solid var(--border); padding: 10px; border-radius: 10px; margin-bottom: 12px;">
-              <div style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Your Payment Reference</div>
-              <div style="font-size: 20px; font-weight: 800; color: var(--accent); font-family: monospace; letter-spacing: 1px;">${paymentRef}</div>
-              <div style="font-size: 10px; color: var(--muted); margin-top: 2px;">Use this reference when making EFT or sending WhatsApp proof!</div>
+            <!-- VENDOR SPECIFIC BANK DETAILS -->
+            <div style="background: #f8fafc; border: 1px solid var(--border); padding: 12px; border-radius: 10px; margin-bottom: 12px; text-align: left; font-size: 12px;">
+              <div style="font-weight: 800; color: var(--primary); margin-bottom: 6px;"><i class="ph ph-bank"></i> Official Bank Account for ${vendorShopName}:</div>
+              <div style="margin-bottom: 3px;"><strong>Bank:</strong> ${bankName}</div>
+              <div style="margin-bottom: 3px;"><strong>Account Name:</strong> ${accHolder}</div>
+              <div style="margin-bottom: 3px;"><strong>Account Number:</strong> ${accNumber}</div>
+              <div style="margin-bottom: 6px;"><strong>Branch Code:</strong> ${branchCode}</div>
+              <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; text-align: center;">
+                <span style="font-size: 10px; color: var(--muted); display: block; text-transform: uppercase; font-weight: 700;">Mandatory Payment Reference:</span>
+                <span style="font-size: 18px; font-weight: 800; color: var(--accent); font-family: monospace;">${paymentRef}</span>
+              </div>
             </div>
 
-            <div style="background: #ffffff; border: 2px dashed var(--border); padding: 12px; border-radius: 14px; margin-bottom: 12px; display: inline-block;">
-              <img src="${qrDataUrl}" alt="Receipt QR" style="width: 140px; height: 140px; border-radius: 8px;">
+            <div style="background: #ffffff; border: 2px dashed var(--border); padding: 10px; border-radius: 14px; margin-bottom: 12px; display: inline-block;">
+              <img src="${qrDataUrl}" alt="Receipt QR" style="width: 130px; height: 130px; border-radius: 8px;">
               <div style="font-size: 10px; font-weight: 800; color: var(--danger); margin-top: 4px; text-transform: uppercase;">STATUS: UNPAID (REF: ${paymentRef})</div>
             </div>
 
