@@ -1416,7 +1416,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
     try {
       const { data: bookingsData, error: bErr } = await db
         .from("bookings")
-        .select("service_id, service_items(price, sale_price)")
+        .select("booked_price, service_items(price, sale_price)")
         .eq("store_id", activeVendor.id)
         .eq("status", "completed");
 
@@ -1425,10 +1425,9 @@ button:disabled{opacity:.6;cursor:not-allowed}
       let totalEarned = 0;
       if (bookingsData) {
         bookingsData.forEach(b => {
-          if (b.service_items) {
-            const price = Number(b.service_items.sale_price || b.service_items.price || 0);
-            totalEarned += price;
-          }
+          // ✅ Uses booked_price if available, falling back to service price
+          const price = Number(b.booked_price !== null && b.booked_price !== undefined ? b.booked_price : (b.service_items?.sale_price || b.service_items?.price || 0));
+          totalEarned += price;
         });
       }
 
@@ -1446,7 +1445,6 @@ button:disabled{opacity:.6;cursor:not-allowed}
     setEmpty("services-list", "Loading services...");
 
     try {
-      // ✅ Updated .select() query explicitly including the promotional sale columns
       const { data, error } = await db
         .from("service_items")
         .select("id, store_id, title, price, sale_price, sale_start_date, sale_end_date, image_urls, created_at")
@@ -1583,7 +1581,8 @@ button:disabled{opacity:.6;cursor:not-allowed}
         ? `${booking.customer_name} — ${booking.customer_phone || ""}`
         : "Service booking";
 
-      const amountVal = booking.service_items ? (booking.service_items.sale_price || booking.service_items.price || 0) : 0;
+      // ✅ Uses booked_price if available, falling back to service item price
+      const amountVal = Number(booking.booked_price !== null && booking.booked_price !== undefined ? booking.booked_price : (booking.service_items?.sale_price || booking.service_items?.price || 0));
       const gross = document.createElement("div");
       gross.className = "order-price";
       gross.textContent = money(amountVal);
@@ -1653,7 +1652,9 @@ button:disabled{opacity:.6;cursor:not-allowed}
       } else {
         bookings.forEach(booking => {
           const statusText = String(booking.status || "pending").toUpperCase();
-          const amountVal = booking.service_items ? Number(booking.service_items.sale_price || booking.service_items.price || 0) : 0;
+          
+          // ✅ Uses booked_price if available, locking in the price at checkout
+          const amountVal = Number(booking.booked_price !== null && booking.booked_price !== undefined ? booking.booked_price : (booking.service_items?.sale_price || booking.service_items?.price || 0));
 
           if (statusText === "COMPLETED") {
             revenue += amountVal;
