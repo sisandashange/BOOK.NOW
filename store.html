@@ -55,7 +55,7 @@
     .store-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
     .store-title { font-size: 20px; font-weight: 800; margin: 0; color: var(--primary); letter-spacing: -0.4px; }
     .store-badge { font-size: 9px; font-weight: 800; background: #f1f5f9; color: var(--muted); padding: 3px 8px; border-radius: 5px; text-transform: uppercase; }
-    
+
     .store-meta-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; font-size: 12px; color: var(--muted); }
     .meta-item { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
     .rating-item { color: #d97706; font-weight: 700; }
@@ -83,8 +83,7 @@
 
     .menu-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; padding-top: 6px; border-top: 1px solid #f1f5f9; gap: 4px; }
     .price-container { display: flex; flex-direction: column; }
-    
-    /* Exact sale layout matching your reference screenshot */
+
     .menu-price { font-size: 13px; font-weight: 800; color: var(--danger); white-space: nowrap; line-height: 1.2; }
     .menu-price.normal { color: var(--primary); }
     .original-price { font-size: 10px; font-weight: 700; color: var(--muted); text-decoration: line-through; line-height: 1.1; }
@@ -123,7 +122,7 @@
     <div class="section-title">
       <i class="ph ph-squares-four" style="color:var(--accent);"></i> Services & Menu
     </div>
-    
+
     <div id="services-menu-box" class="menu-grid">
       <div class="empty-box">Loading menu items...</div>
     </div>
@@ -219,7 +218,7 @@
         eftBtn.style.border = "2px solid var(--accent)";
         eftBtn.style.background = "#eff6ff";
         eftBtn.style.color = "var(--accent)";
-        
+
         cashBtn.style.border = "1px solid var(--border)";
         cashBtn.style.background = "white";
         cashBtn.style.color = "var(--text)";
@@ -340,7 +339,7 @@
 
           const imgWrapper = document.createElement("div");
           imgWrapper.className = "menu-img-wrapper";
-          
+
           const coverImg = document.createElement("img");
           coverImg.className = "menu-cover-img";
           coverImg.src = defaultImg;
@@ -419,6 +418,7 @@
           const bookBtn = document.createElement("button");
           bookBtn.className = "btn-book";
           bookBtn.textContent = "Book";
+          // ✅ Saves the exact active price at time of booking
           bookBtn.addEventListener("click", () => openBookingModal(s.id, s.title, activePrice));
 
           footer.append(priceContainer, bookBtn);
@@ -469,6 +469,7 @@
 
         const queueNumber = (todayBookings ? todayBookings.length : 0) + 1;
 
+        // ✅ Inserts the exact booked price into the booking record
         const { data: bookingData, error } = await supabase.from("bookings").insert([{
           store_id: selectedService.storeId,
           service_id: selectedService.serviceId,
@@ -478,7 +479,8 @@
           payment_status: "UNPAID",
           status: "pending",
           payment_ref: paymentRef,
-          queue_number: queueNumber
+          queue_number: queueNumber,
+          booked_price: selectedService.price
         }]).select().single();
 
         if (error) throw error;
