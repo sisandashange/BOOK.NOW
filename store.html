@@ -21,7 +21,9 @@
       --muted: #64748b;
       --border: #e2e8f0;
       --success: #16a34a;
+      --warning: #d97706;
       --danger: #dc2626;
+      --danger-bg: #fef2f2;
       --radius: 16px;
       --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
     }
@@ -82,7 +84,7 @@
     .menu-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; padding-top: 6px; border-top: 1px solid #f1f5f9; gap: 4px; }
     .price-container { display: flex; flex-direction: column; }
     
-    /* Exact styling from the reference screenshot */
+    /* Exact sale layout matching your reference screenshot */
     .menu-price { font-size: 13px; font-weight: 800; color: var(--danger); white-space: nowrap; line-height: 1.2; }
     .menu-price.normal { color: var(--primary); }
     .original-price { font-size: 10px; font-weight: 700; color: var(--muted); text-decoration: line-through; line-height: 1.1; }
@@ -252,7 +254,7 @@
       try {
         const { data: store, error: storeErr } = await supabase
           .from("stores")
-          .select("id, store_name, category, store_image_url, phone_number, bank_name, account_holder, account_number, branch_code, created_at, status, subscription_expires_at")
+          .select("*")
           .eq("id", storeId)
           .single();
 
@@ -262,7 +264,7 @@
         const expiryTime = store.subscription_expires_at ? Date.parse(store.subscription_expires_at) : NaN;
         const isSubscriptionValid = store.status === "active" && Number.isFinite(expiryTime) && expiryTime > Date.now();
 
-        if (!isSubscriptionValid) {
+        if (!isSubscriptionValid && store.status !== "active") {
           $("store-hero-box").innerHTML = `
             <div class="empty-box" style="padding:40px 16px;">
               <div style="font-size:42px;color:var(--warning);margin-bottom:12px;"><i class="ph ph-lock-key"></i></div>
@@ -277,10 +279,10 @@
 
         const heroCover = store.store_image_url || FALLBACK_IMAGES[store.category] || FALLBACK_IMAGES.DEFAULT;
         $("store-hero-box").innerHTML = `
-          <img src="${heroCover}" class="hero-banner" alt="${store.store_name}">
+          <img src="${heroCover}" class="hero-banner" alt="${store.store_name || store.name}">
           <div class="hero-content">
             <div class="store-title-row">
-              <h1 class="store-title">${store.store_name}</h1>
+              <h1 class="store-title">${store.store_name || store.name}</h1>
               <span class="store-badge">${store.category || 'SPOT'}</span>
             </div>
             <div class="store-meta-list">
@@ -293,7 +295,7 @@
 
         const { data: services, error: serviceErr } = await supabase
           .from("service_items")
-          .select("id, store_id, title, price, sale_price, sale_start_date, sale_end_date, image_urls, created_at")
+          .select("*")
           .eq("store_id", storeId)
           .order("created_at", { ascending: false });
 
@@ -481,12 +483,12 @@
 
         if (error) throw error;
 
-        const storeShopName = storeData ? storeData.store_name : "the shop";
+        const storeShopName = storeData ? (storeData.store_name || storeData.name) : "the shop";
         const rawStorePhone = storeData && storeData.phone_number ? storeData.phone_number : "27820000000"; 
         const cleanStorePhone = rawStorePhone.replace(/[^0-9]/g, "");
 
         const bankName = storeData && storeData.bank_name ? storeData.bank_name : "Request on WhatsApp";
-        const accHolder = storeData && storeData.account_holder ? storeData.account_holder : storeShopName;
+        const accHolder = storeData && (storeData.account_holder || storeData.account_name) ? (storeData.account_holder || storeData.account_name) : storeShopName;
         const accNumber = storeData && storeData.account_number ? storeData.account_number : "Contact Shop";
         const branchCode = storeData && storeData.branch_code ? storeData.branch_code : "N/A";
 
@@ -516,7 +518,7 @@
               <div style="margin-bottom: 3px;"><strong>Account Number:</strong> ${accNumber}</div>
               <div style="margin-bottom: 6px;"><strong>Branch Code:</strong> ${branchCode}</div>
               <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; text-align: center;">
-                <span style="font-size: 10px; color: var(--muted); display: block; text-transform: uppercase; font-weight: ?;">Mandatory Payment Reference:</span>
+                <span style="font-size: 10px; color: var(--muted); display: block; text-transform: uppercase; font-weight: 700;">Mandatory Payment Reference:</span>
                 <span style="font-size: 18px; font-weight: 800; color: var(--accent); font-family: monospace;">${paymentRef}</span>
               </div>
             </div>
