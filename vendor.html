@@ -23,7 +23,7 @@ button,input,select{font:inherit}
 button{cursor:pointer}
 button:disabled{opacity:.6;cursor:not-allowed}
 #auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.auth-card{background:white;padding:28px;border-radius:20px;border:1px solid var(--border);width:100%;max-width:400px}
+.auth-card{background:white;padding:28px;border-radius:20px;border:1px solid var(--border);width:100%;max-width:420px}
 .auth-title{text-align:center;font-size:20px;font-weight:700;margin-bottom:6px}
 .auth-sub{text-align:center;font-size:13px;color:var(--muted);margin-bottom:24px}
 .top-nav{background:white;padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px;position:sticky;top:0;z-index:20}
@@ -185,9 +185,9 @@ button:disabled{opacity:.6;cursor:not-allowed}
       </div>
     </section>
 
-    <!-- BANK & EFT SETTINGS TAB (BANK SELECTOR + MANUAL ACCOUNT NUMBER) -->
+    <!-- BANK & EFT SETTINGS TAB -->
     <section id="bank-tab" style="display:none">
-      <div class="section-head"><h3><i class="ph ph-bank"></i> Direct Bank Account Setup (EFT)</h3></div>
+      <div class="section-head"><h3><i class="ph ph-bank"></i> Customer Payout Bank Account Setup (EFT)</h3></div>
       <div class="card" style="background:white; padding:16px; border-radius:var(--radius); border:1px solid var(--border);">
         <p style="font-size:12px; color:var(--muted); margin-bottom:14px; line-height:1.4;">
           Select your bank from the list below. The universal branch code will be set automatically, and you only need to enter your account holder name and account number manually.
@@ -485,7 +485,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
         if (error) throw error;
         activeVendor = data;
         updateHeader();
-        await Promise.all([loadServices(), loadOrders()]);
+        await checkSubscriptionAndRender();
       } catch (error) {
         alert("Could not switch business: " + error.message);
       }
@@ -722,7 +722,12 @@ button:disabled{opacity:.6;cursor:not-allowed}
       const { data: { user }, error: userError } = await db.auth.getUser();
       if (userError) throw userError;
       if (!user) throw new Error("Not authenticated.");
-      const { data, error } = await db.from("vendors").insert([{ name, category, owner_id: user.id }]).select().single();
+      const { data, error } = await db.from("vendors").insert([{ 
+        name, 
+        category, 
+        owner_id: user.id,
+        subscription_status: "PENDING_APPROVAL"
+      }]).select().single();
       if (error) throw error;
       $("new-biz-name").value = "";
       closeModal("register-modal");
@@ -839,11 +844,113 @@ button:disabled{opacity:.6;cursor:not-allowed}
       activeVendor = vendors.find(v => String(v.id) === String(preferredVendorId)) || vendors[0];
       select.value = String(activeVendor.id);
       updateHeader();
-      await Promise.all([loadServices(), loadOrders(), loadMoneyStoreWallet()]);
+      await checkSubscriptionAndRender();
     } catch (error) {
       console.error("Dashboard error:", error);
     }
   }
+
+  async function checkSubscriptionAndRender() {
+    if (!activeVendor) return;
+    const expiresAt = activeVendor.subscription_expires_at ? new Date(activeVendor.subscription_expires_at) : null;
+    const now = new Date();
+    const status = activeVendor.subscription_status || "PENDING_APPROVAL";
+
+    // If pending approval or expired, automatically display Founder EFT & POP upload screen
+    if (status === "PENDING_APPROVAL" || (expiresAt && now > expiresAt)) {
+      const isRenewal = expiresAt && now > expiresAt;
+      const feeAmount = isRenewal ? "R299.00" : "R99.00 (First-Time Registration)";
+      const paymentRef = activeVendor.pending_payment_ref || `SUB-${Math.floor(100000 + Math.random() * 900000)}`;
+      
+      if (!activeVendor.pending_payment_ref) {
+        await db.from("vendors").update({ pending_payment_ref: paymentRef }).eq("id", activeVendor.id);
+        activeVendor.pending_payment_ref = paymentRef;
+      }
+
+      const mainContainer = document.querySelector("main.container");
+      mainContainer.innerHTML = `
+        <div class="card" style="background:white; padding:24px; border-radius:var(--radius); border:1px solid var(--border); max-width:500px; margin: 20px auto; text-align: left;">
+          <div style="text-align: center; margin-bottom: 16px;">
+            <div style="font-size: 36px; color: var(--accent);"><i class="ph ph-bank"></i></div>
+            <h2 style="font-size: 18px; font-weight: 800; margin-top: 6px;">${isRenewal ? "Monthly Subscription Renewal" : "Complete Vendor Activation"}</h2>
+            <p style="font-size: 12px; color: var(--muted); margin-top: 4px;">Pay your subscription fee to activate your store on BOOK.NOW</p>
+          </div>
+
+          <div style="background: #f8fafc; border: 1px solid var(--border); padding: 14px; border-radius: 12px; font-size: 12px; margin-bottom: 16px;">
+            <div style="font-weight: 800; color: var(--primary); margin-bottom: 6px;">Founder Bank Account Details:</div>
+            <div style="margin-bottom: 3px;"><strong>Bank:</strong> FNB / First National Bank</div>
+            <div style="margin-bottom: 3px;"><strong>Account Name:</strong> BOOK NOW Platform (Pty) Ltd</div>
+            <div style="margin-bottom: 3px;"><strong>Account Number:</strong> 62810293847</div>
+            <div style="margin-bottom: 3px;"><strong>Branch Code:</strong> 250655</div>
+            <div style="margin-top: 8px; padding: 8px; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center;">
+              <span style="font-size: 10px; color: var(--muted); display: block; text-transform: uppercase; font-weight: 700;">Mandatory Reference Code:</span>
+              <span style="font-size: 16px; font-weight: 800; color: var(--accent); font-family: monospace;">${paymentRef}</span>
+            </div>
+            <div style="margin-top: 8px; font-weight: 700; color: var(--success);">Amount Due: ${feeAmount}</div>
+          </div>
+
+          ${status === "PENDING_APPROVAL" && activeVendor.pop_receipt_url ? `
+            <div style="background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; padding: 12px; border-radius: 10px; font-size: 12px; margin-bottom: 14px; text-align: center;">
+              ⏳ <strong>Application Under Review</strong><br>Your proof of payment was submitted. Your store will be activated within 24 hours once approved by the founder.
+            </div>
+          ` : `
+            <div class="form-field">
+              <label for="pop-file-input">Upload Proof of Payment (Image / PDF)</label>
+              <input type="file" id="pop-file-input" accept="image/*,.pdf" style="padding: 8px; font-size: 12px;">
+            </div>
+            <button class="btn-primary" id="submit-pop-btn" onclick="submitProofOfPayment('${activeVendor.id}')">
+              Confirm Payment &amp; Submit POP
+            </button>
+          `}
+        </div>
+      `;
+      return;
+    }
+
+    await Promise.all([loadServices(), loadOrders(), loadMoneyStoreWallet()]);
+  }
+
+  window.submitProofOfPayment = async function(vendorId) {
+    const fileInput = $("pop-file-input");
+    const button = $("submit-pop-btn");
+
+    if (!fileInput.files || fileInput.files.length === 0) {
+      return alert("Please upload your Proof of Payment (Image or PDF) before confirming.");
+    }
+
+    const file = fileInput.files[0];
+    setButtonLoading(button, true, "Uploading POP...");
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${vendorId}/pop_${Date.now()}.${fileExt}`;
+
+      const { error: uploadErr } = await db.storage
+        .from('menu-images')
+        .upload(fileName, file);
+
+      if (uploadErr) throw uploadErr;
+
+      const { data: urlData } = db.storage.from('menu-images').getPublicUrl(fileName);
+      const popUrl = urlData.publicUrl;
+
+      const { error: updateErr } = await db
+        .from("vendors")
+        .update({ 
+          subscription_status: "PENDING_APPROVAL",
+          pop_receipt_url: popUrl 
+        })
+        .eq("id", vendorId);
+
+      if (updateErr) throw updateErr;
+
+      alert("Your application is under review! Your store/business will be activated within 24 hours once approved.");
+      location.reload();
+    } catch (err) {
+      alert("Error submitting proof of payment: " + err.message);
+      setButtonLoading(button, false, "Confirm Payment & Submit POP");
+    }
+  };
 
   function updateHeader() {
     if (!activeVendor) return;
