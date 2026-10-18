@@ -1629,6 +1629,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
         ? `${booking.customer_name} — ${booking.customer_phone || ""}`
         : "Service booking";
 
+      // ALWAYS respect locked booked_price; fallback only for unmigrated legacy rows
       const fallbackPrice = booking.service_items?.sale_price || booking.service_items?.price || 0;
       const amountVal = Number(booking.booked_price !== null && booking.booked_price !== undefined ? booking.booked_price : fallbackPrice);
       
@@ -1702,6 +1703,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
         bookings.forEach(booking => {
           const statusText = String(booking.status || "pending").toUpperCase();
           
+          // ALWAYS respect locked booked_price; fallback only for unmigrated legacy rows
           const fallbackPrice = booking.service_items?.sale_price || booking.service_items?.price || 0;
           const amountVal = Number(booking.booked_price !== null && booking.booked_price !== undefined ? booking.booked_price : fallbackPrice);
 
