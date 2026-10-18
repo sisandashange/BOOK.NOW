@@ -1464,7 +1464,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
     try {
       const { data: bookingsData, error: bErr } = await db
         .from("bookings")
-        .select("booked_price")
+        .select("booked_price, service_items(price, sale_price)")
         .eq("store_id", activeVendor.id)
         .eq("status", "completed");
 
@@ -1473,7 +1473,8 @@ button:disabled{opacity:.6;cursor:not-allowed}
       let totalEarned = 0;
       if (bookingsData) {
         bookingsData.forEach(b => {
-          const price = Number(b.booked_price ?? 0);
+          const fallbackPrice = b.service_items?.sale_price || b.service_items?.price || 0;
+          const price = Number(b.booked_price !== null && b.booked_price !== undefined ? b.booked_price : fallbackPrice);
           totalEarned += price;
         });
       }
@@ -1628,7 +1629,9 @@ button:disabled{opacity:.6;cursor:not-allowed}
         ? `${booking.customer_name} — ${booking.customer_phone || ""}`
         : "Service booking";
 
-      const amountVal = Number(booking.booked_price ?? 0);
+      const fallbackPrice = booking.service_items?.sale_price || booking.service_items?.price || 0;
+      const amountVal = Number(booking.booked_price !== null && booking.booked_price !== undefined ? booking.booked_price : fallbackPrice);
+      
       const gross = document.createElement("div");
       gross.className = "order-price";
       gross.textContent = money(amountVal);
@@ -1679,7 +1682,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
     try {
       const { data: bookings, error } = await db
         .from("bookings")
-        .select("*, service_items(title)")
+        .select("*, service_items(title, price, sale_price)")
         .eq("store_id", activeVendor.id)
         .order("created_at", { ascending: false });
 
@@ -1698,7 +1701,9 @@ button:disabled{opacity:.6;cursor:not-allowed}
       } else {
         bookings.forEach(booking => {
           const statusText = String(booking.status || "pending").toUpperCase();
-          const amountVal = Number(booking.booked_price ?? 0);
+          
+          const fallbackPrice = booking.service_items?.sale_price || booking.service_items?.price || 0;
+          const amountVal = Number(booking.booked_price !== null && booking.booked_price !== undefined ? booking.booked_price : fallbackPrice);
 
           if (statusText === "COMPLETED") {
             revenue += amountVal;
