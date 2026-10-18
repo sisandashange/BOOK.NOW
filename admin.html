@@ -572,57 +572,68 @@
     }
 
     async function loadVendors() {
-      const container = $("vendorsList");
-      container.innerHTML = '<div class="empty">Loading vendors…</div>';
+  const container = $("vendorsList");
+  container.innerHTML = '<div class="empty">Loading vendors…</div>';
 
-      const { data, error } = await db
-        .from("vendors")
-        .select("id,owner_id,name,business_name,email,phone,subscription_status,subscription_expires_at,is_admin,created_at,pop_receipt_url")
-        .order("created_at", { ascending: false });
+  const { data, error } = await db
+    .from("vendors")
+    .select("id,owner_id,name,email,phone,subscription_status,subscription_expires_at,is_admin,created_at,pop_receipt_url")
+    .order("created_at", { ascending: false });
 
-      if (error) {
-        vendorsCache = [];
-        container.innerHTML = "";
-        showMessage("vendorsMessage", `Could not load vendors: ${error.message}`, "error");
-        container.innerHTML = '<div class="empty">Vendor records could not be loaded. Check the vendors table grants and RLS policies.</div>';
-        updateStats();
-        return;
-      }
+  if (error) {
+    vendorsCache = [];
+    container.innerHTML =
+      '<div class="empty">Vendor records could not be loaded. Check the database columns and permissions.</div>';
 
-      vendorsCache = data || [];
-      showMessage("vendorsMessage", "", "info");
+    showMessage(
+      "vendorsMessage",
+      `Could not load vendors: ${error.message}`,
+      "error"
+    );
 
-      if (!vendorsCache.length) {
-        container.innerHTML = '<div class="empty">No vendor records were returned.</div>';
-        updateStats();
-        return;
-      }
+    updateStats();
+    return;
+  }
 
-      container.innerHTML = vendorsCache.map((vendor) => {
-        const name = vendor.business_name || vendor.name || "Unnamed vendor";
-        const status = vendor.subscription_status || "UNKNOWN";
-        const legacyReceipt = safeHttpUrl(vendor.pop_receipt_url);
+  vendorsCache = data || [];
+  showMessage("vendorsMessage", "", "info");
 
-        return `
-          <article class="item-card">
-            <div class="item-title">${escapeHTML(name)}</div>
-            <p><strong>Vendor ID:</strong> ${escapeHTML(vendor.id)}</p>
-            <p><strong>Owner ID:</strong> ${escapeHTML(vendor.owner_id)}</p>
-            <p><strong>Email:</strong> ${escapeHTML(vendor.email || "Not provided")}</p>
-            <p><strong>Phone:</strong> ${escapeHTML(vendor.phone || "Not provided")}</p>
-            <p><strong>Subscription:</strong>
-              <span class="badge ${statusClass(status)}">${escapeHTML(status)}</span>
-            </p>
-            <p><strong>Expires:</strong> ${escapeHTML(formatDate(vendor.subscription_expires_at))}</p>
-            <p><strong>Registered:</strong> ${escapeHTML(formatDate(vendor.created_at))}</p>
-            ${legacyReceipt ? `<p><a href="${escapeHTML(legacyReceipt)}" target="_blank" rel="noopener noreferrer">Open legacy payment receipt</a></p>` : ""}
-            <p class="muted small">Subscription approvals must be handled through the subscription payment request workflow.</p>
-          </article>
-        `;
-      }).join("");
+  if (vendorsCache.length === 0) {
+    container.innerHTML =
+      '<div class="empty">No vendor records were returned.</div>';
+    updateStats();
+    return;
+  }
 
-      updateStats();
-    }
+  container.innerHTML = vendorsCache.map((vendor) => {
+    const name = vendor.name || "Unnamed vendor";
+    const status = vendor.subscription_status || "UNKNOWN";
+    const receiptUrl = safeHttpUrl(vendor.pop_receipt_url);
+
+    return `
+      <article class="item-card">
+        <div class="item-title">${escapeHTML(name)}</div>
+        <p><strong>Vendor ID:</strong> ${escapeHTML(vendor.id)}</p>
+        <p><strong>Owner ID:</strong> ${escapeHTML(vendor.owner_id)}</p>
+        <p><strong>Email:</strong> ${escapeHTML(vendor.email || "Not provided")}</p>
+        <p><strong>Phone:</strong> ${escapeHTML(vendor.phone || "Not provided")}</p>
+        <p>
+          <strong>Subscription:</strong>
+          <span class="badge ${statusClass(status)}">${escapeHTML(status)}</span>
+        </p>
+        <p><strong>Expires:</strong> ${escapeHTML(formatDate(vendor.subscription_expires_at))}</p>
+        <p><strong>Registered:</strong> ${escapeHTML(formatDate(vendor.created_at))}</p>
+        ${
+          receiptUrl
+            ? `<p><a href="${escapeHTML(receiptUrl)}" target="_blank" rel="noopener noreferrer">Open legacy payment receipt</a></p>`
+            : ""
+        }
+      </article>
+    `;
+  }).join("");
+
+  updateStats();
+}
 
     async function loadPaymentRequests() {
       const container = $("paymentsList");
