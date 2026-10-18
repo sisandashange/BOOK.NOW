@@ -3,262 +3,437 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BOOK.NOW Partner Portal</title>
+<title>BOOK.NOW Founder Control Panel</title>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
 :root {
-  --primary:#0f172a;--accent:#2563eb;--bg:#f8fafc;--surface:#fff;
-  --text:#0f172a;--muted:#64748b;--border:#e2e8f0;
-  --success:#16a34a;--success-bg:#f0fdf4;--warning-bg:#fffbeb;
-  --warning:#d97706;--danger:#dc2626;--danger-bg:#fef2f2;--radius:16px;
+  --primary:#0f172a;
+  --accent:#2563eb;
+  --bg:#f8fafc;
+  --text:#0f172a;
+  --muted:#64748b;
+  --border:#e2e8f0;
+  --success:#16a34a;
+  --success-bg:#f0fdf4;
+  --warning:#d97706;
+  --warning-bg:#fffbeb;
+  --danger:#dc2626;
+  --danger-bg:#fef2f2;
+  --radius:16px;
 }
-*{box-sizing:border-box;font-family:'Plus Jakarta Sans',sans-serif;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:var(--bg);color:var(--text);padding-bottom:50px}
-button,input,select{font:inherit}
-button{cursor:pointer}
-button:disabled{opacity:.6;cursor:not-allowed}
-#auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.auth-card{background:white;padding:28px;border-radius:20px;border:1px solid var(--border);width:100%;max-width:420px}
-.auth-title{text-align:center;font-size:20px;font-weight:700;margin-bottom:6px}
-.auth-sub{text-align:center;font-size:13px;color:var(--muted);margin-bottom:24px}
-.top-nav{background:white;padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px;position:sticky;top:0;z-index:20}
-.brand{font-size:16px;font-weight:700;display:flex;align-items:center;gap:7px}
-.brand-badge{background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:3px 6px;border-radius:4px}
-.business-bar{background:white;padding:14px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:12px}
-.business-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.business-info{display:flex;align-items:center;gap:10px;min-width:0}
-.biz-avatar{width:42px;height:42px;border-radius:12px;object-fit:cover;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
-.biz-name{font-weight:700;font-size:15px}
-.biz-type{font-size:12px;color:var(--muted);margin-top:2px}
-.store-photo-edit-box{display:flex;align-items:center;gap:10px;background:#f8fafc;padding:10px;border-radius:12px;border:1px solid var(--border);font-size:12px;}
-.container{padding:16px;max-width:760px;margin:auto}
-.stats-container{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:20px}
-.stat-box,.finance-card{background:white;padding:15px;border-radius:var(--radius);border:1px solid var(--border);min-width:0}
-.stat-header{font-size:12px;font-weight:600;color:var(--muted)}
-.stat-value{font-size:22px;font-weight:700;margin-top:7px;overflow-wrap:anywhere}
-.nav-tabs{display:flex;gap:4px;background:#e2e8f0;padding:4px;border-radius:12px;margin-bottom:20px;overflow-x:auto;}
-.tab-item{flex:1;min-width:70px;padding:10px 5px;border:0;background:transparent;font-size:12px;font-weight:600;color:var(--muted);border-radius:8px;white-space:nowrap;}
-.tab-item.active{background:white;color:var(--text);box-shadow:0 1px 3px #00000012}
-.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
-.section-head h3{font-size:16px;margin:0}
-.btn-primary{background:var(--accent);color:white;border:0;padding:12px 14px;border-radius:10px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%}
-.card-list{display:flex;flex-direction:column;gap:12px}
-.order-card,.ledger-card{background:white;padding:15px;border-radius:14px;border:1px solid var(--border);overflow-wrap:anywhere}
-.order-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
-.order-title{font-weight:700;font-size:14px;overflow-wrap:anywhere}
-.order-time{font-size:12px;color:var(--muted);margin-top:4px}
-.order-price{font-weight:700;color:var(--success);font-size:16px;text-align:right;white-space:nowrap}
-.old-price{font-size:11px;color:var(--muted);text-decoration:line-through;display:block}
-.order-status{display:inline-block;padding:4px 9px;border-radius:6px;font-size:11px;font-weight:700;margin-top:6px}
-.status-pending{background:var(--warning-bg);color:var(--warning)}
-.status-confirmed{background:#e0f2fe;color:#0369a1}
-.status-completed{background:var(--success-bg);color:var(--success)}
-.status-cancelled,.status-failed{background:#fee2e2;color:#991b1b}
-.order-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)}
-.btn-action{padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;border:0}
-.btn-confirm{background:#0284c7;color:white}
-.btn-complete{background:var(--success);color:white}
-.btn-edit{background:#f1f5f9;color:var(--text);border:1px solid var(--border);}
-.modal{position:fixed;inset:0;background:#0f172a66;display:none;justify-content:center;align-items:flex-end;z-index:100;overflow-y:auto}
-.modal-sheet{background:white;width:100%;max-width:600px;padding:24px;border-radius:24px 24px 0 0;margin-top:auto}
-.form-field{margin-bottom:14px}
-.form-field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
-.form-field input,.form-field select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);font-size:14px}
-.empty-box{text-align:center;padding:32px 16px;background:white;border-radius:14px;border:1px dashed var(--border);color:var(--muted);font-size:13px;overflow-wrap:anywhere}
-.link-btn{color:var(--accent);cursor:pointer;font-weight:600;text-align:center;margin-top:14px;font-size:13px;display:block}
-.finance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0 22px}
-.finance-label{color:var(--muted);font-size:11px;font-weight:600;line-height:1.5}
-.finance-value{font-size:19px;font-weight:700;margin-top:7px;overflow-wrap:anywhere}
-.finance-note{color:var(--muted);font-size:11px;line-height:1.5;margin-top:5px}
-.ledger-row{display:flex;justify-content:space-between;gap:12px;margin:9px 0;font-size:12px}
-.ledger-row span:first-child{color:var(--muted)}
-.ledger-row span:last-child{text-align:right;font-weight:600;overflow-wrap:anywhere}
-.ledger-section{margin-top:24px}
-.ledger-section h3{font-size:15px;margin:0 0 12px}
-.finance-disclaimer{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;padding:12px;border-radius:10px;font-size:12px;line-height:1.6;margin-bottom:16px}
-
-.image-preview-grid { display: flex; gap: 8px; margin-top: 8px; overflow-x: auto; padding-bottom: 4px; }
-.preview-thumb { width: 64px; height: 64px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); }
-.item-gallery { display: flex; gap: 6px; margin-top: 8px; }
-.item-thumb { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border); }
-
-.sale-badge { background: var(--danger-bg); color: var(--danger); font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; margin-left: 6px; text-transform: uppercase; }
-.ref-pill { background: #eff6ff; color: var(--accent); font-family: monospace; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 6px; border: 1px solid #bfdbfe; display: inline-block; }
-.queue-pill { background: #fef3c7; color: #b45309; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; border: 1px solid #fde68a; display: inline-block; }
-
-@media(max-width:400px){.container{padding:12px}.top-nav{padding:12px}.brand{font-size:13px}.finance-card{padding:11px}.finance-value{font-size:17px}.tab-item{font-size:11px}}
-
-#subscription-gate {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  overflow-y: auto;
-  background: #f8fafc;
-  padding: 20px;
+* {
+  box-sizing:border-box;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  -webkit-tap-highlight-color:transparent;
 }
-
-.subscription-card {
-  max-width: 500px;
-  margin: 24px auto;
-  padding: 24px;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 18px;
+body {
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  padding-bottom:50px;
 }
-
-.subscription-bank {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  padding: 14px;
-  border-radius: 12px;
-  margin: 18px 0;
-  font-size: 13px;
-  line-height: 1.9;
+button,input,select {font:inherit}
+button {cursor:pointer}
+button:disabled {opacity:.6;cursor:not-allowed}
+#auth-screen {
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
 }
-
-.subscription-reference {
-  display: block;
-  padding: 10px;
-  background: #eff6ff;
-  border-radius: 8px;
-  text-align: center;
-  color: #1d4ed8;
-  font-weight: 800;
-  overflow-wrap: anywhere;
+.auth-card {
+  background:white;
+  padding:28px;
+  border-radius:20px;
+  border:1px solid var(--border);
+  width:100%;
+  max-width:400px;
 }
-
-.subscription-message {
-  padding: 12px;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  border-radius: 10px;
-  color: #92400e;
-  font-size: 13px;
-  line-height: 1.6;
-  margin-bottom: 16px;
+.auth-title {
+  text-align:center;
+  font-size:20px;
+  font-weight:700;
+  margin-bottom:6px;
 }
-
-.subscription-card input[type="file"] {
-  display: block;
-  width: 100%;
-  margin: 10px 0 16px;
-  padding: 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
+.auth-sub {
+  text-align:center;
+  font-size:13px;
+  color:var(--muted);
+  margin-bottom:24px;
 }
-
-.subscription-logout {
-  margin-top: 12px;
-  background: #f1f5f9;
-  color: #0f172a;
+.top-nav {
+  background:white;
+  padding:14px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  position:sticky;
+  top:0;
+  z-index:20;
+  gap:10px;
+}
+.brand {
+  font-size:16px;
+  font-weight:800;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  color:var(--primary);
+}
+.container {
+  padding:16px;
+  max-width:850px;
+  margin:auto;
+}
+.stats-container {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  margin-bottom:20px;
+}
+.stat-box {
+  background:white;
+  padding:15px;
+  border-radius:var(--radius);
+  border:1px solid var(--border);
+  min-width:0;
+}
+.stat-header {
+  font-size:12px;
+  font-weight:600;
+  color:var(--muted);
+}
+.stat-value {
+  font-size:22px;
+  font-weight:700;
+  margin-top:7px;
+  overflow-wrap:anywhere;
+}
+.nav-tabs {
+  display:flex;
+  gap:4px;
+  background:#e2e8f0;
+  padding:4px;
+  border-radius:12px;
+  margin-bottom:20px;
+  overflow-x:auto;
+}
+.tab-item {
+  flex:1;
+  min-width:max-content;
+  padding:10px;
+  border:0;
+  background:transparent;
+  font-size:12px;
+  font-weight:600;
+  color:var(--muted);
+  border-radius:8px;
+  text-align:center;
+}
+.tab-item.active {
+  background:white;
+  color:var(--text);
+  box-shadow:0 1px 3px rgba(0,0,0,.08);
+}
+.section-head {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-bottom:14px;
+}
+.section-head h3 {font-size:16px;margin:0}
+.btn-primary {
+  background:var(--accent);
+  color:white;
+  border:0;
+  padding:10px 14px;
+  border-radius:10px;
+  font-size:13px;
+  font-weight:600;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+.btn-success {background:var(--success)}
+.btn-danger {background:var(--danger)}
+.btn-muted {background:#475569}
+.card-list {display:flex;flex-direction:column;gap:12px}
+.vendor-card,.order-card,.admin-card {
+  background:white;
+  padding:18px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  overflow-wrap:anywhere;
+}
+.vendor-top,.order-top {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+  margin-bottom:10px;
+}
+.vendor-title,.order-title {font-weight:800;font-size:14px}
+.vendor-meta,.order-time {
+  font-size:12px;
+  color:var(--muted);
+  margin-top:4px;
+  overflow-wrap:anywhere;
+}
+.order-price {
+  font-weight:700;
+  color:var(--success);
+  font-size:16px;
+  text-align:right;
+}
+.status-badge {
+  padding:4px 9px;
+  border-radius:6px;
+  font-size:11px;
+  font-weight:700;
+  display:inline-block;
+  overflow-wrap:anywhere;
+}
+.status-active,.status-approved,.status-completed {
+  background:var(--success-bg);
+  color:var(--success);
+}
+.status-pending,.status-pending_approval,.status-pending_payment {
+  background:var(--warning-bg);
+  color:var(--warning);
+}
+.status-rejected,.status-expired {
+  background:var(--danger-bg);
+  color:var(--danger);
+}
+.ref-pill {
+  background:#eff6ff;
+  color:var(--accent);
+  font-family:monospace;
+  font-size:11px;
+  font-weight:800;
+  padding:2px 8px;
+  border-radius:6px;
+  border:1px solid #bfdbfe;
+  display:inline-block;
+  margin-top:4px;
+  overflow-wrap:anywhere;
+}
+.form-field {margin-bottom:14px}
+.form-field label {
+  display:block;
+  font-size:12px;
+  font-weight:600;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+.form-field input,.form-field select {
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  font-size:14px;
+  background:white;
+}
+.empty-box {
+  text-align:center;
+  padding:32px 16px;
+  background:white;
+  border-radius:14px;
+  border:1px dashed var(--border);
+  color:var(--muted);
+  font-size:13px;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+.notice {
+  padding:12px;
+  border-radius:10px;
+  background:#eff6ff;
+  color:#1e40af;
+  font-size:12px;
+  line-height:1.5;
+  margin-bottom:14px;
+}
+.error-box {
+  padding:12px;
+  border-radius:10px;
+  background:var(--danger-bg);
+  color:#991b1b;
+  font-size:12px;
+  line-height:1.5;
+  margin-bottom:12px;
+  overflow-wrap:anywhere;
+  white-space:pre-wrap;
+}
+.success-box {
+  padding:12px;
+  border-radius:10px;
+  background:var(--success-bg);
+  color:#166534;
+  font-size:12px;
+  line-height:1.5;
+  margin-bottom:12px;
+  overflow-wrap:anywhere;
+}
+.actions {
+  background:#f8fafc;
+  padding:12px;
+  border-radius:10px;
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  margin-top:8px;
+}
+.small-note {
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.5;
+  overflow-wrap:anywhere;
+}
+.hidden {display:none!important}
+a {
+  color:var(--accent);
+  font-weight:700;
+  overflow-wrap:anywhere;
+}
+.receipt-link {
+  display:inline-block;
+  margin-top:8px;
+  padding:8px 10px;
+  border-radius:8px;
+  background:#eff6ff;
+  font-size:12px;
+}
+@media(max-width:480px) {
+  .top-nav {align-items:flex-start}
+  .brand {font-size:13px}
+  .btn-primary {padding:9px 10px}
+  .vendor-card,.order-card,.admin-card {padding:14px}
+  .section-head {align-items:flex-start}
+  .vendor-top,.order-top {flex-wrap:wrap}
 }
 </style>
 </head>
+
 <body>
 
 <div id="auth-screen">
   <div class="auth-card">
-    <div class="brand" style="justify-content:center;margin-bottom:16px"><i class="ph ph-storefront" style="font-size:26px;color:var(--accent)"></i> Partner Hub</div>
-    <div class="auth-title" id="auth-heading">Partner Login</div>
-    <div class="auth-sub" id="auth-subheading">Access your business dashboard securely</div>
-    <div class="form-field"><label for="auth-email">Email Address</label><input type="email" id="auth-email" autocomplete="email" placeholder="owner@business.co.za"></div>
-    <div class="form-field"><label for="auth-password">Password</label><input type="password" id="auth-password" autocomplete="current-password" placeholder="Password"></div>
-    <button class="btn-primary" id="auth-submit-btn">Sign In</button>
-    <span class="link-btn" id="toggle-auth-btn">Need an account? Register as Partner</span>
+    <div class="brand" style="justify-content:center;margin-bottom:16px">
+      <i class="ph ph-shield-check" style="font-size:26px;color:var(--accent)"></i>
+      BOOK.NOW
+    </div>
+
+    <div class="auth-title">Founder Login</div>
+    <div class="auth-sub">Sign in with the authorised founder account.</div>
+
+    <div id="startup-message" class="error-box hidden" role="alert"></div>
+
+    <form id="admin-login-form">
+      <div class="form-field">
+        <label for="admin-email">Email Address</label>
+        <input type="email" id="admin-email" autocomplete="username" placeholder="you@gmail.com" required>
+      </div>
+
+      <div class="form-field">
+        <label for="admin-password">Password</label>
+        <input type="password" id="admin-password" autocomplete="current-password" placeholder="Password" required>
+      </div>
+
+      <button type="submit" class="btn-primary" id="admin-login-btn" style="width:100%">
+        Sign In
+      </button>
+    </form>
+
+    <div id="login-message" class="small-note" role="status" aria-live="polite" style="margin-top:12px"></div>
   </div>
 </div>
 
-<div id="dashboard-screen" style="display:none">
+<div id="admin-dashboard" class="hidden">
   <div class="top-nav">
-    <div class="brand"><i class="ph ph-storefront" style="font-size:22px;color:var(--accent)"></i> Partner Portal <span class="brand-badge">DIRECT PAYOUT</span></div>
-    <div style="display:flex;gap:7px;align-items:center">
-      <button class="btn-primary" style="width:auto;padding:8px 10px;background:#2563eb;color:#fff" id="open-scanner-btn"><i class="ph ph-qr-code"></i> Scan Receipt</button>
-      <button class="btn-primary" style="width:auto;padding:8px 10px;background:#f1f5f9;color:#0f172a" id="open-add-biz-btn"><i class="ph ph-plus"></i> Add Shop</button>
-      <button class="btn-primary" style="width:auto;padding:8px 10px;background:#fee2e2;color:#991b1b" id="logout-btn" aria-label="Logout"><i class="ph ph-sign-out"></i></button>
+    <div class="brand">
+      <i class="ph ph-shield-check" style="color:var(--accent)"></i>
+      BOOK.NOW Founder Panel
     </div>
-  </div>
-
-  <div class="business-bar">
-    <div class="business-top">
-      <div class="business-info">
-        <img id="biz-avatar-img" class="biz-avatar" src="" alt="Store" style="display:none">
-        <div class="biz-avatar" id="biz-avatar-letter">N</div>
-        <div>
-          <div class="biz-name" id="biz-display-name">Loading Business...</div>
-          <div class="biz-type" id="biz-display-type">Verifying partner account</div>
-        </div>
-      </div>
-      <select id="vendor-select" aria-label="Switch business" style="padding:7px;border-radius:8px;border:1px solid var(--border);max-width:45%;font-size:12px"><option value="">Switch Shop</option></select>
-    </div>
-
-    <div class="store-photo-edit-box">
-      <i class="ph ph-image" style="font-size:18px;color:var(--accent);"></i>
-      <div style="flex-grow:1;">
-        <div style="font-weight:700;">Store Profile Picture</div>
-        <div style="color:var(--muted);font-size:11px;">Shown on marketplace & storefront hero</div>
-      </div>
-      <input type="file" id="store-photo-input" accept="image/*" style="display:none">
-      <button class="btn-action btn-confirm" id="upload-store-photo-btn" style="padding:6px 12px;font-size:11px;">Change Photo</button>
-    </div>
+    <button class="btn-primary" style="background:#fee2e2;color:#991b1b;padding:8px 12px" id="admin-logout-btn">Log Out</button>
   </div>
 
   <main class="container">
+    <div style="margin-bottom:18px">
+      <h2 style="margin-bottom:5px">Founder Dashboard</h2>
+      <div class="small-note">Manage stores, subscription requests, bank settings and bookings.</div>
+    </div>
+
+    <div id="global-message" class="small-note" role="status" aria-live="polite"></div>
+
     <div class="stats-container">
-      <div class="stat-box"><div class="stat-header"><i class="ph ph-currency-circle-dollar"></i> Vendor Net Revenue</div><div class="stat-value" id="stat-revenue">R0.00</div></div>
-      <div class="stat-box"><div class="stat-header"><i class="ph ph-users"></i> Queue Active Today</div><div class="stat-value" id="stat-count">0</div></div>
+      <div class="stat-box">
+        <div class="stat-header">Total Registered Shops</div>
+        <div class="stat-value" id="stat-shops">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-header">Pending Payment Requests</div>
+        <div class="stat-value" id="stat-pending">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-header">Active Subscriptions</div>
+        <div class="stat-value" id="stat-active">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-header">Customer Bookings</div>
+        <div class="stat-value" id="stat-orders">—</div>
+      </div>
     </div>
 
     <div class="nav-tabs">
-      <button class="tab-item active" id="tab-orders-btn">Bookings Queue</button>
-      <button class="tab-item" id="tab-services-btn">Services</button>
-      <button class="tab-item" id="tab-profile-btn">Store Profile</button>
-      <button class="tab-item" id="tab-bank-btn">Bank & EFT</button>
-      <button class="tab-item" id="tab-settlement-btn">Settlement</button>
-      <button class="tab-item" id="tab-moneystore-btn">Money Store</button>
+      <button class="tab-item active" data-tab="vendors-section">Stores &amp; Approvals</button>
+      <button class="tab-item" data-tab="settings-section">Founder Bank Settings</button>
+      <button class="tab-item" data-tab="orders-section">Platform Bookings</button>
     </div>
 
-    <section id="orders-tab">
-      <div class="section-head"><h3>Today's Active Appointments Queue</h3></div>
-      <div id="orders-list" class="card-list"><div class="empty-box">No bookings received yet.</div></div>
-    </section>
+    <section id="vendors-section">
+      <div class="section-head">
+        <h3>Stores &amp; Subscription Approvals</h3>
+        <button class="btn-primary" id="refresh-vendors-btn">
+          <i class="ph ph-arrows-clockwise"></i> Refresh
+        </button>
+      </div>
 
-    <section id="services-tab" style="display:none">
-      <div class="section-head"><h3>Services &amp; Menu</h3><button class="btn-primary" id="open-add-service-btn" style="width:auto;padding:8px 12px"><i class="ph ph-plus"></i> Add Service</button></div>
-      <div id="services-list" class="card-list"><div class="empty-box">No services added yet.</div></div>
-    </section>
+      <div class="notice">
+        Subscription requests are loaded securely.
+        Open the receipt and verify payment in your bank account before approving.
+        Rejected requests do not delete store data.
+      </div>
 
-    <!-- STORE PROFILE & LOCATION MANAGER TAB -->
-    <section id="profile-tab" style="display:none">
-      <div class="section-head"><h3><i class="ph ph-storefront"></i> Store Profile &amp; Location Manager</h3></div>
-      <div class="card" style="background:white; padding:16px; border-radius:var(--radius); border:1px solid var(--border);">
-        <div class="form-field"><label for="store-name-input">Business Name</label><input type="text" id="store-name-input" placeholder="e.g. Maboneng Barbershop"></div>
-        <div class="form-field"><label for="store-category-input">Business Category</label>
-          <select id="store-category-input">
-            <option value="BARBER">Barbershop</option>
-            <option value="SALON">Hair &amp; Beauty Salon</option>
-            <option value="SHISANYAMA">Shisanyama / Braai Spot</option>
-          </select>
-        </div>
-        <div class="form-field"><label for="store-phone-input">WhatsApp / Contact Number</label><input type="tel" id="store-phone-input" placeholder="e.g. 0821234567"></div>
-        <div class="form-field"><label for="store-address-input">Store Physical Location / Address</label><input type="text" id="store-address-input" placeholder="e.g. 12 Fox Street, Maboneng, Johannesburg"></div>
-        <button class="btn-primary" id="save-profile-btn" style="margin-top:6px;">Save Profile &amp; Location</button>
+      <div id="vendors-admin-list" class="card-list">
+        <div class="empty-box">Loading stores…</div>
       </div>
     </section>
 
-    <!-- BANK & EFT SETTINGS TAB -->
-    <section id="bank-tab" style="display:none">
-      <div class="section-head"><h3><i class="ph ph-bank"></i> Customer Payout Bank Account Setup (EFT)</h3></div>
-      <div class="card" style="background:white; padding:16px; border-radius:var(--radius); border:1px solid var(--border);">
-        <p style="font-size:12px; color:var(--muted); margin-bottom:14px; line-height:1.4;">
-          Select your bank from the list below. The universal branch code will be set automatically, and you only need to enter your account holder name and account number manually.
+    <section id="settings-section" class="hidden">
+      <div class="section-head">
+        <h3><i class="ph ph-bank"></i> Founder EFT Receiving Account</h3>
+      </div>
+
+      <div class="admin-card">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5">
+          These details are for store subscription payments. Check your details carefully before saving.
         </p>
-        <div class="form-field"><label for="bank-select">Select Bank</label>
-          <select id="bank-select" onchange="onBankSelected()">
+
+        <div class="form-field">
+          <label for="founder-bank-select">Select Bank</label>
+          <select id="founder-bank-select">
             <option value="">-- Choose Your Bank --</option>
             <option value="First National Bank (FNB)|250655">First National Bank (FNB)</option>
             <option value="Capitec Bank|470010">Capitec Bank</option>
@@ -269,1641 +444,542 @@ button:disabled{opacity:.6;cursor:not-allowed}
             <option value="Discovery Bank|679000">Discovery Bank</option>
           </select>
         </div>
-        <div class="form-field"><label for="account-holder">Account Holder Name</label><input type="text" id="account-holder" placeholder="e.g. John Doe / Business (Pty) Ltd"></div>
-        <div class="form-field"><label for="account-number">Account Number (Manual Entry)</label><input type="text" id="account-number" placeholder="e.g. 62810293847"></div>
-        <div class="form-field"><label for="branch-code">Branch Code (Auto-Filled)</label><input type="text" id="branch-code" readonly style="background:#f1f5f9; color:var(--muted);" placeholder="Select bank above"></div>
-        <button class="btn-primary" id="save-bank-btn" style="margin-top:6px;">Save Verified Bank Details</button>
+
+        <div class="form-field">
+          <label for="founder-acc-name">Account Holder Name</label>
+          <input type="text" id="founder-acc-name" placeholder="Account holder name" autocomplete="off">
+        </div>
+
+        <div class="form-field">
+          <label for="founder-acc-number">Account Number</label>
+          <input type="text" id="founder-acc-number" inputmode="numeric" placeholder="Account number" autocomplete="off">
+        </div>
+
+        <div class="form-field">
+          <label for="founder-branch-code">Branch Code</label>
+          <input type="text" id="founder-branch-code" readonly style="background:#f1f5f9;color:var(--muted)" placeholder="Select bank above">
+        </div>
+
+        <button class="btn-primary" id="save-founder-bank-btn" style="width:100%;margin-top:6px">Save Founder Bank Details</button>
+
+        <div id="bank-message" style="margin-top:12px"></div>
       </div>
     </section>
 
-    <section id="settlement-tab" style="display:none">
-      <div class="section-head"><h3>Settlement Overview</h3><button class="btn-action btn-confirm" id="refresh-settlement-btn">Refresh</button></div>
-      <div class="finance-disclaimer">Match incoming Instant EFT transfers using the customer's unique payment reference shown on their appointment cards.</div>
-      <div class="finance-grid">
-        <div class="finance-card"><div class="finance-label">Total Booking Value</div><div class="finance-value" id="ledger-gross">R0.00</div><div class="finance-note">Gross value of completed bookings</div></div>
-        <div class="finance-card"><div class="finance-label">Platform Commission</div><div class="finance-value" id="ledger-commission" style="color:var(--success);">R0.00</div><div class="finance-note">0% commission model</div></div>
-        <div class="finance-card"><div class="finance-label">Vendor Net Earnings</div><div class="finance-value" id="ledger-net">R0.00</div><div class="finance-note">100% full earnings retained</div></div>
-        <div class="finance-card"><div class="finance-label">Instant EFT Balances</div><div class="finance-value" id="ledger-eft-balance">R0.00</div><div class="finance-note">Completed bookings paid via Instant EFT</div></div>
-      </div>
-      <div class="ledger-section"><h3>Booking Settlement Details</h3><div id="settlement-orders-list" class="card-list"><div class="empty-box">Settlement details will appear here.</div></div></div>
-    </section>
-
-    <section id="moneystore-tab" style="display:none">
+    <section id="orders-section" class="hidden">
       <div class="section-head">
-        <h3><i class="ph ph-wallet"></i> My Money Store</h3>
-        <span class="brand-badge" style="background:#dcfce7; color:#166534;">100% Direct Earnings</span>
+        <h3>All Customer Bookings</h3>
+        <button class="btn-primary" id="refresh-orders-btn">
+          <i class="ph ph-arrows-clockwise"></i> Refresh
+        </button>
       </div>
-      <div class="finance-grid">
-        <div class="finance-card">
-          <div class="finance-label">Total Shop Earnings</div>
-          <div class="finance-value" id="wallet-balance">R0.00</div>
-          <div class="finance-note">Directly settled to your account</div>
-        </div>
-        <div class="finance-card">
-          <div class="finance-label">Platform Subscription</div>
-          <div class="finance-value" style="color:var(--accent);" id="wallet-subscription-rate">R299.00/mo</div>
-          <div class="finance-note">Flat monthly platform access fee</div>
-        </div>
+
+      <div id="orders-admin-list" class="card-list">
+        <div class="empty-box">Loading bookings…</div>
       </div>
     </section>
   </main>
 </div>
 
-<!-- QR SCANNER MODAL FOR VENDORS -->
-<div id="qr-scanner-modal" class="modal">
-  <div class="modal-sheet" style="text-align:center;">
-    <div class="section-head">
-      <h3><i class="ph ph-qr-code"></i> Scan Customer Receipt</h3>
-      <button class="btn-action btn-muted" id="close-qr-scanner-btn">✕</button>
-    </div>
-    <p style="font-size: 11px; color: var(--muted); margin-bottom: 10px;">Point camera at customer's receipt QR code to verify payment reference and queue position.</p>
-    <div id="qr-reader" style="width: 100%; max-width: 300px; margin: 0 auto; border-radius: 12px; overflow: hidden; border: 2px solid var(--border);"></div>
-    <div id="scan-result-status" style="margin-top: 12px; font-size: 13px; font-weight: 700;"></div>
-  </div>
-</div>
-
-<div id="service-modal" class="modal">
-  <div class="modal-sheet">
-    <div class="section-head"><h3 id="modal-service-title-text">Add Service Offering</h3><button class="btn-action btn-muted" id="close-service-modal" aria-label="Close">✕</button></div>
-    <input type="hidden" id="editing-service-id" value="">
-
-    <div class="form-field"><label for="service-title">Service Title</label><input type="text" id="service-title" placeholder="e.g. Fade Cut & Beard Trim" maxlength="150"></div>
-    <div class="form-field"><label for="service-price">Standard Price (ZAR)</label><input type="number" id="service-price" placeholder="e.g. 150" min="1" max="10000" step="0.01"></div>
-
-    <div style="background:#f8fafc; border:1px solid var(--border); padding:14px; border-radius:12px; margin-bottom:14px;">
-      <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:10px;"><i class="ph ph-tag"></i> Promotional Sale Pricing (Optional)</div>
-      <div class="form-field"><label for="service-sale-price">Special Sale Price (ZAR)</label><input type="number" id="service-sale-price" placeholder="e.g. 100" min="1" max="10000" step="0.01"></div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-        <div class="form-field"><label for="sale-start-date">Sale Start Date</label><input type="date" id="sale-start-date"></div>
-        <div class="form-field"><label for="sale-end-date">Sale End Date</label><input type="date" id="sale-end-date"></div>
-      </div>
-    </div>
-
-    <div class="form-field">
-      <label for="service-photos">Menu Photos (Max 3)</label>
-      <input type="file" id="service-photos" accept="image/*" multiple>
-      <div style="font-size:11px; color:var(--muted); margin-top:4px;">Upload new photos to update existing ones</div>
-      <div id="image-preview-container" class="image-preview-grid"></div>
-    </div>
-
-    <button class="btn-primary" id="save-service-btn">Publish Service</button>
-  </div>
-</div>
-
-<div id="register-modal" class="modal">
-  <div class="modal-sheet">
-    <div class="section-head"><h3>Register New Business</h3><button class="btn-action btn-muted" id="close-register-modal" aria-label="Close">✕</button></div>
-    <div class="form-field"><label for="new-biz-name">Business Name</label><input type="text" id="new-biz-name" placeholder="e.g. Nzuzo Barbershop" maxlength="150"></div>
-    <div class="form-field"><label for="new-biz-category">Category</label><select id="new-biz-category"><option value="BARBER">Barbershop</option><option value="SALON">Hair &amp; Beauty Salon</option><option value="SHISANYAMA">Shisanyama / Braai Spot</option></select></div>
-    <button class="btn-primary" id="save-biz-btn">Save Business</button>
-  </div>
-</div>
-
-<div id="subscription-gate" style="display:none">
-  <div class="subscription-card">
-    <div style="text-align:center">
-      <div style="font-size:36px;color:#2563eb">🏦</div>
-      <h2 id="subscription-heading">Store Subscription</h2>
-      <p id="subscription-description" style="color:#64748b;font-size:13px">
-        Complete payment to access your business dashboard.
-      </p>
-    </div>
-
-    <div class="subscription-bank">
-      <strong>BOOK.NOW EFT Payment Details</strong><br>
-      Bank: <span id="bank-info-name">FNB / First National Bank</span><br>
-      Account name: <span id="bank-info-acc-name">BOOK NOW Platform (Pty) Ltd</span><br>
-      Account number: <span id="bank-info-acc-num">62810293847</span><br>
-      Branch code: <span id="bank-info-branch">250655</span>
-
-      <hr style="border:0;border-top:1px solid #e2e8f0;margin:12px 0">
-
-      Payment reference:
-      <span id="subscription-reference" class="subscription-reference">Loading...</span>
-
-      <div style="margin-top:12px">
-        Amount due:
-        <strong id="subscription-amount" style="color:#166534"></strong>
-      </div>
-    </div>
-
-    <div id="subscription-review-message" class="subscription-message" style="display:none">
-      <strong>Application under review</strong><br>
-      Your proof of payment has been submitted. Your store/business will be activated within 24 hours once approved by the administrator.
-    </div>
-
-    <div id="subscription-upload-section">
-      <label for="subscription-proof-file" style="font-size:13px;font-weight:700">
-        Upload proof of payment (photo or PDF)
-      </label>
-      <input
-        type="file"
-        id="subscription-proof-file"
-        accept="image/jpeg,image/png,image/webp,application/pdf"
-      >
-      <button class="btn-primary" id="subscription-submit-btn">
-        Confirm Payment
-      </button>
-    </div>
-
-    <button class="btn-primary subscription-logout" id="subscription-logout-btn">
-      Sign Out
-    </button>
-  </div>
-</div>
-
 <script>
-(() => {
+(function () {
   "use strict";
 
   const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
-
-  let db = null;
-  let activeVendor = null;
-  let isSignUpMode = false;
-  let booted = false;
-  let selectedFiles = [];
-  let html5QrCodeScanner = null;
+  const SUPABASE_ANON_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
+  const FOUNDER_ID = "c0c85d2f-8473-49c3-a33a-92ff5acf1e94";
+  const PROOF_BUCKET = "subscription-proofs";
 
   const $ = id => document.getElementById(id);
 
+  function setLoginMessage(message, isError = false) {
+    const target = $("login-message");
+    if (!target) return;
+    target.textContent = message || "";
+    target.style.color = isError ? "#b91c1c" : "var(--muted)";
+  }
+
+  function showStartupError(message) {
+    const target = $("startup-message");
+    if (target) {
+      target.textContent = message;
+      target.classList.remove("hidden");
+    }
+    setLoginMessage(message, true);
+  }
+
+  function showMessage(container, message, isError = false) {
+    container.replaceChildren();
+    const div = document.createElement("div");
+    div.className = isError ? "error-box" : "empty-box";
+    div.textContent = message;
+    container.appendChild(div);
+  }
+
+  function showInlineMessage(container, message, type = "success") {
+    container.replaceChildren();
+    if (!message) return;
+
+    const div = document.createElement("div");
+    div.className = type === "error" ? "error-box" : "success-box";
+    div.textContent = message;
+    container.appendChild(div);
+  }
+
   function money(value) {
-    const n = Number(value);
-    return "R" + (Number.isFinite(n) ? n : 0).toFixed(2);
+    const amount = Number(value);
+    if (!Number.isFinite(amount)) return "R0.00";
+
+    return new Intl.NumberFormat("en-ZA", {
+      style: "currency",
+      currency: "ZAR"
+    }).format(amount);
   }
 
-  function setEmpty(id, message) {
-    const el = $(id);
-    if (!el) return;
-
-    el.replaceChildren();
-
-    const box = document.createElement("div");
-    box.className = "empty-box";
-    box.textContent = message;
-    el.appendChild(box);
+  function setDashboard(visible) {
+    $("auth-screen").classList.toggle("hidden", visible);
+    $("admin-dashboard").classList.toggle("hidden", !visible);
+    $("admin-dashboard").style.display = visible ? "block" : "none";
   }
 
-  function setButtonLoading(button, loading, text) {
-    if (!button) return;
-    button.disabled = loading;
-    button.textContent = text;
+  if (!window.supabase || typeof window.supabase.createClient !== "function") {
+    showStartupError("The Supabase library did not load. Refresh the page.");
+    return;
   }
 
-  function openModal(id) {
-    const modal = $(id);
-    if (modal) {
-      modal.style.display = "flex";
-      document.body.style.overflow = "hidden";
-    }
-  }
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  let refreshInProgress = false;
 
-  function closeModal(id) {
-    const modal = $(id);
-    if (modal) modal.style.display = "none";
+  async function requireFounder() {
+    const { data, error } = await db.auth.getUser();
 
-    const open = [
-      "register-modal",
-      "service-modal",
-      "qr-scanner-modal"
-    ].some(m => $(m)?.style.display === "flex");
-
-    document.body.style.overflow = open ? "hidden" : "";
-  }
-
-  function showTab(name) {
-    const tabs = {
-      orders: $("orders-tab"),
-      services: $("services-tab"),
-      profile: $("profile-tab"),
-      bank: $("bank-tab"),
-      settlement: $("settlement-tab"),
-      moneystore: $("moneystore-tab")
-    };
-
-    Object.entries(tabs).forEach(([key, el]) => {
-      if (el) el.style.display = key === name ? "block" : "none";
-    });
-
-    $("tab-orders-btn").classList.toggle("active", name === "orders");
-    $("tab-services-btn").classList.toggle("active", name === "services");
-    $("tab-profile-btn").classList.toggle("active", name === "profile");
-    $("tab-bank-btn").classList.toggle("active", name === "bank");
-
-    $("tab-settlement-btn")?.classList.toggle("active", name === "settlement");
-    $("tab-moneystore-btn")?.classList.toggle("active", name === "moneystore");
-  }
-
-  window.onBankSelected = function() {
-    const val = $("bank-select").value;
-
-    if (!val) {
-      $("branch-code").value = "";
-      return;
+    if (error || !data?.user) {
+      setDashboard(false);
+      return false;
     }
 
-    const [, branchCode] = val.split("|");
-    $("branch-code").value = branchCode;
-  };
+    if (data.user.id !== FOUNDER_ID) {
+      await db.auth.signOut();
+      setDashboard(false);
+      setLoginMessage("Access denied. Authorized founder account only.", true);
+      return false;
+    }
 
-  function bindButtons() {
-    $("upload-store-photo-btn").addEventListener("click", () => {
-      $("store-photo-input").click();
+    setDashboard(true);
+    return true;
+  }
+
+  async function boot() {
+    $("admin-login-form").addEventListener("submit", event => {
+      event.preventDefault();
+      signIn();
     });
 
-    $("store-photo-input").addEventListener("change", uploadStorePhoto);
+    $("admin-logout-btn").addEventListener("click", signOut);
+    $("refresh-vendors-btn").addEventListener("click", loadAdminData);
+    $("refresh-orders-btn").addEventListener("click", loadOrders);
+    $("save-founder-bank-btn").addEventListener("click", saveFounderBank);
 
-    $("open-scanner-btn").addEventListener("click", openQrScanner);
-    $("close-qr-scanner-btn").addEventListener("click", closeQrScanner);
-
-    $("tab-orders-btn").addEventListener("click", () => showTab("orders"));
-    $("tab-services-btn").addEventListener("click", () => showTab("services"));
-
-    $("tab-profile-btn").addEventListener("click", () => {
-      showTab("profile");
-      populateProfileForm();
+    $("founder-bank-select").addEventListener("change", () => {
+      const selected = $("founder-bank-select").value;
+      $("founder-branch-code").value = selected ? selected.split("|")[1] : "";
     });
 
-    $("tab-bank-btn").addEventListener("click", () => {
-      showTab("bank");
-      populateBankForm();
+    document.querySelectorAll("[data-tab]").forEach(button => {
+      button.addEventListener("click", () => switchTab(button.dataset.tab));
     });
 
-    $("tab-settlement-btn").addEventListener("click", async () => {
-      showTab("settlement");
-      await loadOrders();
-    });
+    try {
+      const { data, error } = await db.auth.getSession();
+      if (error) throw error;
 
-    $("tab-moneystore-btn").addEventListener("click", () => {
-      showTab("moneystore");
-      loadMoneyStoreWallet();
-    });
-
-    $("refresh-settlement-btn").addEventListener("click", async () => {
-      await loadOrders();
-    });
-
-    $("save-profile-btn").addEventListener("click", saveStoreProfile);
-    $("save-bank-btn").addEventListener("click", saveVendorBankDetails);
-
-    $("service-photos").addEventListener("change", event => {
-      const files = Array.from(event.target.files);
-
-      if (files.length > 3) {
-        alert("Maximum 3 photos allowed per menu item.");
-        event.target.value = "";
-        selectedFiles = [];
-        $("image-preview-container").replaceChildren();
-        return;
-      }
-
-      selectedFiles = files.slice(0, 3);
-
-      const container = $("image-preview-container");
-      container.replaceChildren();
-
-      selectedFiles.forEach(file => {
-        const img = document.createElement("img");
-        img.className = "preview-thumb";
-        img.src = URL.createObjectURL(file);
-        container.appendChild(img);
-      });
-    });
-
-    $("toggle-auth-btn").addEventListener("click", () => {
-      isSignUpMode = !isSignUpMode;
-
-      $("auth-heading").textContent = isSignUpMode
-        ? "Register Partner Account"
-        : "Partner Login";
-
-      $("auth-subheading").textContent = isSignUpMode
-        ? "Create an account to register your shop"
-        : "Access your business dashboard securely";
-
-      $("auth-submit-btn").textContent = isSignUpMode
-        ? "Register Account"
-        : "Sign In";
-
-      $("toggle-auth-btn").textContent = isSignUpMode
-        ? "Already registered? Sign In"
-        : "Need an account? Register as Partner";
-
-      $("auth-password").autocomplete = isSignUpMode
-        ? "new-password"
-        : "current-password";
-    });
-
-    $("auth-submit-btn").addEventListener("click", async () => {
-      const email = $("auth-email").value.trim();
-      const password = $("auth-password").value;
-      const button = $("auth-submit-btn");
-
-      if (!email || !password) {
-        alert("Please enter both email and password.");
-        return;
-      }
-
-      setButtonLoading(button, true, "Processing...");
-
-      try {
-        if (isSignUpMode) {
-          const { data, error } = await db.auth.signUp({ email, password });
-
-          if (error) throw error;
-
-          if (data.session) {
-            await showDashboard();
-          } else {
-            alert("Account created! Please check your email to sign in.");
-          }
-        } else {
-          const { error } = await db.auth.signInWithPassword({
-            email,
-            password
-          });
-
-          if (error) throw error;
-
-          await showDashboard();
+      if (data?.session) {
+        if (await requireFounder()) {
+          await loadAdminData();
         }
-      } catch (error) {
-        alert("Authentication Error: " + error.message);
-      } finally {
-        setButtonLoading(
-          button,
-          false,
-          isSignUpMode ? "Register Account" : "Sign In"
-        );
-      }
-    });
-
-    $("logout-btn").addEventListener("click", logout);
-
-    $("subscription-logout-btn").addEventListener("click", logout);
-
-    $("open-add-biz-btn").addEventListener("click", () => {
-      openModal("register-modal");
-    });
-
-    $("close-register-modal").addEventListener("click", () => {
-      closeModal("register-modal");
-    });
-
-    $("open-add-service-btn").addEventListener("click", () => {
-      if (!activeVendor) {
-        alert("Please add or select a business first.");
-        return;
-      }
-
-      resetServiceForm();
-      openModal("service-modal");
-    });
-
-    $("close-service-modal").addEventListener("click", () => {
-      closeModal("service-modal");
-    });
-
-    ["register-modal", "service-modal", "qr-scanner-modal"].forEach(id => {
-      $(id).addEventListener("click", event => {
-        if (event.target === $(id)) closeModal(id);
-      });
-    });
-
-    $("vendor-select").addEventListener("change", async event => {
-      const id = event.target.value;
-      if (!id || !db) return;
-
-      try {
-        const { data, error } = await db
-          .from("stores")
-          .select("*")
-          .eq("id", id)
-          .single();
-
-        if (error) throw error;
-
-        activeVendor = data;
-        updateHeader();
-
-        await checkSubscriptionAndRender();
-      } catch (error) {
-        alert("Could not switch business: " + error.message);
-      }
-    });
-
-    $("save-biz-btn").addEventListener("click", saveBusiness);
-    $("save-service-btn").addEventListener("click", saveService);
-
-    $("subscription-submit-btn").addEventListener(
-      "click",
-      submitSubscriptionProof
-    );
-  }
-
-  async function logout() {
-    try {
-      const { error } = await db.auth.signOut();
-      if (error) throw error;
-    } catch (error) {
-      alert("Could not sign out: " + error.message);
-      return;
-    }
-
-    activeVendor = null;
-
-    $("dashboard-screen").style.display = "none";
-    $("auth-screen").style.display = "flex";
-    $("subscription-gate").style.display = "none";
-
-    showTab("orders");
-  }
-
-  function populateProfileForm() {
-    if (!activeVendor) return;
-
-    $("store-name-input").value = activeVendor.store_name || activeVendor.name || "";
-    $("store-category-input").value = activeVendor.category || "BARBER";
-    $("store-phone-input").value = activeVendor.phone_number || "";
-    $("store-address-input").value = activeVendor.address || "";
-  }
-
-  async function saveStoreProfile() {
-    if (!activeVendor) return;
-
-    const button = $("save-profile-btn");
-    const name = $("store-name-input").value.trim();
-    const category = $("store-category-input").value;
-    const phone_number = $("store-phone-input").value.trim();
-    const address = $("store-address-input").value.trim();
-
-    if (!name) {
-      alert("Business name is required.");
-      return;
-    }
-
-    setButtonLoading(button, true, "Saving Profile...");
-
-    try {
-      const { data, error } = await db
-        .from("stores")
-        .update({ store_name: name, category, phone_number, address, updated_at: new Date() })
-        .eq("id", activeVendor.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      activeVendor = { ...activeVendor, ...data };
-
-      updateHeader();
-
-      const selectedOption = $("vendor-select").selectedOptions[0];
-      if (selectedOption) selectedOption.textContent = name;
-
-      alert("Store profile & location updated successfully!");
-    } catch (error) {
-      alert("Error saving profile: " + error.message);
-    } finally {
-      setButtonLoading(button, false, "Save Profile & Location");
-    }
-  }
-
-  function populateBankForm() {
-    if (!activeVendor) return;
-
-    $("account-holder").value = activeVendor.account_holder || "";
-    $("account-number").value = activeVendor.account_number || "";
-    $("branch-code").value = activeVendor.branch_code || "";
-
-    if (activeVendor.bank_name) {
-      const select = $("bank-select");
-
-      for (let i = 0; i < select.options.length; i++) {
-        if (
-          select.options[i].value.startsWith(activeVendor.bank_name + "|")
-        ) {
-          select.selectedIndex = i;
-          break;
-        }
-      }
-    }
-  }
-
-  async function saveVendorBankDetails() {
-    if (!activeVendor) return;
-
-    const button = $("save-bank-btn");
-    const bankVal = $("bank-select").value;
-    const account_holder = $("account-holder").value.trim();
-    const account_number = $("account-number").value.trim();
-    const branch_code = $("branch-code").value.trim();
-
-    if (!bankVal || !account_number) {
-      alert("Please select your bank and enter your account number.");
-      return;
-    }
-
-    const bank_name = bankVal.split("|")[0];
-
-    setButtonLoading(button, true, "Saving Bank Details...");
-
-    try {
-      const { error } = await db
-        .from("stores")
-        .update({
-          bank_name,
-          account_holder,
-          account_number,
-          branch_code,
-          updated_at: new Date()
-        })
-        .eq("id", activeVendor.id);
-
-      if (error) throw error;
-
-      activeVendor.bank_name = bank_name;
-      activeVendor.account_holder = account_holder;
-      activeVendor.account_number = account_number;
-      activeVendor.branch_code = branch_code;
-
-      alert("Bank details saved securely!");
-    } catch (error) {
-      alert("Error saving bank details: " + error.message);
-    } finally {
-      setButtonLoading(button, false, "Save Verified Bank Details");
-    }
-  }
-
-  function openQrScanner() {
-    if (!activeVendor) {
-      alert("Please select a business first.");
-      return;
-    }
-
-    openModal("qr-scanner-modal");
-
-    $("scan-result-status").textContent =
-      "Camera active... Point at customer QR code...";
-    $("scan-result-status").style.color = "var(--muted)";
-
-    if (!html5QrCodeScanner) {
-      html5QrCodeScanner = new Html5Qrcode("qr-reader");
-    }
-
-    html5QrCodeScanner.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 200, height: 200 } },
-      async decodedText => {
-        try {
-          await html5QrCodeScanner.stop();
-        } catch (_) {}
-
-        await verifyScannedReceipt(decodedText);
-      },
-      () => {}
-    ).catch(error => {
-      $("scan-result-status").textContent = "Camera Error: " + error;
-      $("scan-result-status").style.color = "var(--danger)";
-    });
-  }
-
-  function closeQrScanner() {
-    if (html5QrCodeScanner) {
-      html5QrCodeScanner.stop().catch(() => {});
-    }
-
-    closeModal("qr-scanner-modal");
-  }
-
-  async function verifyScannedReceipt(scannedOrderId) {
-    $("scan-result-status").textContent =
-      "Verifying live queue & receipt reference...";
-
-    try {
-      const { data: order, error } = await db
-        .from("orders")
-        .select("*")
-        .eq("id", scannedOrderId)
-        .eq("store_id", activeVendor.id)
-        .single();
-
-      if (error || !order) {
-        $("scan-result-status").textContent = "Invalid receipt or booking.";
-        $("scan-result-status").style.color = "var(--danger)";
-        return;
-      }
-
-      if (order.status === "COMPLETED") {
-        $("scan-result-status").textContent =
-          "This booking has already been completed.";
-        $("scan-result-status").style.color = "var(--warning)";
-        return;
-      }
-
-      const todayStart =
-        new Date().toISOString().split("T")[0] + "T00:00:00.000Z";
-
-      const { data: aheadOrders } = await db
-        .from("orders")
-        .select("customer_name")
-        .eq("store_id", activeVendor.id)
-        .eq("status", "PENDING")
-        .gte("created_at", todayStart)
-        .lt("created_at", order.created_at);
-
-      const aheadCount = aheadOrders ? aheadOrders.length : 0;
-
-      const queueMsg = aheadCount === 0
-        ? "Next in line!"
-        : `Queue: ${aheadCount} customer(s) ahead.`;
-
-      const result = $("scan-result-status");
-      result.replaceChildren();
-
-      const box = document.createElement("div");
-      box.style.cssText =
-        "background:#f0fdf4;border:1px solid #86efac;padding:12px;border-radius:10px;text-align:left;";
-
-      const heading = document.createElement("div");
-      heading.style.cssText =
-        "font-size:14px;font-weight:800;color:#166534;margin-bottom:4px;";
-      heading.textContent = "VALID BOOKING FOUND";
-
-      const customer = document.createElement("div");
-      customer.style.fontSize = "12px";
-      customer.textContent =
-        `Customer: ${order.customer_name || "N/A"} (${order.customer_phone || "N/A"})`;
-
-      const ref = document.createElement("div");
-      ref.style.cssText = "font-size:12px;margin-top:4px;";
-      ref.textContent = "Payment Ref: " + (order.payment_ref || "N/A");
-
-      const queue = document.createElement("div");
-      queue.style.cssText =
-        "font-size:12px;font-weight:800;color:#b45309;margin-top:6px;";
-      queue.textContent = queueMsg;
-
-      const complete = document.createElement("button");
-      complete.className = "btn-primary";
-      complete.style.cssText = "background:#16a34a;margin-top:10px;";
-      complete.textContent = "Confirm Payment & Complete";
-      complete.addEventListener("click", () => {
-        confirmAndCompleteOrder(order.id);
-      });
-
-      box.append(heading, customer, ref, queue, complete);
-      result.appendChild(box);
-    } catch (error) {
-      $("scan-result-status").textContent =
-        "Scanner Error: " + error.message;
-    }
-  }
-
-  window.confirmAndCompleteOrder = async function(orderId) {
-    if (!activeVendor) return;
-
-    const { error } = await db
-      .from("orders")
-      .update({
-        status: "COMPLETED",
-        payment_status: "PAID"
-      })
-      .eq("id", orderId)
-      .eq("store_id", activeVendor.id);
-
-    if (error) {
-      alert("Error: " + error.message);
-    } else {
-      alert("Appointment marked completed.");
-      closeQrScanner();
-      await loadOrders();
-    }
-  };
-
-  async function uploadStorePhoto(event) {
-    const file = event.target.files[0];
-    if (!file || !activeVendor) return;
-
-    const btn = $("upload-store-photo-btn");
-    btn.disabled = true;
-    btn.textContent = "Uploading...";
-
-    try {
-      const fileExt = file.name.split(".").pop();
-      const fileName =
-        `${activeVendor.id}/store_${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await db.storage
-        .from("menu-images")
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = db.storage
-        .from("menu-images")
-        .getPublicUrl(fileName);
-
-      const { error: updateError } = await db
-        .from("stores")
-        .update({ store_image_url: urlData.publicUrl, updated_at: new Date() })
-        .eq("id", activeVendor.id);
-
-      if (updateError) throw updateError;
-
-      activeVendor.store_image_url = urlData.publicUrl;
-      updateHeader();
-
-      alert("Store picture updated successfully!");
-    } catch (error) {
-      alert("Could not upload store picture: " + error.message);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Change Photo";
-      event.target.value = "";
-    }
-  }
-
-  function resetServiceForm() {
-    $("editing-service-id").value = "";
-    $("modal-service-title-text").textContent = "Add Service Offering";
-    $("service-title").value = "";
-    $("service-price").value = "";
-    $("service-sale-price").value = "";
-    $("sale-start-date").value = "";
-    $("sale-end-date").value = "";
-    $("service-photos").value = "";
-    $("image-preview-container").replaceChildren();
-    selectedFiles = [];
-  }
-
-  function populateEditServiceForm(service) {
-    $("editing-service-id").value = service.id;
-    $("modal-service-title-text").textContent = "Edit Service Offering";
-    $("service-title").value = service.title || "";
-    $("service-price").value = service.price || "";
-    $("service-sale-price").value = service.sale_price || "";
-    $("sale-start-date").value = service.sale_start_date || "";
-    $("sale-end-date").value = service.sale_end_date || "";
-
-    const container = $("image-preview-container");
-    container.replaceChildren();
-
-    if (Array.isArray(service.image_urls)) {
-      service.image_urls.forEach(url => {
-        if (!url) return;
-
-        const img = document.createElement("img");
-        img.className = "preview-thumb";
-        img.src = url;
-        container.appendChild(img);
-      });
-    }
-
-    selectedFiles = [];
-    openModal("service-modal");
-  }
-
-  async function saveBusiness() {
-    const button = $("save-biz-btn");
-    const name = $("new-biz-name").value.trim();
-    const category = $("new-biz-category").value;
-
-    if (!name) {
-      alert("Please enter a business name.");
-      return;
-    }
-
-    setButtonLoading(button, true, "Saving...");
-
-    try {
-      const {
-        data: { user },
-        error: userError
-      } = await db.auth.getUser();
-
-      if (userError) throw userError;
-      if (!user) throw new Error("Not authenticated.");
-
-      const storeSlug = name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '') + '-' + Math.floor(1000 + Math.random() * 9000);
-
-      const { data, error } = await db
-        .from("stores")
-        .insert([{
-          store_name: name,
-          store_slug: storeSlug,
-          category,
-          profile_id: user.id,
-          status: "pending_payment",
-          is_first_time: true
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      $("new-biz-name").value = "";
-      closeModal("register-modal");
-
-      await initDashboard(data.id);
-
-      alert(
-        "Business registered! Please complete the R99 registration payment to activate your store."
-      );
-    } catch (error) {
-      alert("Could not save business: " + error.message);
-    } finally {
-      setButtonLoading(button, false, "Save Business");
-    }
-  }
-
-  async function saveService() {
-    const button = $("save-service-btn");
-
-    if (!activeVendor) {
-      alert("Please select a business first.");
-      return;
-    }
-
-    const serviceId = $("editing-service-id").value;
-    const title = $("service-title").value.trim();
-    const priceText = $("service-price").value.trim();
-    const price = Number(priceText);
-
-    const salePriceText = $("service-sale-price").value.trim();
-    const salePrice = salePriceText ? Number(salePriceText) : null;
-    const saleStartDate = $("sale-start-date").value || null;
-    const saleEndDate = $("sale-end-date").value || null;
-
-    if (!title) {
-      alert("Please enter a service title.");
-      return;
-    }
-
-    if (!priceText || !Number.isFinite(price) || price < 1 || price > 10000) {
-      alert("Standard price must be between R1 and R10,000.");
-      return;
-    }
-
-    if (
-      salePrice !== null &&
-      (!Number.isFinite(salePrice) || salePrice < 1 || salePrice > 10000)
-    ) {
-      alert("Sale price must be between R1 and R10,000.");
-      return;
-    }
-
-    if (saleStartDate && saleEndDate && saleEndDate < saleStartDate) {
-      alert("Sale end date cannot be before the start date.");
-      return;
-    }
-
-    setButtonLoading(button, true, "Publishing changes...");
-
-    try {
-      const uploadedUrls = [];
-
-      if (selectedFiles.length > 0) {
-        for (const file of selectedFiles) {
-          const fileExt = file.name.split(".").pop();
-          const fileName =
-            `${activeVendor.id}/${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-
-          const { error: storageError } = await db.storage
-            .from("menu-images")
-            .upload(fileName, file);
-
-          if (storageError) throw storageError;
-
-          const { data: urlData } = db.storage
-            .from("menu-images")
-            .getPublicUrl(fileName);
-
-          if (urlData?.publicUrl) uploadedUrls.push(urlData.publicUrl);
-        }
-      }
-
-      const payload = {
-        store_id: activeVendor.id,
-        title,
-        price,
-        sale_price: salePrice,
-        sale_start_date: saleStartDate,
-        sale_end_date: saleEndDate
-      };
-
-      if (uploadedUrls.length > 0) {
-        payload.image_urls = uploadedUrls;
-      }
-
-      if (serviceId) {
-        const { error } = await db
-          .from("service_items")
-          .update(payload)
-          .eq("id", serviceId)
-          .eq("store_id", activeVendor.id);
-
-        if (error) throw error;
       } else {
-        if (!uploadedUrls.length) payload.image_urls = [];
-
-        const { error } = await db
-          .from("service_items")
-          .insert([payload]);
-
-        if (error) throw error;
-      }
-
-      resetServiceForm();
-      closeModal("service-modal");
-      await loadServices();
-
-      alert("Service saved successfully!");
-    } catch (error) {
-      alert("Could not save service: " + error.message);
-    } finally {
-      setButtonLoading(button, false, "Publish Service");
-    }
-  }
-
-  async function showDashboard() {
-    $("auth-screen").style.display = "none";
-    $("dashboard-screen").style.display = "block";
-
-    await initDashboard();
-  }
-
-  async function initDashboard(preferredVendorId = null) {
-    if (!db) return;
-
-    try {
-      const {
-        data: { user },
-        error: userError
-      } = await db.auth.getUser();
-
-      if (userError) throw userError;
-      if (!user) throw new Error("No active user session.");
-
-      const { data: vendors, error } = await db
-        .from("stores")
-        .select("*")
-        .eq("profile_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      const select = $("vendor-select");
-      select.replaceChildren();
-
-      const placeholder = document.createElement("option");
-      placeholder.value = "";
-      placeholder.textContent = "Switch Shop";
-      select.appendChild(placeholder);
-
-      if (!vendors || vendors.length === 0) {
-        activeVendor = null;
-
-        $("biz-display-name").textContent = "No Business Found";
-        $("biz-display-type").textContent = "Tap '+ Add Shop' above";
-
-        $("subscription-gate").style.display = "none";
-        document.querySelector("main.container").style.display = "block";
-
-        return;
-      }
-
-      vendors.forEach(vendor => {
-        const option = document.createElement("option");
-        option.value = String(vendor.id);
-        option.textContent = vendor.store_name || vendor.name || "Unnamed Business";
-        select.appendChild(option);
-      });
-
-      activeVendor =
-        vendors.find(v => String(v.id) === String(preferredVendorId)) ||
-        vendors[0];
-
-      select.value = String(activeVendor.id);
-
-      updateHeader();
-
-      await loadFounderBankSettings();
-      await checkSubscriptionAndRender();
-    } catch (error) {
-      console.error("Dashboard error:", error);
-      alert("Could not load your dashboard: " + error.message);
-    }
-  }
-
-  async function loadFounderBankSettings() {
-    try {
-      const { data, error } = await db
-        .from("platform_settings")
-        .select("bank_name, account_name, account_number, branch_code")
-        .eq("id", 1)
-        .single();
-
-      if (error || !data) return;
-
-      if ($("bank-info-name")) $("bank-info-name").textContent = data.bank_name;
-      if ($("bank-info-acc-name")) $("bank-info-acc-name").textContent = data.account_name;
-      if ($("bank-info-acc-num")) $("bank-info-acc-num").textContent = data.account_number;
-      if ($("bank-info-branch")) $("bank-info-branch").textContent = data.branch_code;
-    } catch (e) {
-      console.error("Could not load platform bank settings:", e);
-    }
-  }
-
-  async function checkSubscriptionAndRender() {
-    if (!activeVendor || !db) return;
-
-    const gate = $("subscription-gate");
-    const main = document.querySelector("main.container");
-
-    if (!gate || !main) return;
-
-    const now = new Date();
-    const expiresAt = activeVendor.subscription_expires_at ? new Date(activeVendor.subscription_expires_at) : null;
-    const isActive = activeVendor.status === "active" && expiresAt && expiresAt > now;
-
-    if (isActive) {
-      gate.style.display = "none";
-      main.style.display = "block";
-
-      await Promise.all([
-        loadServices(),
-        loadOrders(),
-        loadMoneyStoreWallet()
-      ]);
-
-      return;
-    }
-
-    // Otherwise show subscription lock screen
-    gate.style.display = "block";
-    main.style.display = "none";
-
-    const isFirstTime = activeVendor.is_first_time !== false;
-    const amountDue = isFirstTime ? 99 : 299;
-    const reference = "REF-" + activeVendor.store_slug.toUpperCase().substring(0, 15);
-
-    // Update prices & text dynamically
-    if ($("wallet-subscription-rate")) {
-      $("wallet-subscription-rate").textContent = money(amountDue) + "/mo";
-    }
-
-    $("subscription-heading").textContent = isFirstTime
-      ? "First-Time Registration Payment"
-      : "Monthly Subscription Renewal";
-
-    $("subscription-description").textContent = isFirstTime
-      ? "Pay the R99 special registration fee by EFT to activate your store."
-      : "Pay your R299 monthly subscription by EFT to restore store access.";
-
-    $("subscription-reference").textContent = reference;
-    $("subscription-amount").textContent = money(amountDue);
-
-    // Check if vendor already has a pending request in subscription_payment_requests
-    try {
-      const { data: pendingReq } = await db
-        .from("subscription_payment_requests")
-        .select("status")
-        .eq("store_id", activeVendor.id)
-        .eq("status", "PENDING")
-        .maybeSingle();
-
-      if (pendingReq || activeVendor.status === "pending_approval") {
-        $("subscription-review-message").style.display = "block";
-        $("subscription-upload-section").style.display = "none";
-      } else {
-        $("subscription-review-message").style.display = "none";
-        $("subscription-upload-section").style.display = "block";
-      }
-    } catch (err) {
-      $("subscription-review-message").style.display = "none";
-      $("subscription-upload-section").style.display = "block";
-    }
-  }
-
-  function updateHeader() {
-    if (!activeVendor) return;
-
-    const name = activeVendor.store_name || activeVendor.name || "Unnamed Business";
-
-    $("biz-display-name").textContent = name;
-
-    $("biz-display-type").textContent =
-      `${activeVendor.category || "Business"} • ${activeVendor.address || "Location not set"}`;
-
-    if (activeVendor.store_image_url) {
-      $("biz-avatar-img").src = activeVendor.store_image_url;
-      $("biz-avatar-img").style.display = "block";
-      $("biz-avatar-letter").style.display = "none";
-    } else {
-      $("biz-avatar-img").style.display = "none";
-      $("biz-avatar-letter").style.display = "flex";
-      $("biz-avatar-letter").textContent = name.charAt(0).toUpperCase();
-    }
-  }
-
-  async function loadMoneyStoreWallet() {
-    if (!db || !activeVendor) return;
-
-    try {
-      const { data, error } = await db
-        .from("orders")
-        .select("gross_amount")
-        .eq("store_id", activeVendor.id)
-        .eq("status", "COMPLETED");
-
-      if (error) throw error;
-
-      const totalEarned = data
-        ? data.reduce((sum, item) => sum + Number(item.gross_amount || 0), 0)
-        : 0;
-
-      if ($("wallet-balance")) {
-        $("wallet-balance").textContent = money(totalEarned);
+        setDashboard(false);
       }
     } catch (error) {
-      console.error("Error loading wallet:", error);
+      setDashboard(false);
+      setLoginMessage("Could not check session: " + error.message, true);
     }
   }
 
-  async function loadServices() {
-    if (!db || !activeVendor) return;
-
-    setEmpty("services-list", "Loading services...");
-
-    try {
-      const { data, error } = await db
-        .from("service_items")
-        .select("*")
-        .eq("store_id", activeVendor.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      const container = $("services-list");
-      container.replaceChildren();
-
-      if (!data || data.length === 0) {
-        setEmpty(
-          "services-list",
-          "No services added yet. Click '+ Add Service' above."
-        );
-        return;
-      }
-
-      const today = new Date().toISOString().split("T")[0];
-
-      data.forEach(service => {
-        const card = document.createElement("div");
-        card.className = "order-card";
-
-        const top = document.createElement("div");
-        top.style.cssText =
-          "display:flex;justify-content:space-between;align-items:flex-start;gap:12px;";
-
-        const info = document.createElement("div");
-
-        const title = document.createElement("div");
-        title.className = "order-title";
-        title.textContent = service.title || "Untitled Service";
-
-        const hasActiveSale = Boolean(service.sale_price) &&
-          (!service.sale_start_date || service.sale_start_date <= today) &&
-          (!service.sale_end_date || service.sale_end_date >= today);
-
-        if (hasActiveSale) {
-          const badge = document.createElement("span");
-          badge.className = "sale-badge";
-          badge.textContent = "ON SALE";
-          title.appendChild(badge);
-        }
-
-        const status = document.createElement("div");
-        status.className = "order-time";
-        status.textContent = hasActiveSale
-          ? `Promo active until ${service.sale_end_date || "N/A"}`
-          : "Active & Available";
-
-        info.append(title, status);
-
-        const priceBox = document.createElement("div");
-        priceBox.style.textAlign = "right";
-
-        if (hasActiveSale) {
-          const oldPrice = document.createElement("span");
-          oldPrice.className = "old-price";
-          oldPrice.textContent = money(service.price);
-
-          const salePrice = document.createElement("span");
-          salePrice.className = "order-price";
-          salePrice.textContent = money(service.sale_price);
-
-          priceBox.append(oldPrice, salePrice);
-        } else {
-          const price = document.createElement("div");
-          price.className = "order-price";
-          price.textContent = money(service.price);
-          priceBox.appendChild(price);
-        }
-
-        top.append(info, priceBox);
-        card.appendChild(top);
-
-        if (Array.isArray(service.image_urls) && service.image_urls.length) {
-          const gallery = document.createElement("div");
-          gallery.className = "item-gallery";
-
-          service.image_urls.forEach(url => {
-            if (!url) return;
-
-            const img = document.createElement("img");
-            img.className = "item-thumb";
-            img.src = url;
-            img.alt = service.title || "Service image";
-            gallery.appendChild(img);
-          });
-
-          card.appendChild(gallery);
-        }
-
-        const actions = document.createElement("div");
-        actions.className = "order-actions";
-
-        const editButton = document.createElement("button");
-        editButton.className = "btn-action btn-edit";
-        editButton.textContent = "Edit Service & Sale";
-        editButton.addEventListener("click", () => {
-          populateEditServiceForm(service);
-        });
-
-        actions.appendChild(editButton);
-        card.appendChild(actions);
-        container.appendChild(card);
-      });
-    } catch (error) {
-      console.error("Load services error:", error);
-      setEmpty("services-list", "Could not load services.");
-    }
-  }
-
-  function renderSettlementOrders(orders) {
-    const container = $("settlement-orders-list");
-    container.replaceChildren();
-
-    if (!activeVendor || !orders || orders.length === 0) {
-      setEmpty("settlement-orders-list", "No booking settlement records yet.");
-      return;
-    }
-
-    orders.forEach(order => {
-      const card = document.createElement("div");
-      card.className = "ledger-card";
-
-      const heading = document.createElement("div");
-      heading.className = "order-top";
-
-      const title = document.createElement("div");
-      title.className = "order-title";
-      title.textContent = order.customer_name
-        ? `${order.customer_name} — ${order.customer_phone || ""}`
-        : "Service booking";
-
-      const gross = document.createElement("div");
-      gross.className = "order-price";
-      gross.textContent = money(order.gross_amount);
-
-      heading.append(title, gross);
-      card.appendChild(heading);
-
-      const addRow = (label, value) => {
-        const row = document.createElement("div");
-        row.className = "ledger-row";
-
-        const left = document.createElement("span");
-        left.textContent = label;
-
-        const right = document.createElement("span");
-        right.textContent = value || "N/A";
-
-        row.append(left, right);
-        card.appendChild(row);
-      };
-
-      addRow(
-        "Booking status",
-        String(order.status || "PENDING").replaceAll("_", " ")
-      );
-
-      addRow("Payment ref", order.payment_ref || "N/A");
-
-      addRow(
-        "Payment method",
-        String(order.payment_method || "EFT").replaceAll("_", " ")
-      );
-
-      addRow(
-        "Payment status",
-        String(order.payment_status || "UNPAID").replaceAll("_", " ")
-      );
-
-      addRow("Vendor net earnings", money(order.gross_amount));
-
-      container.appendChild(card);
-    });
-  }
-
-  async function loadOrders() {
-    if (!db || !activeVendor) return;
-
-    try {
-      const { data: orders, error } = await db
-        .from("orders")
-        .select("*")
-        .eq("store_id", activeVendor.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      let revenue = 0;
-      let activeQueueCount = 0;
-      let completedGross = 0;
-      let eftBalanceEstimate = 0;
-
-      const container = $("orders-list");
-      container.replaceChildren();
-
-      if (!orders || orders.length === 0) {
-        setEmpty("orders-list", "No bookings received yet.");
-      } else {
-        orders.forEach(order => {
-          const statusText = String(order.status || "PENDING").toUpperCase();
-          const gross = Number(order.gross_amount || 0);
-
-          if (statusText === "COMPLETED") {
-            revenue += gross;
-            completedGross += gross;
-
-            if (String(order.payment_method || "EFT").toUpperCase() === "EFT") {
-              eftBalanceEstimate += gross;
-            }
-          } else if (
-            statusText === "PENDING" ||
-            statusText === "CONFIRMED"
-          ) {
-            activeQueueCount++;
-          }
-
-          const card = document.createElement("div");
-          card.className = "order-card";
-
-          const top = document.createElement("div");
-          top.className = "order-top";
-
-          const left = document.createElement("div");
-
-          const title = document.createElement("div");
-          title.className = "order-title";
-          title.textContent = order.customer_name
-            ? `${order.customer_name} (${order.customer_phone || "N/A"})`
-            : "Customer Booking";
-
-          const time = document.createElement("div");
-          time.className = "order-time";
-
-          const date = order.created_at ? new Date(order.created_at) : null;
-
-          time.textContent =
-            date && !Number.isNaN(date.getTime())
-              ? date.toLocaleString()
-              : "Date unavailable";
-
-          const status = document.createElement("div");
-          status.className = "order-status status-" + statusText.toLowerCase();
-          status.textContent = statusText;
-
-          const refPill = document.createElement("span");
-          refPill.className = "ref-pill";
-          refPill.style.marginLeft = "6px";
-          refPill.textContent = `REF: ${order.payment_ref || "N/A"}`;
-
-          const queuePill = document.createElement("span");
-          queuePill.className = "queue-pill";
-          queuePill.style.marginLeft = "4px";
-          queuePill.textContent = `QUEUE #${order.queue_number || "1"}`;
-
-          left.append(title, time, status, refPill, queuePill);
-
-          const right = document.createElement("div");
-          const price = document.createElement("div");
-          price.className = "order-price";
-          price.textContent = money(order.gross_amount);
-
-          right.appendChild(price);
-          top.append(left, right);
-          card.appendChild(top);
-
-          if (
-            statusText !== "COMPLETED" &&
-            statusText !== "CANCELLED"
-          ) {
-            const actions = document.createElement("div");
-            actions.className = "order-actions";
-
-            if (statusText === "PENDING") {
-              const confirmButton = document.createElement("button");
-              confirmButton.className = "btn-action btn-confirm";
-              confirmButton.textContent = "Confirm Booking";
-              confirmButton.addEventListener("click", () => {
-                updateOrderStatus(order.id, "CONFIRMED");
-              });
-
-              actions.appendChild(confirmButton);
-            }
-
-            const completeButton = document.createElement("button");
-            completeButton.className = "btn-action btn-complete";
-            completeButton.textContent = "Mark Completed";
-            completeButton.addEventListener("click", () => {
-              updateOrderStatus(order.id, "COMPLETED");
-            });
-
-            actions.appendChild(completeButton);
-            card.appendChild(actions);
-          }
-
-          container.appendChild(card);
-        });
-      }
-
-      $("stat-revenue").textContent = money(revenue);
-      $("stat-count").textContent = String(activeQueueCount);
-      $("ledger-gross").textContent = money(completedGross);
-      $("ledger-net").textContent = money(completedGross);
-      $("ledger-eft-balance").textContent = money(eftBalanceEstimate);
-
-      renderSettlementOrders(orders || []);
-    } catch (error) {
-      console.error("Load bookings error:", error);
-    }
-  }
-
-  async function updateOrderStatus(orderId, newStatus) {
-    if (!db || !activeVendor) return;
-
-    try {
-      const { error } = await db
-        .from("orders")
-        .update({
-          status: newStatus,
-          payment_status: "PAID"
-        })
-        .eq("id", orderId)
-        .eq("store_id", activeVendor.id);
-
-      if (error) throw error;
-
-      await loadOrders();
-    } catch (error) {
-      alert("Could not update booking status: " + error.message);
-    }
-  }
-
-  async function submitSubscriptionProof() {
-    if (!db || !activeVendor) {
-      alert("Please sign in and select your business.");
-      return;
-    }
-
-    const input = $("subscription-proof-file");
-    const button = $("subscription-submit-btn");
-    const file = input.files && input.files[0];
-
-    if (!file) {
-      alert("Please select your proof of payment file first.");
-      return;
-    }
-
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "application/pdf"
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-      alert("Please upload a JPG, PNG, or PDF file.");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Your proof of payment must be 5 MB or smaller.");
+  async function signIn() {
+    const button = $("admin-login-btn");
+    const email = $("admin-email").value.trim();
+    const password = $("admin-password").value;
+
+    if (!email || !password) {
+      setLoginMessage("Enter email and password.", true);
       return;
     }
 
     button.disabled = true;
-    button.textContent = "Uploading Proof...";
+    button.textContent = "Signing in…";
 
     try {
-      const {
-        data: { user },
-        error: userError
-      } = await db.auth.getUser();
-
-      if (userError) throw userError;
-      if (!user) throw new Error("Please sign in again.");
-
-      const extension = file.type === "application/pdf"
-        ? "pdf"
-        : file.type === "image/png"
-          ? "png"
-          : "jpg";
-
-      const path = `${user.id}/${activeVendor.id}/${Date.now()}.${extension}`;
-
-      // 1. Upload to subscription-proofs storage bucket
-      const { error: uploadError } = await db.storage
-        .from("subscription-proofs")
-        .upload(path, file, { contentType: file.type, upsert: false });
-
-      if (uploadError) throw uploadError;
-
-      const isFirstTime = activeVendor.is_first_time !== false;
-      const amountDue = isFirstTime ? 99.00 : 299.00;
-      const ref = "REF-" + activeVendor.store_slug.toUpperCase().substring(0, 15);
-
-      // 2. Insert record in subscription_payment_requests table
-      const { error: requestError } = await db
-        .from("subscription_payment_requests")
-        .insert([{
-          store_id: activeVendor.id,
-          owner_id: user.id,
-          amount: amountDue,
-          payment_reference: ref,
-          receipt_path: path,
-          status: "PENDING"
-        }]);
-
-      if (requestError) throw requestError;
-
-      // 3. Update store status to pending_approval
-      await db
-        .from("stores")
-        .update({ status: "pending_approval", updated_at: new Date() })
-        .eq("id", activeVendor.id);
-
-      activeVendor.status = "pending_approval";
-      input.value = "";
-
-      alert(
-        "Your application is under review. Your store/business will be " +
-        "activated within 24 hours once approved by the administrator."
-      );
-
-      await checkSubscriptionAndRender();
-    } catch (error) {
-      console.error("Subscription payment submission failed:", error);
-      alert("Could not submit proof of payment: " + (error.message || "An unexpected error occurred."));
-    } finally {
-      button.disabled = false;
-      button.textContent = "Confirm Payment";
-    }
-  }
-
-  async function boot() {
-    if (booted) return;
-    booted = true;
-
-    try {
-      if (!window.supabase) {
-        throw new Error("Supabase library did not load. Refresh the page.");
-      }
-
-      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-      bindButtons();
-
-      const {
-        data: { session },
-        error
-      } = await db.auth.getSession();
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
 
       if (error) throw error;
 
-      if (session) {
-        await showDashboard();
+      if (data.user.id !== FOUNDER_ID) {
+        await db.auth.signOut();
+        setDashboard(false);
+        throw new Error("Access denied. Authorized founder account only.");
       }
+
+      setDashboard(true);
+      await loadAdminData();
     } catch (error) {
-      console.error("Portal startup error:", error);
-      alert("Could not start the Partner Portal: " + error.message);
+      setLoginMessage(error.message || "Sign-in failed.", true);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Sign In";
     }
+  }
+
+  async function signOut() {
+    await db.auth.signOut();
+    setDashboard(false);
+    setLoginMessage("You have signed out.");
+  }
+
+  function switchTab(tabId) {
+    ["vendors-section", "settings-section", "orders-section"].forEach(id => {
+      $(id).classList.toggle("hidden", id !== tabId);
+    });
+
+    document.querySelectorAll("[data-tab]").forEach(button => {
+      button.classList.toggle("active", button.dataset.tab === tabId);
+    });
+  }
+
+  async function loadAdminData() {
+    if (refreshInProgress) return;
+    if (!(await requireFounder())) return;
+
+    refreshInProgress = true;
+    $("global-message").textContent = "Refreshing dashboard…";
+
+    try {
+      await Promise.all([
+        loadStoresAndPayments(),
+        loadOrders(),
+        loadFounderBank()
+      ]);
+      $("global-message").textContent = "Dashboard refresh finished.";
+    } catch (err) {
+      $("global-message").textContent = "Dashboard refreshed with errors.";
+    } finally {
+      refreshInProgress = false;
+    }
+  }
+
+  async function loadStoresAndPayments() {
+    const vContainer = $("vendors-admin-list");
+    showMessage(vContainer, "Loading stores and payment requests…");
+
+    // Query 'stores' table directly
+    const { data: stores, error: storeError } = await db
+      .from("stores")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (storeError) {
+      $("stat-shops").textContent = "—";
+      $("stat-active").textContent = "—";
+      $("stat-pending").textContent = "—";
+      showMessage(vContainer, "Could not load stores: " + storeError.message, true);
+      return;
+    }
+
+    const storeRows = stores || [];
+    $("stat-shops").textContent = String(storeRows.length);
+
+    const activeCount = storeRows.filter(s =>
+      s.status === "active" &&
+      s.subscription_expires_at &&
+      new Date(s.subscription_expires_at).getTime() > Date.now()
+    ).length;
+
+    $("stat-active").textContent = String(activeCount);
+
+    // Call RPC function to list payment requests
+    const { data: requests, error: requestError } = await db.rpc("founder_list_subscription_payment_requests");
+
+    if (requestError) {
+      $("stat-pending").textContent = "—";
+      showMessage(vContainer, "Could not load subscription requests: " + requestError.message, true);
+      return;
+    }
+
+    const requestRows = requests || [];
+    const pendingRequests = requestRows.filter(r => r.status === "PENDING");
+
+    $("stat-pending").textContent = String(pendingRequests.length);
+    vContainer.replaceChildren();
+
+    if (!pendingRequests.length) {
+      showMessage(vContainer, "No pending subscription payment requests.");
+      return;
+    }
+
+    pendingRequests.forEach(request => {
+      const store = storeRows.find(s => s.id === request.store_id);
+
+      const card = document.createElement("div");
+      card.className = "vendor-card";
+
+      const top = document.createElement("div");
+      top.className = "vendor-top";
+
+      const details = document.createElement("div");
+      details.style.minWidth = "0";
+
+      const title = document.createElement("div");
+      title.className = "vendor-title";
+      title.textContent = (store?.store_name || "Unknown Store") + " — " + (store?.category || "STORE");
+
+      const meta = document.createElement("div");
+      meta.className = "vendor-meta";
+      meta.textContent = "Amount: " + money(request.amount) + " · Phone: " + (store?.phone_number || "N/A");
+
+      const reference = document.createElement("span");
+      reference.className = "ref-pill";
+      reference.textContent = "REF: " + (request.payment_reference || "N/A");
+
+      details.append(title, meta, reference);
+
+      if (request.receipt_path) {
+        const receiptButton = document.createElement("button");
+        receiptButton.type = "button";
+        receiptButton.className = "btn-primary";
+        receiptButton.style.marginTop = "8px";
+        receiptButton.textContent = "Open Payment Receipt";
+        receiptButton.addEventListener("click", () => openPrivateReceipt(request.receipt_path, receiptButton));
+        details.appendChild(document.createElement("br"));
+        details.appendChild(receiptButton);
+      }
+
+      const status = document.createElement("span");
+      status.className = "status-badge status-pending";
+      status.textContent = request.status;
+
+      top.append(details, status);
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+
+      const note = document.createElement("span");
+      note.className = "small-note";
+      note.textContent = "Verify bank payment before approving.";
+
+      const approve = document.createElement("button");
+      approve.className = "btn-primary btn-success";
+      approve.textContent = "Approve Payment";
+      approve.addEventListener("click", () => approvePaymentRequest(request.id, approve));
+
+      const reject = document.createElement("button");
+      reject.className = "btn-primary btn-danger";
+      reject.textContent = "Reject Request";
+      reject.addEventListener("click", () => rejectPaymentRequest(request.id, reject));
+
+      actions.append(note, approve, reject);
+      card.append(top, actions);
+      vContainer.appendChild(card);
+    });
+  }
+
+  async function openPrivateReceipt(receiptPath, button) {
+    if (!(await requireFounder())) return;
+
+    button.disabled = true;
+    button.textContent = "Opening…";
+
+    try {
+      const { data, error } = await db.storage
+        .from(PROOF_BUCKET)
+        .createSignedUrl(receiptPath, 60);
+
+      if (error) throw error;
+
+      window.open(data.signedUrl, "_blank");
+    } catch (error) {
+      alert("Could not open receipt: " + error.message);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Open Payment Receipt";
+    }
+  }
+
+  async function approvePaymentRequest(requestId, button) {
+    if (!(await requireFounder())) return;
+
+    if (!confirm("Confirm you received payment in your bank account?")) return;
+
+    button.disabled = true;
+    button.textContent = "Approving…";
+
+    try {
+      const { data, error } = await db.rpc("approve_subscription_payment", { p_request_id: requestId });
+
+      if (error) throw error;
+
+      if (data && data.success === false) throw new Error(data.message);
+
+      alert("Store activated for 30 days!");
+      await loadAdminData();
+    } catch (error) {
+      alert("Approval failed: " + error.message);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Approve Payment";
+    }
+  }
+
+  async function rejectPaymentRequest(requestId, button) {
+    if (!(await requireFounder())) return;
+
+    if (!confirm("Reject this payment request? Store data will remain intact.")) return;
+
+    button.disabled = true;
+    button.textContent = "Rejecting…";
+
+    try {
+      const { data, error } = await db.rpc("reject_subscription_payment", { p_request_id: requestId });
+
+      if (error) throw error;
+
+      alert("Request rejected.");
+      await loadAdminData();
+    } catch (error) {
+      alert("Rejection failed: " + error.message);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Reject Request";
+    }
+  }
+
+  async function loadFounderBank() {
+    const { data, error } = await db
+      .from("platform_settings")
+      .select("*")
+      .eq("id", 1)
+      .maybeSingle();
+
+    if (error || !data) return;
+
+    $("founder-acc-name").value = data.account_name || "";
+    $("founder-acc-number").value = data.account_number || "";
+    $("founder-branch-code").value = data.branch_code || "";
+
+    if (data.bank_name) {
+      const options = [...$("founder-bank-select").options];
+      const match = options.find(o => o.value.startsWith(data.bank_name + "|"));
+      if (match) $("founder-bank-select").value = match.value;
+    }
+  }
+
+  async function saveFounderBank() {
+    if (!(await requireFounder())) return;
+
+    const button = $("save-founder-bank-btn");
+    const selection = $("founder-bank-select").value;
+
+    if (!selection) {
+      showInlineMessage($("bank-message"), "Please select a bank.", "error");
+      return;
+    }
+
+    const [bank_name, selectedBranch] = selection.split("|");
+    const account_name = $("founder-acc-name").value.trim();
+    const account_number = $("founder-acc-number").value.trim();
+    const branch_code = $("founder-branch-code").value.trim() || selectedBranch;
+
+    button.disabled = true;
+    button.textContent = "Saving…";
+
+    try {
+      const { error } = await db
+        .from("platform_settings")
+        .update({
+          bank_name,
+          account_name,
+          account_number,
+          branch_code,
+          updated_at: new Date()
+        })
+        .eq("id", 1);
+
+      if (error) throw error;
+
+      showInlineMessage($("bank-message"), "Bank details saved successfully.");
+    } catch (error) {
+      showInlineMessage($("bank-message"), "Saving failed: " + error.message, "error");
+    } finally {
+      button.disabled = false;
+      button.textContent = "Save Founder Bank Details";
+    }
+  }
+
+  async function loadOrders() {
+    const container = $("orders-admin-list");
+    showMessage(container, "Loading bookings…");
+
+    const { data: orders, error } = await db
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (error) {
+      $("stat-orders").textContent = "—";
+      showMessage(container, "Could not load bookings: " + error.message, true);
+      return;
+    }
+
+    const rows = orders || [];
+    $("stat-orders").textContent = String(rows.length);
+    container.replaceChildren();
+
+    if (!rows.length) {
+      showMessage(container, "No customer bookings found.");
+      return;
+    }
+
+    rows.forEach(order => {
+      const card = document.createElement("div");
+      card.className = "order-card";
+
+      const top = document.createElement("div");
+      top.className = "order-top";
+
+      const details = document.createElement("div");
+
+      const title = document.createElement("div");
+      title.className = "order-title";
+      title.textContent = (order.customer_name || "Customer") + " (" + (order.customer_phone || "N/A") + ")";
+
+      const time = document.createElement("div");
+      time.className = "order-time";
+      time.textContent = order.created_at ? new Date(order.created_at).toLocaleString() : "N/A";
+
+      const reference = document.createElement("span");
+      reference.className = "ref-pill";
+      reference.textContent = "REF: " + (order.payment_ref || "N/A");
+
+      details.append(title, time, reference);
+
+      const price = document.createElement("div");
+      price.className = "order-price";
+      price.textContent = money(order.gross_amount);
+
+      top.append(details, price);
+      card.append(top);
+      container.appendChild(card);
+    });
   }
 
   document.addEventListener("DOMContentLoaded", boot);
