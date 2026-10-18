@@ -160,7 +160,7 @@
       $("search-input").addEventListener("input", handleSearch);
     }
 
-    async function loadMarketplace() {
+        async function loadMarketplace() {
       const container = $("store-grid");
       container.textContent = "Loading available stores...";
 
@@ -170,15 +170,11 @@
       }
 
       try {
-        const now = new Date().toISOString();
-
-        // Query active stores
-const { data: stores, error } = await supabase
-  .from("stores")
-  .select("id, store_name, category, store_image_url, created_at, status, subscription_expires_at")
-  .eq("status", "active")
-  .order("created_at", { ascending: false });
-
+        // Fetch stores ordered by creation date
+        const { data: stores, error } = await supabase
+          .from("stores")
+          .select("id, store_name, category, store_image_url, created_at, status, subscription_expires_at")
+          .order("created_at", { ascending: false });
 
         if (error) throw error;
 
@@ -195,7 +191,9 @@ const { data: stores, error } = await supabase
               .select("id, store_id, title, price")
               .eq("store_id", store.id);
 
-            if (serviceErr) throw serviceErr;
+            if (serviceErr) {
+              console.warn("Could not load services for store:", store.id, serviceErr);
+            }
 
             return {
               ...store,
@@ -204,14 +202,7 @@ const { data: stores, error } = await supabase
           })
         );
 
-        const currentTime = Date.now();
-
-        allStores = results.filter(s =>
-          s.status === "active" &&
-          s.subscription_expires_at &&
-          new Date(s.subscription_expires_at).getTime() > currentTime
-        );
-
+        allStores = results;
         renderStores(allStores);
 
       } catch (error) {
@@ -220,11 +211,12 @@ const { data: stores, error } = await supabase
 
         const message = document.createElement("div");
         message.className = "empty-box";
-        message.textContent = "Unable to load stores. Please try again later.";
+        message.textContent = "Unable to load stores: " + error.message;
 
         container.appendChild(message);
       }
     }
+
 
     function renderStores(stores) {
       const container = $("store-grid");
