@@ -22,7 +22,6 @@
       --border: #e2e8f0;
       --success: #16a34a;
       --danger: #dc2626;
-      --danger-bg: #fef2f2;
       --radius: 16px;
       --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
     }
@@ -82,8 +81,7 @@
 
     .menu-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; padding-top: 6px; border-top: 1px solid #f1f5f9; gap: 4px; }
     .price-container { display: flex; flex-direction: column; }
-    .menu-price { font-size: 13px; font-weight: 800; color: var(--primary); white-space: nowrap; }
-    .menu-price.sale-active { color: var(--danger); }
+    .menu-price { font-size: 13px; font-weight: 800; color: var(--success); white-space: nowrap; }
     .original-price { font-size: 10px; font-weight: 600; color: var(--muted); text-decoration: line-through; }
 
     .btn-book { background: var(--accent); color: white; border: none; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
@@ -401,7 +399,7 @@
             origPrice.textContent = `R${Number(s.price).toFixed(2)}`;
 
             const salePrice = document.createElement("span");
-            salePrice.className = "menu-price sale-active";
+            salePrice.className = "menu-price";
             salePrice.textContent = `R${activePrice.toFixed(2)}`;
 
             priceContainer.append(origPrice, salePrice);
