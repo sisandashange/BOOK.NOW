@@ -92,6 +92,71 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .queue-pill { background: #fef3c7; color: #b45309; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; border: 1px solid #fde68a; display: inline-block; }
 
 @media(max-width:400px){.container{padding:12px}.top-nav{padding:12px}.brand{font-size:13px}.finance-card{padding:11px}.finance-value{font-size:17px}.tab-item{font-size:11px}}
+
+#subscription-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  overflow-y: auto;
+  background: #f8fafc;
+  padding: 20px;
+}
+
+.subscription-card {
+  max-width: 500px;
+  margin: 24px auto;
+  padding: 24px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+}
+
+.subscription-bank {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 14px;
+  border-radius: 12px;
+  margin: 18px 0;
+  font-size: 13px;
+  line-height: 1.9;
+}
+
+.subscription-reference {
+  display: block;
+  padding: 10px;
+  background: #eff6ff;
+  border-radius: 8px;
+  text-align: center;
+  color: #1d4ed8;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.subscription-message {
+  padding: 12px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  color: #92400e;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.subscription-card input[type="file"] {
+  display: block;
+  width: 100%;
+  margin: 10px 0 16px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.subscription-logout {
+  margin-top: 12px;
+  background: #f1f5f9;
+  color: #0f172a;
+}
 </style>
 </head>
 <body>
