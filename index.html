@@ -172,13 +172,13 @@
       try {
         const now = new Date().toISOString();
 
-        // Query the new 'stores' table respecting RLS (active stores with valid subscriptions)
-        const { data: stores, error } = await supabase
-          .from("stores")
-          .select("id, store_name, category, store_image_url, created_at, status, subscription_expires_at")
-          .eq("status", "active")
-          .gt("subscription_expires_at", now)
-          .order("created_at", { ascending: false });
+        // Query active stores
+const { data: stores, error } = await supabase
+  .from("stores")
+  .select("id, store_name, category, store_image_url, created_at, status, subscription_expires_at")
+  .eq("status", "active")
+  .order("created_at", { ascending: false });
+
 
         if (error) throw error;
 
