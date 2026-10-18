@@ -613,6 +613,25 @@ button:disabled{opacity:.6;cursor:not-allowed}
     $("save-service-btn").addEventListener("click", saveService);
   }
 
+$("subscription-submit-btn").addEventListener(
+  "click",
+  submitSubscriptionProof
+);
+
+$("subscription-logout-btn").addEventListener("click", async () => {
+  const { error } = await db.auth.signOut();
+
+  if (error) {
+    alert("Could not sign out: " + error.message);
+    return;
+  }
+
+  activeVendor = null;
+  $("dashboard-screen").style.display = "none";
+  $("auth-screen").style.display = "flex";
+  $("subscription-gate").style.display = "none";
+});
+
   function populateProfileForm() {
     if (!activeVendor) return;
     $("store-name-input").value = activeVendor.name || "";
