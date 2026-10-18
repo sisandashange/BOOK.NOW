@@ -45,7 +45,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .btn-primary{background:var(--accent);color:white;border:0;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 
 .card-list{display:flex;flex-direction:column;gap:12px}
-.vendor-card,.order-card{background:white;padding:15px;border-radius:14px;border:1px solid var(--border);overflow-wrap:anywhere}
+.vendor-card,.order-card,.admin-card{background:white;padding:18px;border-radius:14px;border:1px solid var(--border);overflow-wrap:anywhere}
 .vendor-top,.order-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
 .vendor-title,.order-title{font-weight:800;font-size:14px}
 .vendor-meta,.order-time{font-size:12px;color:var(--muted);margin-top:4px}
@@ -69,38 +69,58 @@ button:disabled{opacity:.6;cursor:not-allowed}
   <div class="auth-card">
     <div class="brand" style="justify-content:center;margin-bottom:16px"><i class="ph ph-shield-check" style="font-size:26px;color:var(--accent)"></i> Founder Admin</div>
     <div class="auth-title">Admin Login</div>
-    <div class="auth-sub">Enter founder credentials to manage platform</div>
-    <div class="form-field"><label for="admin-email">Email Address</label><input type="email" id="admin-email" placeholder="Mfanarhshange43@gmail.com"></div>
-    <div class="form-field"><label for="admin-password">Password</label><input type="password" id="admin-password" placeholder="Password"></div>
-    <button class="btn-primary" id="admin-login-btn" style="width:100%;">Sign In to Control Panel</button>
+    <div class="auth-sub">Enter credentials to manage platform</div>
+    <div class="form-field"><label>Email Address</label><input type="email" id="admin-email" value="Mfanarhshange43@gmail.com"></div>
+    <div class="form-field"><label>Password</label><input type="password" id="admin-password" placeholder="Password"></div>
+    <button class="btn-primary" id="admin-login-btn" style="width:100%;">Sign In</button>
   </div>
 </div>
 
 <div id="admin-dashboard" style="display:none">
   <div class="top-nav">
-    <div class="brand"><i class="ph ph-shield-check" style="font-size:20px;color:var(--accent)"></i> BOOK.NOW Founder Control Panel</div>
-    <button class="btn-primary" style="background:#fee2e2;color:#991b1b;padding:8px 12px;" id="admin-logout-btn"><i class="ph ph-sign-out"></i> Sign Out</button>
+    <div class="brand"><i class="ph ph-shield-check" style="color:var(--accent)"></i> BOOK.NOW Founder Panel</div>
+    <button class="btn-primary" style="background:#fee2e2;color:#991b1b;padding:8px 12px;" id="admin-logout-btn">Sign Out</button>
   </div>
 
   <main class="container">
     <div class="stats-container">
-      <div class="stat-box"><div class="stat-header"><i class="ph ph-storefront"></i> Total Registered Shops</div><div class="stat-value" id="stat-shops">0</div></div>
-      <div class="stat-box"><div class="stat-header"><i class="ph ph-calendar-check"></i> Total Platform Bookings</div><div class="stat-value" id="stat-bookings">R0.00</div></div>
+      <div class="stat-box"><div class="stat-header">Total Registered Shops</div><div class="stat-value" id="stat-shops">0</div></div>
+      <div class="stat-box"><div class="stat-header">Pending Approvals</div><div class="stat-value" id="stat-pending">0</div></div>
     </div>
 
     <div class="nav-tabs">
       <button class="tab-item active" id="tab-vendors-btn">Vendors &amp; Approvals</button>
-      <button class="tab-item" id="tab-orders-btn">Platform Orders</button>
+      <button class="tab-item" id="tab-settings-btn">Founder Bank Settings</button>
+      <button class="tab-item" id="tab-orders-btn">Platform Bookings</button>
     </div>
 
+    <!-- VENDORS TAB -->
     <section id="vendors-section">
       <div class="section-head">
-        <h3>Registered Vendors &amp; Subscriptions</h3>
+        <h3>Vendors &amp; Subscription Approvals</h3>
         <button class="btn-primary" onclick="loadAdminData()"><i class="ph ph-arrows-clockwise"></i> Refresh</button>
       </div>
       <div id="vendors-admin-list" class="card-list"><div class="empty-box">Loading vendors...</div></div>
     </section>
 
+    <!-- FOUNDER BANK SETTINGS TAB -->
+    <section id="settings-section" style="display:none">
+      <div class="section-head">
+        <h3><i class="ph ph-bank"></i> Your Founder EFT Receiving Account</h3>
+      </div>
+      <div class="admin-card">
+        <p style="font-size:12px; color:var(--muted); margin-bottom:14px; line-height:1.4;">
+          Update your founder bank details here. All new and renewing vendors will automatically see these exact bank details when paying their R99 registration or R299 monthly subscription fees.
+        </p>
+        <div class="form-field"><label for="founder-bank-name">Bank Name</label><input type="text" id="founder-bank-name" placeholder="e.g. First National Bank (FNB)"></div>
+        <div class="form-field"><label for="founder-acc-name">Account Holder Name</label><input type="text" id="founder-acc-name" placeholder="e.g. BOOK NOW Platform (Pty) Ltd"></div>
+        <div class="form-field"><label for="founder-acc-number">Account Number</label><input type="text" id="founder-acc-number" placeholder="e.g. 62810293847"></div>
+        <div class="form-field"><label for="founder-branch-code">Branch Code</label><input type="text" id="founder-branch-code" placeholder="e.g. 250655"></div>
+        <button class="btn-primary" id="save-founder-bank-btn" style="width:100%; margin-top:6px;">Save Founder Bank Details</button>
+      </div>
+    </section>
+
+    <!-- ORDERS TAB -->
     <section id="orders-section" style="display:none">
       <div class="section-head">
         <h3>All Customer Bookings (Live Platform Feed)</h3>
@@ -127,8 +147,10 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
   function showTab(name) {
     $("vendors-section").style.display = name === "vendors" ? "block" : "none";
+    $("settings-section").style.display = name === "settings" ? "block" : "none";
     $("orders-section").style.display = name === "orders" ? "block" : "none";
     $("tab-vendors-btn").classList.toggle("active", name === "vendors");
+    $("tab-settings-btn").classList.toggle("active", name === "settings");
     $("tab-orders-btn").classList.toggle("active", name === "orders");
   }
 
@@ -136,13 +158,14 @@ button:disabled{opacity:.6;cursor:not-allowed}
     db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     $("tab-vendors-btn").addEventListener("click", () => showTab("vendors"));
+    $("tab-settings-btn").addEventListener("click", () => { showTab("settings"); loadFounderBankSettings(); });
     $("tab-orders-btn").addEventListener("click", () => showTab("orders"));
+
+    $("save-founder-bank-btn").addEventListener("click", saveFounderBankSettings);
 
     $("admin-login-btn").addEventListener("click", async () => {
       const email = $("admin-email").value.trim();
       const password = $("admin-password").value;
-      if (!email || !password) return alert("Enter credentials.");
-      
       const { error } = await db.auth.signInWithPassword({ email, password });
       if (error) return alert("Login failed: " + error.message);
       checkSession();
@@ -166,8 +189,53 @@ button:disabled{opacity:.6;cursor:not-allowed}
     }
   }
 
+  async function loadFounderBankSettings() {
+    try {
+      const { data, error } = await db.from("platform_settings").select("*").eq("id", 1).single();
+      if (error && error.code !== "PGRST116") throw error;
+      if (data) {
+        $("founder-bank-name").value = data.bank_name || "";
+        $("founder-acc-name").value = data.account_name || "";
+        $("founder-acc-number").value = data.account_number || "";
+        $("founder-branch-code").value = data.branch_code || "";
+      }
+    } catch (err) {
+      console.error("Error loading founder bank settings:", err);
+    }
+  }
+
+  async function saveFounderBankSettings() {
+    const button = $("save-founder-bank-btn");
+    const bank_name = $("founder-bank-name").value.trim();
+    const account_name = $("founder-acc-name").value.trim();
+    const account_number = $("founder-acc-number").value.trim();
+    const branch_code = $("founder-branch-code").value.trim();
+
+    if (!bank_name || !account_number) return alert("Bank name and account number are required.");
+
+    button.disabled = true;
+    button.textContent = "Saving...";
+
+    try {
+      const { error } = await db.from("platform_settings").upsert({
+        id: 1,
+        bank_name,
+        account_name,
+        account_number,
+        branch_code
+      });
+
+      if (error) throw error;
+      alert("Founder bank settings saved successfully! All vendors will now see these details for subscription payments.");
+    } catch (err) {
+      alert("Error saving settings: " + err.message);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Save Founder Bank Details";
+    }
+  }
+
   window.loadAdminData = async function() {
-    // 1. Load Vendors
     const { data: vendors, error: vErr } = await db.from("vendors").select("*").order("created_at", { ascending: false });
     const vContainer = $("vendors-admin-list");
     vContainer.replaceChildren();
@@ -175,15 +243,19 @@ button:disabled{opacity:.6;cursor:not-allowed}
     if (vErr || !vendors || vendors.length === 0) {
       vContainer.innerHTML = `<div class="empty-box">No vendors registered yet.</div>`;
       $("stat-shops").textContent = "0";
+      $("stat-pending").textContent = "0";
     } else {
       $("stat-shops").textContent = String(vendors.length);
+      const pendingCount = vendors.filter(v => v.subscription_status === "PENDING_APPROVAL").length;
+      $("stat-pending").textContent = String(pendingCount);
+
       vendors.forEach(v => {
         const card = document.createElement("div");
         card.className = "vendor-card";
         const status = v.subscription_status || "PENDING_APPROVAL";
         const expires = v.subscription_expires_at ? new Date(v.subscription_expires_at).toLocaleDateString() : "Not Activated";
         const ref = v.pending_payment_ref || "N/A";
-        const popLink = v.pop_receipt_url ? `<a href="${v.pop_receipt_url}" target="_blank" style="color:var(--accent); font-weight:700; text-decoration:none;"><i class="ph ph-file-arrow-down"></i> View Proof of Payment (POP)</a>` : `<span style="color:var(--muted);">No POP uploaded yet</span>`;
+        const popLink = v.pop_receipt_url ? `<a href="${v.pop_receipt_url}" target="_blank" style="color:var(--accent); font-weight:700; text-decoration:none;"><i class="ph ph-file-arrow-down"></i> View Proof of Payment</a>` : `<span style="color:var(--muted);">No POP uploaded yet</span>`;
 
         card.innerHTML = `
           <div class="vendor-top">
@@ -191,11 +263,9 @@ button:disabled{opacity:.6;cursor:not-allowed}
               <div class="vendor-title">${v.name} (${v.category || 'STORE'})</div>
               <div class="vendor-meta">Owner: ${v.owner_id}</div>
               <div><span class="ref-pill">REF: ${ref}</span></div>
-              <div class="vendor-meta" style="margin-top:6px;">Subscription Expires: <strong>${expires}</strong></div>
+              <div class="vendor-meta" style="margin-top:6px;">Expires: <strong>${expires}</strong></div>
             </div>
-            <div>
-              <span class="status-badge status-${status === 'ACTIVE' ? 'active' : 'pending'}">${status}</span>
-            </div>
+            <div><span class="status-badge status-${status === 'ACTIVE' ? 'active' : 'pending'}">${status}</span></div>
           </div>
           <div style="background:#f8fafc; padding:12px; border-radius:10px; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; margin-top:8px;">
             <div>${popLink}</div>
@@ -208,21 +278,13 @@ button:disabled{opacity:.6;cursor:not-allowed}
       });
     }
 
-    // 2. Load Orders
     const { data: orders, error: oErr } = await db.from("orders").select("*").order("created_at", { ascending: false });
     const oContainer = $("orders-admin-list");
     oContainer.replaceChildren();
 
     if (oErr || !orders || orders.length === 0) {
       oContainer.innerHTML = `<div class="empty-box">No customer bookings across platform yet.</div>`;
-      $("stat-bookings").textContent = "R0.00";
     } else {
-      let totalGross = 0;
-      orders.forEach(o => {
-        if (o.status === "COMPLETED") totalGross += Number(o.gross_amount || 0);
-      });
-      $("stat-bookings").textContent = money(totalGross);
-
       orders.forEach(o => {
         const card = document.createElement("div");
         card.className = "order-card";
@@ -248,18 +310,15 @@ button:disabled{opacity:.6;cursor:not-allowed}
     const expiryDate = new Date();
     expiryDate.setMonth(expiryDate.getMonth() + 1);
 
-    const { error } = await db
-      .from("vendors")
-      .update({
-        subscription_status: "ACTIVE",
-        subscription_expires_at: expiryDate.toISOString()
-      })
-      .eq("id", vendorId);
+    const { error } = await db.from("vendors").update({
+      subscription_status: "ACTIVE",
+      subscription_expires_at: expiryDate.toISOString()
+    }).eq("id", vendorId);
 
     if (error) {
       alert("Error approving vendor: " + error.message);
     } else {
-      alert("Vendor approved successfully! Store is now unlocked and live for customers.");
+      alert("Vendor approved successfully! Store unlocked for 1 month.");
       loadAdminData();
     }
   };
