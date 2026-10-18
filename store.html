@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -642,7 +641,19 @@
           .eq("id", storeId)
           .single();
 
-        if (storeErr || !store) throw new Error("Store details not found.");
+        if (storeErr) {
+  console.error("Store query failed:", storeErr);
+
+  throw new Error(
+    `Store query failed (${storeErr.code || "unknown"}): ` +
+    `${storeErr.message || "Unknown error"}` +
+    (storeErr.hint ? ` — ${storeErr.hint}` : "")
+  );
+}
+
+if (!store) {
+  throw new Error("No store row was returned for ID: " + storeId);
+}
 
         storeData = store;
 
