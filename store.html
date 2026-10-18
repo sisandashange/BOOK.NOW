@@ -25,13 +25,11 @@
       --danger-bg: #fef2f2;
       --radius: 16px;
       --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
-      --shadow-md: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
     }
 
     * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
     body { margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 80px; }
 
-    /* TOP NAVIGATION */
     .top-nav { 
       background: rgba(255, 255, 255, 0.95); 
       backdrop-filter: blur(12px);
@@ -50,7 +48,6 @@
 
     .container { padding: 14px 12px; max-width: 850px; margin: 0 auto; }
 
-    /* STORE HERO CARD */
     .store-hero { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm); margin-bottom: 18px; }
     .hero-banner { width: 100%; height: 180px; object-fit: cover; background: #e2e8f0; display: block; }
     .hero-content { padding: 16px; }
@@ -64,48 +61,26 @@
 
     .section-title { font-size: 16px; font-weight: 800; margin: 0 0 12px 0; color: var(--primary); display: flex; align-items: center; gap: 6px; }
 
-    /* STRICT 2-COLUMN MENU GRID FOR ALL SCREENS */
-    .menu-grid { 
-      display: grid; 
-      grid-template-columns: repeat(2, minmax(0, 1fr)); 
-      gap: 10px; 
-    }
+    .menu-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .menu-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; min-width: 0; position: relative; }
 
-    .menu-card { 
-      background: var(--surface); 
-      border-radius: var(--radius); 
-      border: 1px solid var(--border); 
-      overflow: hidden; 
-      box-shadow: var(--shadow-sm); 
-      display: flex; 
-      flex-direction: column; 
-      min-width: 0;
-      position: relative;
-    }
-
-    /* MENU IMAGE BOX */
     .menu-img-wrapper { position: relative; width: 100%; aspect-ratio: 4 / 3; background: #f1f5f9; cursor: pointer; overflow: hidden; }
     .menu-cover-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
     .menu-card:hover .menu-cover-img { transform: scale(1.04); }
 
     .zoom-overlay { position: absolute; top: 6px; right: 6px; background: rgba(15, 23, 42, 0.65); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; backdrop-filter: blur(4px); }
-
-    /* PROMO SALE BADGE */
     .sale-tag { position: absolute; top: 6px; left: 6px; background: var(--danger); color: white; font-size: 9px; font-weight: 800; padding: 3px 6px; border-radius: 5px; text-transform: uppercase; z-index: 2; box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3); }
 
-    /* THUMBNAIL GALLERY STRIP */
     .thumb-strip { display: flex; gap: 4px; padding: 6px 8px; background: #f8fafc; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
     .thumb-strip::-webkit-scrollbar { display: none; }
     .thumb-btn { width: 30px; height: 30px; border-radius: 6px; object-fit: cover; border: 2px solid transparent; cursor: pointer; opacity: 0.7; transition: all 0.2s; flex-shrink: 0; }
     .thumb-btn.active, .thumb-btn:hover { border-color: var(--accent); opacity: 1; }
 
-    /* MENU CONTENT */
     .menu-body { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; gap: 8px; min-width: 0; }
     .menu-title { font-size: 13px; font-weight: 800; color: var(--primary); margin: 0 0 2px 0; letter-spacing: -0.2px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
     .menu-duration { font-size: 10px; font-weight: 600; color: var(--muted); display: inline-flex; align-items: center; gap: 3px; }
 
     .menu-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; padding-top: 6px; border-top: 1px solid #f1f5f9; gap: 4px; }
-    
     .price-container { display: flex; flex-direction: column; }
     .menu-price { font-size: 13px; font-weight: 800; color: var(--primary); white-space: nowrap; }
     .menu-price.sale-active { color: var(--danger); }
@@ -114,12 +89,10 @@
     .btn-book { background: var(--accent); color: white; border: none; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
     .btn-book:hover { background: var(--accent-hover); }
 
-    /* FULL PICTURE LIGHTBOX MODAL */
     .lightbox-modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(10px); display: none; justify-content: center; align-items: center; z-index: 200; padding: 16px; }
     .lightbox-img { max-width: 92vw; max-height: 82vh; border-radius: 14px; object-fit: contain; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
     .lightbox-close { position: absolute; top: 16px; right: 16px; color: white; font-size: 28px; cursor: pointer; background: rgba(255,255,255,0.2); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
 
-    /* BOOKING FORM MODAL */
     .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: flex-end; z-index: 100; }
     .modal-sheet { background: #fff; width: 100%; max-width: 600px; padding: 20px; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.15); max-height: 90vh; overflow-y: auto; }
     .form-field { margin-bottom: 12px; }
@@ -131,7 +104,6 @@
 </head>
 <body>
 
-  <!-- TOP NAV -->
   <div class="top-nav">
     <a href="index.html" class="back-btn"><i class="ph ph-arrow-left"></i> All Spots</a>
     <div class="brand">
@@ -141,29 +113,24 @@
   </div>
 
   <div class="container">
-    <!-- STORE HEADER HERO -->
     <div id="store-hero-box" class="store-hero">
       <div class="empty-box">Loading store info...</div>
     </div>
 
-    <!-- SERVICES & MENU SECTION -->
     <div class="section-title">
       <i class="ph ph-squares-four" style="color:var(--accent);"></i> Services & Menu
     </div>
     
-    <!-- STRICT 2-COLUMN MENU GRID -->
     <div id="services-menu-box" class="menu-grid">
       <div class="empty-box">Loading menu items...</div>
     </div>
   </div>
 
-  <!-- LIGHTBOX FULL IMAGE VIEW MODAL -->
   <div id="lightbox-modal" class="lightbox-modal">
     <span class="lightbox-close" id="close-lightbox"><i class="ph ph-x"></i></span>
     <img id="lightbox-img" class="lightbox-img" src="" alt="Full view">
   </div>
 
-  <!-- BOOKING FORM MODAL -->
   <div id="booking-modal" class="modal">
     <div class="modal-sheet">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
@@ -184,7 +151,6 @@
         <input type="tel" id="customer-phone" placeholder="e.g. 082 123 4567">
       </div>
 
-      <!-- PAYMENT METHOD SELECTOR -->
       <div class="form-field">
         <label>Payment Method</label>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
@@ -197,13 +163,12 @@
         </div>
       </div>
 
-      <!-- DIRECT EFT NOTICE CONTAINER -->
       <div id="eft-details-container" style="background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 12px; font-size: 12px;">
         <div style="font-weight: 700; color: var(--primary); margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
-          <i class="ph ph-shield-check" style="color: var(--success); font-size: 16px;"></i> Direct Bank Transfer
+          <i class="ph ph-shield-check" style="color: var(--success); font-size: 16px;"></i> Unique Reference Generated
         </div>
         <p style="margin: 0; color: var(--muted); line-height: 1.4; font-size: 11px;">
-          Your order will be submitted directly to the shop. Click confirm to receive banking details and instantly notify the vendor on WhatsApp!
+          Click confirm to get your unique payment reference number. Use this reference when doing Instant EFT or sending WhatsApp proof of payment to the shop!
         </p>
       </div>
 
@@ -231,6 +196,15 @@
     };
 
     const $ = id => document.getElementById(id);
+
+    function generatePaymentRef() {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let ref = "BN-";
+      for (let i = 0; i < 6; i++) {
+        ref += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return ref;
+    }
 
     window.setPaymentMethod = function(method) {
       selectedPaymentMethod = method;
@@ -464,24 +438,34 @@
       button.textContent = "Submitting Booking...";
 
       try {
+        const paymentRef = generatePaymentRef();
         const grossAmount = selectedService.price;
-        const netEarnings = grossAmount; // 100% earnings to vendor
-        const commission = 0.00;         // 0% platform commission (R299/mo subscription model)
+        const netEarnings = grossAmount;
+        const commission = 0.00;
 
-        const paymentMethodVal = selectedPaymentMethod;
-        const paymentStatusVal = "UNPAID";
+        const todayStart = new Date().toISOString().split("T")[0] + "T00:00:00.000Z";
+        const { data: todayOrders } = await supabase
+          .from("orders")
+          .select("id")
+          .eq("vendor_id", selectedService.vendorId)
+          .gte("created_at", todayStart)
+          .neq("status", "CANCELLED");
 
-        const { error } = await supabase.from("orders").insert([{
+        const queueNumber = (todayOrders ? todayOrders.length : 0) + 1;
+
+        const { data: orderData, error } = await supabase.from("orders").insert([{
           vendor_id: selectedService.vendorId,
           gross_amount: grossAmount,
           vendor_net_earnings: netEarnings,
           platform_commission: commission,
-          payment_method: paymentMethodVal,
-          payment_status: paymentStatusVal,
+          payment_method: selectedPaymentMethod,
+          payment_status: "UNPAID",
           status: "PENDING",
           customer_name: name,
-          customer_phone: phone
-        }]);
+          customer_phone: phone,
+          payment_ref: paymentRef,
+          queue_number: queueNumber
+        }]).select().single();
 
         if (error) throw error;
 
@@ -489,25 +473,39 @@
         const rawVendorPhone = vendorData && vendorData.phone_number ? vendorData.phone_number : "27820000000"; 
         const cleanVendorPhone = rawVendorPhone.replace(/[^0-9]/g, "");
 
-        const paymentNote = selectedPaymentMethod === "EFT" ? "💳 Paying via Direct Instant EFT" : "💵 Paying Cash at store";
+        const paymentNote = selectedPaymentMethod === "EFT" 
+          ? `💳 Direct Instant EFT (Ref: ${paymentRef})` 
+          : `💵 Pay Cash at store (Ref: ${paymentRef})`;
+
         const message = encodeURIComponent(
-          `Hi ${vendorShopName}! 👋 I just booked "${selectedService.title}" (R${selectedService.price.toFixed(2)}) on BOOK.NOW.\n\nMy Name: ${name}\nMy Phone: ${phone}\nPayment Method: ${paymentNote}\nPlease confirm my appointment!`
+          `Hi ${vendorShopName}! 👋 I just booked "${selectedService.title}" (R${selectedService.price.toFixed(2)}) on BOOK.NOW.\n\nMy Name: ${name}\nMy Phone: ${phone}\nPayment Ref: ${paymentRef}\nPayment Method: ${paymentNote}\nQueue Position: #${queueNumber}\n\nPlease confirm my appointment slot!`
         );
 
         const whatsappUrl = `https://wa.me/${cleanVendorPhone}?text=${message}`;
+        const qrDataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(orderData.id)}`;
 
         const sheet = document.querySelector("#booking-modal .modal-sheet");
         sheet.innerHTML = `
-          <div style="text-align: center; padding: 20px 0;">
-            <i class="ph ph-check-circle" style="font-size: 50px; color: var(--success); margin-bottom: 10px;"></i>
-            <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 800;">Booking Request Sent!</h3>
-            <p style="font-size: 13px; color: var(--muted); margin: 0 0 20px 0; line-height: 1.4;">
-              Your appointment with <strong>${vendorShopName}</strong> has been logged. Click below to confirm directly with them on WhatsApp!
-            </p>
-            <a href="${whatsappUrl}" target="_blank" class="btn-book" style="display: block; width: 100%; text-decoration: none; padding: 14px; font-size: 14px; background: #25d366; color: white; border-radius: 12px; font-weight: 700; margin-bottom: 10px;">
-              <i class="ph ph-whatsapp-logo" style="font-size: 18px; vertical-align: middle;"></i> Open WhatsApp to Confirm
+          <div style="text-align: center; padding: 10px 0;">
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; margin-bottom: 10px;">
+              QUEUE POSITION: #${queueNumber} FOR TODAY
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid var(--border); padding: 10px; border-radius: 10px; margin-bottom: 12px;">
+              <div style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Your Payment Reference</div>
+              <div style="font-size: 20px; font-weight: 800; color: var(--accent); font-family: monospace; letter-spacing: 1px;">${paymentRef}</div>
+              <div style="font-size: 10px; color: var(--muted); margin-top: 2px;">Use this reference when making EFT or sending WhatsApp proof!</div>
+            </div>
+
+            <div style="background: #ffffff; border: 2px dashed var(--border); padding: 12px; border-radius: 14px; margin-bottom: 12px; display: inline-block;">
+              <img src="${qrDataUrl}" alt="Receipt QR" style="width: 140px; height: 140px; border-radius: 8px;">
+              <div style="font-size: 10px; font-weight: 800; color: var(--danger); margin-top: 4px; text-transform: uppercase;">STATUS: UNPAID (REF: ${paymentRef})</div>
+            </div>
+
+            <a href="${whatsappUrl}" target="_blank" class="btn-book" style="display: block; width: 100%; text-decoration: none; padding: 12px; font-size: 13px; background: #25d366; color: white; border-radius: 10px; font-weight: 700; margin-bottom: 8px;">
+              <i class="ph ph-whatsapp-logo" style="font-size: 16px; vertical-align: middle;"></i> Send WhatsApp Proof of Payment
             </a>
-            <button onclick="location.reload()" style="background: none; border: none; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; padding: 8px;">
+            <button onclick="location.reload()" style="background: none; border: none; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer;">
               Done / Close
             </button>
           </div>
