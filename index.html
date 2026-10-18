@@ -137,9 +137,9 @@
 
     const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
     const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
-    
+
     let supabase = null;
-    let allVendors = [];
+    let allStores = [];
     let booted = false;
 
     const FALLBACK_IMAGES = {
@@ -160,89 +160,82 @@
       $("search-input").addEventListener("input", handleSearch);
     }
 
-    
-async function loadMarketplace() {
-  const container = $("store-grid");
-  container.textContent = "Loading available stores...";
+    async function loadMarketplace() {
+      const container = $("store-grid");
+      container.textContent = "Loading available stores...";
 
-  if (!window.supabase || !supabase) {
-    container.textContent =
-      "Unable to connect to database. Please refresh.";
-    return;
-  }
+      if (!window.supabase || !supabase) {
+        container.textContent = "Unable to connect to database. Please refresh.";
+        return;
+      }
 
-  try {
-    const now = new Date().toISOString();
+      try {
+        const now = new Date().toISOString();
 
-    // Only load approved stores with a future expiry date.
-    const { data: vendors, error } = await supabase
-      .from("vendors")
-      .select("id, name, category, store_image_url, created_at, subscription_status, subscription_expires_at")
-      .eq("subscription_status", "ACTIVE")
-      .gt("subscription_expires_at", now)
-      .order("created_at", { ascending: false });
+        // Query the new 'stores' table respecting RLS (active stores with valid subscriptions)
+        const { data: stores, error } = await supabase
+          .from("stores")
+          .select("id, store_name, category, store_image_url, created_at, status, subscription_expires_at")
+          .eq("status", "active")
+          .gt("subscription_expires_at", now)
+          .order("created_at", { ascending: false });
 
-    if (error) throw error;
+        if (error) throw error;
 
-    if (!vendors || vendors.length === 0) {
-      allVendors = [];
-      container.innerHTML =
-        '<div class="empty-box">No active stores available right now. Please check again later.</div>';
-      return;
+        if (!stores || stores.length === 0) {
+          allStores = [];
+          container.innerHTML = '<div class="empty-box">No active stores available right now. Please check again later.</div>';
+          return;
+        }
+
+        const results = await Promise.all(
+          stores.map(async store => {
+            const { data: services, error: serviceErr } = await supabase
+              .from("service_items")
+              .select("id, store_id, title, price")
+              .eq("store_id", store.id);
+
+            if (serviceErr) throw serviceErr;
+
+            return {
+              ...store,
+              service_items: services || []
+            };
+          })
+        );
+
+        const currentTime = Date.now();
+
+        allStores = results.filter(s =>
+          s.status === "active" &&
+          s.subscription_expires_at &&
+          new Date(s.subscription_expires_at).getTime() > currentTime
+        );
+
+        renderStores(allStores);
+
+      } catch (error) {
+        console.error("Marketplace error:", error);
+        container.replaceChildren();
+
+        const message = document.createElement("div");
+        message.className = "empty-box";
+        message.textContent = "Unable to load stores. Please try again later.";
+
+        container.appendChild(message);
+      }
     }
 
-    const results = await Promise.all(
-      vendors.map(async vendor => {
-        const { data: services, error: serviceErr } =
-          await supabase
-            .from("service_items")
-            .select("id, vendor_id, title, price")
-            .eq("vendor_id", vendor.id);
-
-        if (serviceErr) throw serviceErr;
-
-        return {
-          ...vendor,
-          service_items: services || []
-        };
-      })
-    );
-
-    // Extra client-side safeguard.
-    const currentTime = Date.now();
-
-    allVendors = results.filter(v =>
-      v.subscription_status === "ACTIVE" &&
-      v.subscription_expires_at &&
-      new Date(v.subscription_expires_at).getTime() > currentTime
-    );
-
-    renderStores(allVendors);
-
-  } catch (error) {
-    console.error("Marketplace error:", error);
-    container.replaceChildren();
-
-    const message = document.createElement("div");
-    message.className = "empty-box";
-    message.textContent =
-      "Unable to load stores. Please try again later.";
-
-    container.appendChild(message);
-  }
-}
-
-
-    function renderStores(vendors) {
+    function renderStores(stores) {
       const container = $("store-grid");
       container.replaceChildren();
 
-      if (vendors.length === 0) {
+      if (stores.length === 0) {
         container.innerHTML = '<div class="empty-box">No spots found matching your search.</div>';
         return;
       }
 
-      vendors.forEach(v => {
+      stores.forEach(s => {
         const card = document.createElement("div");
         card.className = "store-card";
 
@@ -251,8 +244,8 @@ async function loadMarketplace() {
 
         const img = document.createElement("img");
         img.className = "store-avatar";
-        img.src = v.store_image_url || FALLBACK_IMAGES[v.category] || FALLBACK_IMAGES.DEFAULT;
-        img.alt = v.name;
+        img.src = s.store_image_url || FALLBACK_IMAGES[s.category] || FALLBACK_IMAGES.DEFAULT;
+        img.alt = s.store_name;
         avatarContainer.appendChild(img);
 
         const body = document.createElement("div");
@@ -261,25 +254,25 @@ async function loadMarketplace() {
         const topContent = document.createElement("div");
         const title = document.createElement("h3");
         title.className = "store-title";
-        title.textContent = v.name || "Unnamed Business";
+        title.textContent = s.store_name || "Unnamed Business";
 
         const category = document.createElement("span");
         category.className = "store-category";
-        category.textContent = v.category || "SPOT";
+        category.textContent = s.category || "SPOT";
 
         const meta = document.createElement("div");
         meta.className = "store-meta";
         meta.innerHTML = `
           <span class="store-rating"><i class="ph-fill ph-star"></i> 5.0</span>
           <span>•</span>
-          <span>${v.service_items.length} Svc</span>
+          <span>${s.service_items.length} Svc</span>
         `;
 
         topContent.append(title, category, meta);
 
         const visitBtn = document.createElement("a");
         visitBtn.className = "btn-visit";
-        visitBtn.href = `store.html?id=${v.id}`;
+        visitBtn.href = `store.html?id=${s.id}`;
         visitBtn.innerHTML = `<i class="ph ph-storefront"></i> Visit Store`;
 
         body.append(topContent, visitBtn);
@@ -291,14 +284,14 @@ async function loadMarketplace() {
     function handleSearch(e) {
       const term = e.target.value.toLowerCase().trim();
       if (!term) {
-        renderStores(allVendors);
+        renderStores(allStores);
         return;
       }
 
-      const filtered = allVendors.filter(v => {
-        const matchName = v.name.toLowerCase().includes(term);
-        const matchCategory = v.category.toLowerCase().includes(term);
-        const matchService = v.service_items.some(s => s.title.toLowerCase().includes(term));
+      const filtered = allStores.filter(s => {
+        const matchName = (s.store_name || "").toLowerCase().includes(term);
+        const matchCategory = (s.category || "").toLowerCase().includes(term);
+        const matchService = s.service_items.some(item => item.title.toLowerCase().includes(term));
         return matchName || matchCategory || matchService;
       });
 
@@ -310,9 +303,9 @@ async function loadMarketplace() {
       btn.classList.add("active");
 
       if (cat === "ALL") {
-        renderStores(allVendors);
+        renderStores(allStores);
       } else {
-        const filtered = allVendors.filter(v => v.category === cat);
+        const filtered = allStores.filter(s => s.category === cat);
         renderStores(filtered);
       }
     }
