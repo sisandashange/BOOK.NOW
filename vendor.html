@@ -1414,16 +1414,6 @@ button:disabled{opacity:.6;cursor:not-allowed}
     if (!db || !activeVendor) return;
 
     try {
-      const { data, error } = await db
-        .from("bookings")
-        .select("id")
-        .eq("store_id", activeVendor.id)
-        .eq("status", "completed");
-
-      if (error) throw error;
-
-      // Fetch service items to compute earned amount if needed, or query join. Here we compute from bookings.
-      // Let's fetch bookings with service items or compute from service price.
       const { data: bookingsData, error: bErr } = await db
         .from("bookings")
         .select("service_id, service_items(price, sale_price)")
@@ -1456,6 +1446,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
     setEmpty("services-list", "Loading services...");
 
     try {
+      // ✅ Updated .select() query explicitly including the promotional sale columns
       const { data, error } = await db
         .from("service_items")
         .select("id, store_id, title, price, sale_price, sale_start_date, sale_end_date, image_urls, created_at")
