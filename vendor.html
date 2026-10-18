@@ -856,8 +856,16 @@ button:disabled{opacity:.6;cursor:not-allowed}
     const now = new Date();
     const status = activeVendor.subscription_status || "PENDING_APPROVAL";
 
-    // If pending approval or expired, automatically display Founder EFT & POP upload screen
-    if (status === "PENDING_APPROVAL" || (expiresAt && now > expiresAt)) {
+    // AUTOMATIC STATUS CHECK: If expiration date has passed, update status to PENDING
+    if (expiresAt && now > expiresAt && status === "ACTIVE") {
+      await db.from("vendors").update({ subscription_status: "PENDING_APPROVAL" }).eq("id", activeVendor.id);
+      activeVendor.subscription_status = "PENDING_APPROVAL";
+    }
+
+    const currentStatus = activeVendor.subscription_status || "PENDING_APPROVAL";
+
+    // If pending approval or expired, display Founder EFT & POP upload screen
+    if (currentStatus === "PENDING_APPROVAL" || (expiresAt && now > expiresAt)) {
       const isRenewal = expiresAt && now > expiresAt;
       const feeAmount = isRenewal ? "R299.00" : "R99.00 (First-Time Registration)";
       const paymentRef = activeVendor.pending_payment_ref || `SUB-${Math.floor(100000 + Math.random() * 900000)}`;
@@ -889,9 +897,9 @@ button:disabled{opacity:.6;cursor:not-allowed}
             <div style="margin-top: 8px; font-weight: 700; color: var(--success);">Amount Due: ${feeAmount}</div>
           </div>
 
-          ${status === "PENDING_APPROVAL" && activeVendor.pop_receipt_url ? `
+          ${currentStatus === "PENDING_APPROVAL" && activeVendor.pop_receipt_url ? `
             <div style="background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; padding: 12px; border-radius: 10px; font-size: 12px; margin-bottom: 14px; text-align: center;">
-              ⏳ <strong>Application Under Review</strong><br>Your proof of payment was submitted. Your store will be activated within 24 hours once approved by the founder.
+              ⏳ <strong>Application Under Review</strong><br>Your proof of payment was submitted. Your store/business will be activated within 24 hours once approved by the founder.
             </div>
           ` : `
             <div class="form-field">
