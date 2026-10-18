@@ -160,58 +160,78 @@
       $("search-input").addEventListener("input", handleSearch);
     }
 
-    async function loadMarketplace() {
-      const container = $("store-grid");
-      container.innerHTML = '<div class="empty-box">Loading available stores...</div>';
+    
+async function loadMarketplace() {
+  const container = $("store-grid");
+  container.textContent = "Loading available stores...";
 
-      if (!window.supabase || !supabase) {
-        container.textContent = "Unable to connect to database. Please refresh.";
-        return;
-      }
+  if (!window.supabase || !supabase) {
+    container.textContent =
+      "Unable to connect to database. Please refresh.";
+    return;
+  }
 
-      try {
-        const { data: vendors, error } = await supabase
-          .from("vendors")
-          .select("id, name, category, store_image_url, created_at")
-          .order("created_at", { ascending: false });
+  try {
+    const now = new Date().toISOString();
 
-        if (error) throw error;
+    // Only load approved stores with a future expiry date.
+    const { data: vendors, error } = await supabase
+      .from("vendors")
+      .select("id, name, category, store_image_url, created_at, subscription_status, subscription_expires_at")
+      .eq("subscription_status", "ACTIVE")
+      .gt("subscription_expires_at", now)
+      .order("created_at", { ascending: false });
 
-        if (!vendors || vendors.length === 0) {
-          allVendors = [];
-          container.innerHTML = '<div class="empty-box">No partner spots available yet.</div>';
-          return;
-        }
+    if (error) throw error;
 
-        const results = await Promise.all(
-          vendors.map(async vendor => {
-            const { data: services, error: serviceErr } =
-              await supabase
-                .from("service_items")
-                .select("id, vendor_id, title, price")
-                .eq("vendor_id", vendor.id);
-
-            if (serviceErr) throw serviceErr;
-
-            return {
-              ...vendor,
-              service_items: services || []
-            };
-          })
-        );
-
-        allVendors = results;
-        renderStores(allVendors);
-
-      } catch (error) {
-        console.error("Marketplace error:", error);
-        container.replaceChildren();
-        const message = document.createElement("div");
-        message.className = "empty-box";
-        message.textContent = "Marketplace error: " + (error.message || "Unknown error");
-        container.appendChild(message);
-      }
+    if (!vendors || vendors.length === 0) {
+      allVendors = [];
+      container.innerHTML =
+        '<div class="empty-box">No active stores available right now. Please check again later.</div>';
+      return;
     }
+
+    const results = await Promise.all(
+      vendors.map(async vendor => {
+        const { data: services, error: serviceErr } =
+          await supabase
+            .from("service_items")
+            .select("id, vendor_id, title, price")
+            .eq("vendor_id", vendor.id);
+
+        if (serviceErr) throw serviceErr;
+
+        return {
+          ...vendor,
+          service_items: services || []
+        };
+      })
+    );
+
+    // Extra client-side safeguard.
+    const currentTime = Date.now();
+
+    allVendors = results.filter(v =>
+      v.subscription_status === "ACTIVE" &&
+      v.subscription_expires_at &&
+      new Date(v.subscription_expires_at).getTime() > currentTime
+    );
+
+    renderStores(allVendors);
+
+  } catch (error) {
+    console.error("Marketplace error:", error);
+    container.replaceChildren();
+
+    const message = document.createElement("div");
+    message.className = "empty-box";
+    message.textContent =
+      "Unable to load stores. Please try again later.";
+
+    container.appendChild(message);
+  }
+}
+
 
     function renderStores(vendors) {
       const container = $("store-grid");
