@@ -260,13 +260,13 @@ button:disabled{opacity:.6;cursor:not-allowed}
         <div class="form-field"><label for="bank-select">Select Bank</label>
           <select id="bank-select" onchange="onBankSelected()">
             <option value="">-- Choose Your Bank --</option>
-            <option value="FNB|250655">First National Bank (FNB)</option>
-            <option value="CAPITEC|470010">Capitec Bank</option>
-            <option value="STANDARD|051001">Standard Bank</option>
-            <option value="ABSA|632005">ABSA Bank</option>
-            <option value="NEDBANK|198765">Nedbank</option>
-            <option value="TYME|678910">TymeBank</option>
-            <option value="DISCOVERY|679000">Discovery Bank</option>
+            <option value="First National Bank (FNB)|250655">First National Bank (FNB)</option>
+            <option value="Capitec Bank|470010">Capitec Bank</option>
+            <option value="Standard Bank|051001">Standard Bank</option>
+            <option value="ABSA Bank|632005">ABSA Bank</option>
+            <option value="Nedbank|198765">Nedbank</option>
+            <option value="TymeBank|678910">TymeBank</option>
+            <option value="Discovery Bank|679000">Discovery Bank</option>
           </select>
         </div>
         <div class="form-field"><label for="account-holder">Account Holder Name</label><input type="text" id="account-holder" placeholder="e.g. John Doe / Business (Pty) Ltd"></div>
@@ -301,7 +301,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
         </div>
         <div class="finance-card">
           <div class="finance-label">Platform Subscription</div>
-          <div class="finance-value" style="color:var(--accent);">R299.00/mo</div>
+          <div class="finance-value" style="color:var(--accent);" id="wallet-subscription-rate">R299.00/mo</div>
           <div class="finance-note">Flat monthly platform access fee</div>
         </div>
       </div>
@@ -326,10 +326,10 @@ button:disabled{opacity:.6;cursor:not-allowed}
   <div class="modal-sheet">
     <div class="section-head"><h3 id="modal-service-title-text">Add Service Offering</h3><button class="btn-action btn-muted" id="close-service-modal" aria-label="Close">✕</button></div>
     <input type="hidden" id="editing-service-id" value="">
-    
+
     <div class="form-field"><label for="service-title">Service Title</label><input type="text" id="service-title" placeholder="e.g. Fade Cut & Beard Trim" maxlength="150"></div>
     <div class="form-field"><label for="service-price">Standard Price (ZAR)</label><input type="number" id="service-price" placeholder="e.g. 150" min="1" max="10000" step="0.01"></div>
-    
+
     <div style="background:#f8fafc; border:1px solid var(--border); padding:14px; border-radius:12px; margin-bottom:14px;">
       <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:10px;"><i class="ph ph-tag"></i> Promotional Sale Pricing (Optional)</div>
       <div class="form-field"><label for="service-sale-price">Special Sale Price (ZAR)</label><input type="number" id="service-sale-price" placeholder="e.g. 100" min="1" max="10000" step="0.01"></div>
@@ -371,15 +371,15 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
     <div class="subscription-bank">
       <strong>BOOK.NOW EFT Payment Details</strong><br>
-      Bank: FNB / First National Bank<br>
-      Account name: BOOK NOW Platform (Pty) Ltd<br>
-      Account number: 62810293847<br>
-      Branch code: 250655
+      Bank: <span id="bank-info-name">FNB / First National Bank</span><br>
+      Account name: <span id="bank-info-acc-name">BOOK NOW Platform (Pty) Ltd</span><br>
+      Account number: <span id="bank-info-acc-num">62810293847</span><br>
+      Branch code: <span id="bank-info-branch">250655</span>
 
       <hr style="border:0;border-top:1px solid #e2e8f0;margin:12px 0">
 
       Payment reference:
-      <span id="subscription-reference" class="subscription-reference"></span>
+      <span id="subscription-reference" class="subscription-reference">Loading...</span>
 
       <div style="margin-top:12px">
         Amount due:
@@ -677,7 +677,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
       try {
         const { data, error } = await db
-          .from("vendors")
+          .from("stores")
           .select("*")
           .eq("id", id)
           .single();
@@ -723,7 +723,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
   function populateProfileForm() {
     if (!activeVendor) return;
 
-    $("store-name-input").value = activeVendor.name || "";
+    $("store-name-input").value = activeVendor.store_name || activeVendor.name || "";
     $("store-category-input").value = activeVendor.category || "BARBER";
     $("store-phone-input").value = activeVendor.phone_number || "";
     $("store-address-input").value = activeVendor.address || "";
@@ -747,8 +747,8 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
     try {
       const { data, error } = await db
-        .from("vendors")
-        .update({ name, category, phone_number, address })
+        .from("stores")
+        .update({ store_name: name, category, phone_number, address, updated_at: new Date() })
         .eq("id", activeVendor.id)
         .select()
         .single();
@@ -811,12 +811,13 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
     try {
       const { error } = await db
-        .from("vendors")
+        .from("stores")
         .update({
           bank_name,
           account_holder,
           account_number,
-          branch_code
+          branch_code,
+          updated_at: new Date()
         })
         .eq("id", activeVendor.id);
 
@@ -885,7 +886,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
         .from("orders")
         .select("*")
         .eq("id", scannedOrderId)
-        .eq("vendor_id", activeVendor.id)
+        .eq("store_id", activeVendor.id)
         .single();
 
       if (error || !order) {
@@ -907,7 +908,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
       const { data: aheadOrders } = await db
         .from("orders")
         .select("customer_name")
-        .eq("vendor_id", activeVendor.id)
+        .eq("store_id", activeVendor.id)
         .eq("status", "PENDING")
         .gte("created_at", todayStart)
         .lt("created_at", order.created_at);
@@ -970,7 +971,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
         payment_status: "PAID"
       })
       .eq("id", orderId)
-      .eq("vendor_id", activeVendor.id);
+      .eq("store_id", activeVendor.id);
 
     if (error) {
       alert("Error: " + error.message);
@@ -1005,8 +1006,8 @@ button:disabled{opacity:.6;cursor:not-allowed}
         .getPublicUrl(fileName);
 
       const { error: updateError } = await db
-        .from("vendors")
-        .update({ store_image_url: urlData.publicUrl })
+        .from("stores")
+        .update({ store_image_url: urlData.publicUrl, updated_at: new Date() })
         .eq("id", activeVendor.id);
 
       if (updateError) throw updateError;
@@ -1085,13 +1086,20 @@ button:disabled{opacity:.6;cursor:not-allowed}
       if (userError) throw userError;
       if (!user) throw new Error("Not authenticated.");
 
+      const storeSlug = name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '') + '-' + Math.floor(1000 + Math.random() * 9000);
+
       const { data, error } = await db
-        .from("vendors")
+        .from("stores")
         .insert([{
-          name,
+          store_name: name,
+          store_slug: storeSlug,
           category,
-          owner_id: user.id,
-          subscription_status: "PENDING_APPROVAL"
+          profile_id: user.id,
+          status: "pending_payment",
+          is_first_time: true
         }])
         .select()
         .single();
@@ -1104,8 +1112,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
       await initDashboard(data.id);
 
       alert(
-        "Business registered. Complete the subscription payment process " +
-        "to submit your application for administrator approval."
+        "Business registered! Please complete the R99 registration payment to activate your store."
       );
     } catch (error) {
       alert("Could not save business: " + error.message);
@@ -1181,7 +1188,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
       }
 
       const payload = {
-        vendor_id: activeVendor.id,
+        store_id: activeVendor.id,
         title,
         price,
         sale_price: salePrice,
@@ -1198,7 +1205,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
           .from("service_items")
           .update(payload)
           .eq("id", serviceId)
-          .eq("vendor_id", activeVendor.id);
+          .eq("store_id", activeVendor.id);
 
         if (error) throw error;
       } else {
@@ -1243,9 +1250,9 @@ button:disabled{opacity:.6;cursor:not-allowed}
       if (!user) throw new Error("No active user session.");
 
       const { data: vendors, error } = await db
-        .from("vendors")
+        .from("stores")
         .select("*")
-        .eq("owner_id", user.id)
+        .eq("profile_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -1273,7 +1280,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
       vendors.forEach(vendor => {
         const option = document.createElement("option");
         option.value = String(vendor.id);
-        option.textContent = vendor.name || "Unnamed Business";
+        option.textContent = vendor.store_name || vendor.name || "Unnamed Business";
         select.appendChild(option);
       });
 
@@ -1285,6 +1292,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
       updateHeader();
 
+      await loadFounderBankSettings();
       await checkSubscriptionAndRender();
     } catch (error) {
       console.error("Dashboard error:", error);
@@ -1292,10 +1300,25 @@ button:disabled{opacity:.6;cursor:not-allowed}
     }
   }
 
-  /*
-   * Subscription status and payment information come from the trusted
-   * Supabase RPC. This function never activates a subscription.
-   */
+  async function loadFounderBankSettings() {
+    try {
+      const { data, error } = await db
+        .from("platform_settings")
+        .select("bank_name, account_name, account_number, branch_code")
+        .eq("id", 1)
+        .single();
+
+      if (error || !data) return;
+
+      if ($("bank-info-name")) $("bank-info-name").textContent = data.bank_name;
+      if ($("bank-info-acc-name")) $("bank-info-acc-name").textContent = data.account_name;
+      if ($("bank-info-acc-num")) $("bank-info-acc-num").textContent = data.account_number;
+      if ($("bank-info-branch")) $("bank-info-branch").textContent = data.branch_code;
+    } catch (e) {
+      console.error("Could not load platform bank settings:", e);
+    }
+  }
+
   async function checkSubscriptionAndRender() {
     if (!activeVendor || !db) return;
 
@@ -1304,94 +1327,73 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
     if (!gate || !main) return;
 
+    const now = new Date();
+    const expiresAt = activeVendor.subscription_expires_at ? new Date(activeVendor.subscription_expires_at) : null;
+    const isActive = activeVendor.status === "active" && expiresAt && expiresAt > now;
+
+    if (isActive) {
+      gate.style.display = "none";
+      main.style.display = "block";
+
+      await Promise.all([
+        loadServices(),
+        loadOrders(),
+        loadMoneyStoreWallet()
+      ]);
+
+      return;
+    }
+
+    // Otherwise show subscription lock screen
     gate.style.display = "block";
     main.style.display = "none";
 
-    $("subscription-heading").textContent = "Checking Subscription...";
-    $("subscription-description").textContent =
-      "Verifying your subscription and payment status.";
-    $("subscription-upload-section").style.display = "none";
-    $("subscription-review-message").style.display = "none";
-    $("subscription-reference").textContent = "Loading...";
-    $("subscription-amount").textContent = "";
+    const isFirstTime = activeVendor.is_first_time !== false;
+    const amountDue = isFirstTime ? 99 : 299;
+    const reference = "REF-" + activeVendor.store_slug.toUpperCase().substring(0, 15);
 
+    // Update prices & text dynamically
+    if ($("wallet-subscription-rate")) {
+      $("wallet-subscription-rate").textContent = money(amountDue) + "/mo";
+    }
+
+    $("subscription-heading").textContent = isFirstTime
+      ? "First-Time Registration Payment"
+      : "Monthly Subscription Renewal";
+
+    $("subscription-description").textContent = isFirstTime
+      ? "Pay the R99 special registration fee by EFT to activate your store."
+      : "Pay your R299 monthly subscription by EFT to restore store access.";
+
+    $("subscription-reference").textContent = reference;
+    $("subscription-amount").textContent = money(amountDue);
+
+    // Check if vendor already has a pending request in subscription_payment_requests
     try {
-      const { data, error } = await db.rpc(
-        "get_subscription_payment_details",
-        { p_vendor_id: activeVendor.id }
-      );
+      const { data: pendingReq } = await db
+        .from("subscription_payment_requests")
+        .select("status")
+        .eq("store_id", activeVendor.id)
+        .eq("status", "PENDING")
+        .maybeSingle();
 
-      if (error) throw error;
-
-      if (!data || typeof data !== "object") {
-        throw new Error("The subscription service returned an invalid response.");
-      }
-
-      if (data.active === true) {
-        gate.style.display = "none";
-        main.style.display = "block";
-
-        await Promise.all([
-          loadServices(),
-          loadOrders(),
-          loadMoneyStoreWallet()
-        ]);
-
-        return;
-      }
-
-      const reference = data.reference || "";
-      const amount = Number(data.amount || 0);
-      const pending = data.pending === true;
-      const paymentType = String(data.payment_type || "").toUpperCase();
-
-      $("subscription-heading").textContent =
-        paymentType === "RENEWAL"
-          ? "Monthly Subscription Renewal"
-          : "Complete Store Registration";
-
-      $("subscription-description").textContent =
-        "Pay by EFT using the exact reference below. Your business remains " +
-        "locked until the administrator approves your payment.";
-
-      $("subscription-reference").textContent =
-        reference || "Reference unavailable";
-
-      $("subscription-amount").textContent =
-        money(amount);
-
-      if (pending) {
+      if (pendingReq || activeVendor.status === "pending_approval") {
         $("subscription-review-message").style.display = "block";
         $("subscription-upload-section").style.display = "none";
-
-        $("subscription-review-message").textContent =
-          "Your application is under review. Your store/business will be " +
-          "activated within 24 hours once approved by the administrator.";
       } else {
         $("subscription-review-message").style.display = "none";
         $("subscription-upload-section").style.display = "block";
       }
-    } catch (error) {
-      console.error("Subscription verification failed:", error);
-
-      $("subscription-heading").textContent =
-        "Subscription Verification Unavailable";
-
-      $("subscription-description").textContent =
-        "We could not verify your subscription. Your dashboard remains " +
-        "locked for safety. Please refresh or contact support.";
-
-      $("subscription-reference").textContent = "Not available";
-      $("subscription-amount").textContent = "Not available";
-      $("subscription-upload-section").style.display = "none";
+    } catch (err) {
       $("subscription-review-message").style.display = "none";
+      $("subscription-upload-section").style.display = "block";
     }
   }
 
   function updateHeader() {
     if (!activeVendor) return;
 
-    const name = activeVendor.name || "Unnamed Business";
+    const name = activeVendor.store_name || activeVendor.name || "Unnamed Business";
 
     $("biz-display-name").textContent = name;
 
@@ -1416,7 +1418,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
       const { data, error } = await db
         .from("orders")
         .select("gross_amount")
-        .eq("vendor_id", activeVendor.id)
+        .eq("store_id", activeVendor.id)
         .eq("status", "COMPLETED");
 
       if (error) throw error;
@@ -1442,7 +1444,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
       const { data, error } = await db
         .from("service_items")
         .select("*")
-        .eq("vendor_id", activeVendor.id)
+        .eq("store_id", activeVendor.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -1626,7 +1628,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
       const { data: orders, error } = await db
         .from("orders")
         .select("*")
-        .eq("vendor_id", activeVendor.id)
+        .eq("store_id", activeVendor.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -1765,7 +1767,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
           payment_status: "PAID"
         })
         .eq("id", orderId)
-        .eq("vendor_id", activeVendor.id);
+        .eq("store_id", activeVendor.id);
 
       if (error) throw error;
 
@@ -1775,13 +1777,6 @@ button:disabled{opacity:.6;cursor:not-allowed}
     }
   }
 
-  /*
-   * Submit subscription proof:
-   * 1. Upload to the private subscription-proofs bucket.
-   * 2. Call the protected RPC.
-   * 3. Let Supabase create the pending payment request.
-   * 4. Do not update subscription_status in the browser.
-   */
   async function submitSubscriptionProof() {
     if (!db || !activeVendor) {
       alert("Please sign in and select your business.");
@@ -1793,7 +1788,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
     const file = input.files && input.files[0];
 
     if (!file) {
-      alert("Please select your proof of payment first.");
+      alert("Please select your proof of payment file first.");
       return;
     }
 
@@ -1814,7 +1809,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
     }
 
     button.disabled = true;
-    button.textContent = "Submitting...";
+    button.textContent = "Uploading Proof...";
 
     try {
       const {
@@ -1831,32 +1826,40 @@ button:disabled{opacity:.6;cursor:not-allowed}
           ? "png"
           : "jpg";
 
-      const path =
-        `${user.id}/${activeVendor.id}/${crypto.randomUUID()}.${extension}`;
+      const path = `${user.id}/${activeVendor.id}/${Date.now()}.${extension}`;
 
+      // 1. Upload to subscription-proofs storage bucket
       const { error: uploadError } = await db.storage
         .from("subscription-proofs")
-        .upload(path, file, {
-          contentType: file.type,
-          upsert: false
-        });
+        .upload(path, file, { contentType: file.type, upsert: false });
 
       if (uploadError) throw uploadError;
 
-      const { data: result, error: submitError } = await db.rpc(
-        "submit_subscription_payment",
-        {
-          p_vendor_id: activeVendor.id,
-          p_receipt_path: path
-        }
-      );
+      const isFirstTime = activeVendor.is_first_time !== false;
+      const amountDue = isFirstTime ? 99.00 : 299.00;
+      const ref = "REF-" + activeVendor.store_slug.toUpperCase().substring(0, 15);
 
-      if (submitError) throw submitError;
+      // 2. Insert record in subscription_payment_requests table
+      const { error: requestError } = await db
+        .from("subscription_payment_requests")
+        .insert([{
+          store_id: activeVendor.id,
+          owner_id: user.id,
+          amount: amountDue,
+          payment_reference: ref,
+          receipt_path: path,
+          status: "PENDING"
+        }]);
 
-      if (result && result.success === false) {
-        throw new Error(result.message || "Payment submission was not accepted.");
-      }
+      if (requestError) throw requestError;
 
+      // 3. Update store status to pending_approval
+      await db
+        .from("stores")
+        .update({ status: "pending_approval", updated_at: new Date() })
+        .eq("id", activeVendor.id);
+
+      activeVendor.status = "pending_approval";
       input.value = "";
 
       alert(
@@ -1864,15 +1867,10 @@ button:disabled{opacity:.6;cursor:not-allowed}
         "activated within 24 hours once approved by the administrator."
       );
 
-      // Refresh the actual request status from the database.
       await checkSubscriptionAndRender();
     } catch (error) {
       console.error("Subscription payment submission failed:", error);
-
-      alert(
-        "Could not submit proof of payment: " +
-        (error.message || "An unexpected error occurred.")
-      );
+      alert("Could not submit proof of payment: " + (error.message || "An unexpected error occurred."));
     } finally {
       button.disabled = false;
       button.textContent = "Confirm Payment";
