@@ -37,8 +37,9 @@
     .menu-body { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; gap: 8px; }
     .menu-title { font-size: 13px; font-weight: 800; color: var(--primary); margin: 0; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
     .menu-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; padding-top: 6px; border-top: 1px solid #f1f5f9; }
-    .menu-price { font-size: 13px; font-weight: 800; color: var(--primary); }
-    .btn-book { background: var(--accent); color: white; border: none; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .menu-price { font-size: 13px; font-weight: 800; color: var(--primary); display: flex; align-items: center; }
+    .btn-book { background: var(--accent); color: white; border: none; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+    .btn-book:hover { background: #1d4ed8; }
     .empty-box { text-align: center; padding: 36px 12px; background: var(--surface); border-radius: 14px; border: 1px dashed var(--border); color: var(--muted); font-size: 13px; grid-column: 1 / -1; }
   </style>
 </head>
@@ -73,7 +74,6 @@
       }
 
       try {
-        // Query the new 'stores' table directly
         const { data: store, error } = await supabase
           .from("stores")
           .select("id, store_name, category, address, store_image_url, status, subscription_expires_at")
@@ -116,7 +116,6 @@
               </a>
             </div>
           `;
-
           $("services-menu-box").replaceChildren();
           return;
         }
@@ -164,10 +163,10 @@
           </div>
         `;
 
-        // Query service items using 'store_id'
+        // Query service items including promotional sale columns
         const { data: services, error: servicesError } = await supabase
           .from("service_items")
-          .select("id, store_id, title, price, image_urls")
+          .select("id, store_id, title, price, sale_price, sale_start_date, sale_end_date, image_urls")
           .eq("store_id", storeId);
 
         if (servicesError) throw servicesError;
@@ -180,15 +179,23 @@
           return;
         }
 
+        const today = new Date().toISOString().split("T")[0];
+
         services.forEach(service => {
           const card = document.createElement("div");
           card.className = "menu-card";
 
           const title = escapeHtml(service.title || "Service");
-          const price = Number(service.price);
-          const validPrice = Number.isFinite(price) && price >= 0
-            ? `R${price.toFixed(2)}`
-            : "Price on request";
+          const standardPrice = Number(service.price);
+          const salePrice = Number(service.sale_price);
+
+          const hasSale = Number.isFinite(salePrice) && salePrice >= 0 &&
+            (!service.sale_start_date || service.sale_start_date <= today) &&
+            (!service.sale_end_date || service.sale_end_date >= today);
+
+          const priceHtml = hasSale
+            ? `<span style="text-decoration: line-through; color: var(--muted); font-size: 11px; margin-right: 4px;">R${standardPrice.toFixed(2)}</span><span style="color: var(--success);">R${salePrice.toFixed(2)}</span>`
+            : (Number.isFinite(standardPrice) && standardPrice >= 0 ? `R${standardPrice.toFixed(2)}` : "Price on request");
 
           const serviceImage = Array.isArray(service.image_urls)
             ? safeImageUrl(service.image_urls[0])
@@ -203,10 +210,10 @@
             <div class="menu-body">
               <h3 class="menu-title">${title}</h3>
               <div class="menu-footer">
-                <span class="menu-price">${validPrice}</span>
-                <span style="font-size:11px;color:var(--muted);font-weight:600;">
-                  Direct EFT
-                </span>
+                <span class="menu-price">${priceHtml}</span>
+                <button class="btn-book" onclick="alert('Booking flow triggered for: ${title}')">
+                  Book Now
+                </button>
               </div>
             </div>
           `;
@@ -216,10 +223,8 @@
 
       } catch (err) {
         console.error("Store loading failed:", err);
-
         $("store-hero-box").innerHTML =
           '<div class="empty-box">Unable to load this store right now. Please try again later.</div>';
-
         $("services-menu-box").replaceChildren();
       }
     }
