@@ -62,81 +62,173 @@
 
     const $ = id => document.getElementById(id);
 
-    async function loadStorePage() {
-      const params = new URLSearchParams(window.location.search);
-      const vendorId = params.get("id");
-      if (!vendorId) {
-        $("store-hero-box").innerHTML = '<div class="empty-box">No store selected. <a href="index.html">Return to Marketplace</a></div>';
-        return;
-      }
+    
+async function loadStorePage() {
+  const params = new URLSearchParams(window.location.search);
+  const vendorId = params.get("id");
 
-      try {
-        const { data: vendor, error } = await supabase
-          .from("vendors")
-          .select("*")
-          .eq("id", vendorId)
-          .single();
+  if (!vendorId) {
+    $("store-hero-box").innerHTML =
+      '<div class="empty-box">No store selected. <a href="index.html">Return to Marketplace</a></div>';
+    $("services-menu-box").replaceChildren();
+    return;
+  }
 
-        if (error || !vendor) throw new Error("Store details not found.");
+  try {
+    const { data: vendor, error } = await supabase
+      .from("vendors")
+      .select("id, name, category, address, store_image_url, subscription_status, subscription_expires_at")
+      .eq("id", vendorId)
+      .maybeSingle();
 
-        // LOCK STORE IF PENDING OR EXPIRED
-        if (vendor.subscription_status !== "ACTIVE") {
-          document.querySelector(".container").innerHTML = `
-            <div style="text-align: center; padding: 50px 20px; background: white; border-radius: 16px; border: 1px solid var(--border); margin-top: 40px;">
-              <div style="font-size: 48px; color: var(--warning); margin-bottom: 12px;"><i class="ph ph-lock-key"></i></div>
-              <h2 style="font-size: 18px; font-weight: 800; color: var(--primary); margin-bottom: 8px;">Store Temporarily Locked</h2>
-              <p style="font-size: 13px; color: var(--muted); max-width: 400px; margin: 0 auto 20px auto; line-height: 1.5;">
-                <strong>${vendor.name}</strong> is currently pending subscription review or renewal. All store data is secure. Please check back shortly.
-              </p>
-              <a href="index.html" class="btn-book" style="display: inline-block; text-decoration: none; padding: 10px 20px;">Return to Marketplace</a>
-            </div>
-          `;
-          return;
-        }
+    if (error) throw error;
 
-        $("store-hero-box").innerHTML = `
-          <img src="${vendor.store_image_url || 'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=800&q=80'}" class="hero-banner" alt="${vendor.name}">
-          <div class="hero-content">
-            <div class="store-title-row">
-              <h1 class="store-title">${vendor.name}</h1>
-              <span class="store-badge">${vendor.category || 'SPOT'}</span>
-            </div>
-            <div class="store-meta-list">
-              <span class="meta-item"><i class="ph ph-map-pin"></i> ${vendor.address || 'Verified Location'}</span>
-              <span class="meta-item" style="color:var(--success);"><i class="ph ph-check-circle"></i> Open for Booking</span>
-            </div>
-          </div>
-        `;
-
-        const { data: services } = await supabase.from("service_items").select("*").eq("vendor_id", vendorId);
-        const menuBox = $("services-menu-box");
-        menuBox.replaceChildren();
-
-        if (!services || services.length === 0) {
-          menuBox.innerHTML = '<div class="empty-box">No menu items published yet.</div>';
-          return;
-        }
-
-        services.forEach(s => {
-          const card = document.createElement("div");
-          card.className = "menu-card";
-          const imgUrl = (s.image_urls && s.image_urls[0]) || 'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=800&q=80';
-          card.innerHTML = `
-            <div class="menu-img-wrapper"><img src="${imgUrl}" class="menu-cover-img" alt="${s.title}"></div>
-            <div class="menu-body">
-              <h3 class="menu-title">${s.title}</h3>
-              <div class="menu-footer">
-                <span class="menu-price">R${Number(s.price).toFixed(2)}</span>
-                <span style="font-size:11px; color:var(--muted); font-weight:600;">Direct EFT</span>
-              </div>
-            </div>
-          `;
-          menuBox.appendChild(card);
-        });
-      } catch (err) {
-        $("store-hero-box").innerHTML = `<div class="empty-box">Error loading store: ${err.message}</div>`;
-      }
+    if (!vendor) {
+      $("store-hero-box").innerHTML =
+        '<div class="empty-box">Store not found or unavailable.</div>';
+      $("services-menu-box").replaceChildren();
+      return;
     }
+
+    // A store must be ACTIVE and have a future expiry date.
+    const expiryTime = vendor.subscription_expires_at
+      ? Date.parse(vendor.subscription_expires_at)
+      : NaN;
+
+    const isSubscriptionValid =
+      vendor.subscription_status === "ACTIVE" &&
+      Number.isFinite(expiryTime) &&
+      expiryTime > Date.now();
+
+    if (!isSubscriptionValid) {
+      $("store-hero-box").innerHTML = `
+        <div class="empty-box" style="padding:40px 16px;">
+          <div style="font-size:42px;color:var(--warning);margin-bottom:12px;">
+            <i class="ph ph-lock-key"></i>
+          </div>
+          <h2 style="color:var(--primary);font-size:19px;">
+            Store Temporarily Unavailable
+          </h2>
+          <p style="line-height:1.7;">
+            This store is not currently accepting bookings.
+            Please check back later.
+          </p>
+          <a href="index.html" class="btn-book"
+             style="display:inline-block;text-decoration:none;padding:10px 18px;">
+            Return to Marketplace
+          </a>
+        </div>
+      `;
+
+      $("services-menu-box").replaceChildren();
+      return;
+    }
+
+    // Escape text before placing database values inside HTML.
+    const escapeHtml = value =>
+      String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[char]);
+
+    // Only allow secure HTTPS image URLs.
+    const safeImageUrl = value => {
+      try {
+        const url = new URL(value || "");
+        return url.protocol === "https:" ? url.href : "";
+      } catch {
+        return "";
+      }
+    };
+
+    const storeName = escapeHtml(vendor.name || "BOOK.NOW Store");
+    const category = escapeHtml(vendor.category || "SPOT");
+    const address = escapeHtml(vendor.address || "Location not provided");
+    const imageUrl = safeImageUrl(vendor.store_image_url);
+
+    $("store-hero-box").innerHTML = `
+      ${imageUrl
+        ? `<img src="${escapeHtml(imageUrl)}" class="hero-banner" alt="${storeName}">`
+        : ""}
+      <div class="hero-content">
+        <div class="store-title-row">
+          <h1 class="store-title">${storeName}</h1>
+          <span class="store-badge">${category}</span>
+        </div>
+        <div class="store-meta-list">
+          <span class="meta-item">
+            <i class="ph ph-map-pin"></i> ${address}
+          </span>
+          <span class="meta-item" style="color:var(--success);">
+            <i class="ph ph-check-circle"></i> Open for Booking
+          </span>
+        </div>
+      </div>
+    `;
+
+    const { data: services, error: servicesError } = await supabase
+      .from("service_items")
+      .select("id, vendor_id, title, price, image_urls")
+      .eq("vendor_id", vendorId);
+
+    if (servicesError) throw servicesError;
+
+    const menuBox = $("services-menu-box");
+    menuBox.replaceChildren();
+
+    if (!services || services.length === 0) {
+      menuBox.innerHTML =
+        '<div class="empty-box">No menu items published yet.</div>';
+      return;
+    }
+
+    services.forEach(service => {
+      const card = document.createElement("div");
+      card.className = "menu-card";
+
+      const title = escapeHtml(service.title || "Service");
+      const price = Number(service.price);
+      const validPrice = Number.isFinite(price) && price >= 0
+        ? `R${price.toFixed(2)}`
+        : "Price on request";
+
+      const serviceImage = Array.isArray(service.image_urls)
+        ? safeImageUrl(service.image_urls[0])
+        : "";
+
+      card.innerHTML = `
+        <div class="menu-img-wrapper">
+          ${serviceImage
+            ? `<img src="${escapeHtml(serviceImage)}" class="menu-cover-img" alt="${title}">`
+            : ""}
+        </div>
+        <div class="menu-body">
+          <h3 class="menu-title">${title}</h3>
+          <div class="menu-footer">
+            <span class="menu-price">${validPrice}</span>
+            <span style="font-size:11px;color:var(--muted);font-weight:600;">
+              Direct EFT
+            </span>
+          </div>
+        </div>
+      `;
+
+      menuBox.appendChild(card);
+    });
+
+  } catch (err) {
+    console.error("Store loading failed:", err);
+
+    $("store-hero-box").innerHTML =
+      '<div class="empty-box">Unable to load this store right now. Please try again later.</div>';
+
+    $("services-menu-box").replaceChildren();
+  }
+}
+
 
     document.addEventListener("DOMContentLoaded", () => {
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
