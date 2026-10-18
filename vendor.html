@@ -1381,6 +1381,100 @@ $("subscription-logout-btn").addEventListener("click", async () => {
     }
   }
 
+
+async function submitSubscriptionProof() {
+  if (!db || !activeVendor) {
+    alert("Please sign in and select your business.");
+    return;
+  }
+
+  const input = $("subscription-proof-file");
+  const button = $("subscription-submit-btn");
+  const file = input.files && input.files[0];
+
+  if (!file) {
+    alert("Please select your proof of payment first.");
+    return;
+  }
+
+  const allowedTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "application/pdf"
+  ];
+
+  if (!allowedTypes.includes(file.type)) {
+    alert("Upload a JPG, PNG, WebP image, or PDF.");
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    alert("Your proof of payment must be 5 MB or smaller.");
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "Submitting...";
+
+  try {
+    const {
+      data: { user },
+      error: userError
+    } = await db.auth.getUser();
+
+    if (userError) throw userError;
+    if (!user) throw new Error("Please sign in again.");
+
+    // Use a private storage path, not a public URL.
+    const extension = file.type === "application/pdf"
+      ? "pdf"
+      : file.type === "image/png"
+        ? "png"
+        : file.type === "image/webp"
+          ? "webp"
+          : "jpg";
+
+    const path =
+      `${user.id}/${activeVendor.id}/${crypto.randomUUID()}.${extension}`;
+
+    const { error: uploadError } = await db.storage
+      .from("subscription-proofs")
+      .upload(path, file, {
+        contentType: file.type,
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+
+    // This RPC must validate the vendor owner and proof path.
+    // It must create the pending request without activating the store.
+    const { error: submitError } = await db.rpc(
+      "submit_subscription_payment",
+      {
+        p_vendor_id: activeVendor.id,
+        p_receipt_path: path
+      }
+    );
+
+    if (submitError) {
+      throw submitError;
+    }
+
+    alert(
+      "Your application is under review. " +
+      "Your store/business will be activated within 24 hours once approved."
+    );
+
+    location.reload();
+  } catch (error) {
+    console.error("Subscription payment submission failed:", error);
+    alert("Could not submit proof of payment: " + error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Confirm Payment";
+  }
+}
   async function boot() {
     if (booted) return;
     booted = true;
