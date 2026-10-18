@@ -1,9 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BOOK.NOW Founder Control Panel</title>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -11,76 +13,329 @@
 
 <style>
 :root {
-  --primary:#0f172a;--accent:#2563eb;--bg:#f8fafc;
-  --text:#0f172a;--muted:#64748b;--border:#e2e8f0;
-  --success:#16a34a;--success-bg:#f0fdf4;
-  --warning:#d97706;--warning-bg:#fffbeb;
-  --danger:#dc2626;--danger-bg:#fef2f2;--radius:16px;
+  --primary:#0f172a;
+  --accent:#2563eb;
+  --bg:#f8fafc;
+  --text:#0f172a;
+  --muted:#64748b;
+  --border:#e2e8f0;
+  --success:#16a34a;
+  --success-bg:#f0fdf4;
+  --warning:#d97706;
+  --warning-bg:#fffbeb;
+  --danger:#dc2626;
+  --danger-bg:#fef2f2;
+  --radius:16px;
 }
-*{box-sizing:border-box;font-family:'Plus Jakarta Sans',sans-serif;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:var(--bg);color:var(--text);padding-bottom:50px}
-button,input,select{font:inherit}
-button{cursor:pointer}
-button:disabled{opacity:.6;cursor:not-allowed}
-#auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.auth-card{background:white;padding:28px;border-radius:20px;border:1px solid var(--border);width:100%;max-width:400px}
-.auth-title{text-align:center;font-size:20px;font-weight:700;margin-bottom:6px}
-.auth-sub{text-align:center;font-size:13px;color:var(--muted);margin-bottom:24px}
-.top-nav{background:white;padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:20;gap:10px}
-.brand{font-size:16px;font-weight:800;display:flex;align-items:center;gap:7px;color:var(--primary)}
-.container{padding:16px;max-width:850px;margin:auto}
-.stats-container{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:20px}
-.stat-box{background:white;padding:15px;border-radius:var(--radius);border:1px solid var(--border);min-width:0}
-.stat-header{font-size:12px;font-weight:600;color:var(--muted)}
-.stat-value{font-size:22px;font-weight:700;margin-top:7px;overflow-wrap:anywhere}
-.nav-tabs{display:flex;gap:4px;background:#e2e8f0;padding:4px;border-radius:12px;margin-bottom:20px;overflow-x:auto}
-.tab-item{flex:1;min-width:max-content;padding:10px;border:0;background:transparent;font-size:12px;font-weight:600;color:var(--muted);border-radius:8px;text-align:center}
-.tab-item.active{background:white;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
-.section-head h3{font-size:16px;margin:0}
-.btn-primary{background:var(--accent);color:white;border:0;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px}
-.btn-success{background:var(--success)}
-.btn-danger{background:var(--danger)}
-.btn-muted{background:#475569}
-.card-list{display:flex;flex-direction:column;gap:12px}
-.vendor-card,.order-card,.admin-card{background:white;padding:18px;border-radius:14px;border:1px solid var(--border);overflow-wrap:anywhere}
-.vendor-top,.order-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
-.vendor-title,.order-title{font-weight:800;font-size:14px}
-.vendor-meta,.order-time{font-size:12px;color:var(--muted);margin-top:4px;overflow-wrap:anywhere}
-.order-price{font-weight:700;color:var(--success);font-size:16px;text-align:right}
-.status-badge{padding:4px 9px;border-radius:6px;font-size:11px;font-weight:700;display:inline-block;overflow-wrap:anywhere}
-.status-active,.status-approved,.status-completed{background:var(--success-bg);color:var(--success)}
-.status-pending,.status-pending_approval{background:var(--warning-bg);color:var(--warning)}
-.status-rejected,.status-expired{background:var(--danger-bg);color:var(--danger)}
-.ref-pill{background:#eff6ff;color:var(--accent);font-family:monospace;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;border:1px solid #bfdbfe;display:inline-block;margin-top:4px;overflow-wrap:anywhere}
-.form-field{margin-bottom:14px}
-.form-field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
-.form-field input,.form-field select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);font-size:14px;background:white}
-.empty-box{text-align:center;padding:32px 16px;background:white;border-radius:14px;border:1px dashed var(--border);color:var(--muted);font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}
-.notice{padding:12px;border-radius:10px;background:#eff6ff;color:#1e40af;font-size:12px;line-height:1.5;margin-bottom:14px}
-.error-box{padding:12px;border-radius:10px;background:var(--danger-bg);color:#991b1b;font-size:12px;line-height:1.5;margin-bottom:12px;overflow-wrap:anywhere;white-space:pre-wrap}
-.success-box{padding:12px;border-radius:10px;background:var(--success-bg);color:#166534;font-size:12px;line-height:1.5;margin-bottom:12px}
-.actions{background:#f8fafc;padding:12px;border-radius:10px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin-top:8px}
-.small-note{font-size:11px;color:var(--muted);line-height:1.5;overflow-wrap:anywhere}
-.hidden{display:none!important}
-a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
-@media(max-width:480px){
-  .top-nav{align-items:flex-start}
-  .brand{font-size:13px}
-  .btn-primary{padding:9px 10px}
-  .vendor-card,.order-card,.admin-card{padding:14px}
-  .section-head{align-items:flex-start}
+* {
+  box-sizing:border-box;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  -webkit-tap-highlight-color:transparent;
+}
+body {
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  padding-bottom:50px;
+}
+button,input,select {font:inherit}
+button {cursor:pointer}
+button:disabled {opacity:.6;cursor:not-allowed}
+#auth-screen {
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.auth-card {
+  background:white;
+  padding:28px;
+  border-radius:20px;
+  border:1px solid var(--border);
+  width:100%;
+  max-width:400px;
+}
+.auth-title {
+  text-align:center;
+  font-size:20px;
+  font-weight:700;
+  margin-bottom:6px;
+}
+.auth-sub {
+  text-align:center;
+  font-size:13px;
+  color:var(--muted);
+  margin-bottom:24px;
+}
+.top-nav {
+  background:white;
+  padding:14px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  position:sticky;
+  top:0;
+  z-index:20;
+  gap:10px;
+}
+.brand {
+  font-size:16px;
+  font-weight:800;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  color:var(--primary);
+}
+.container {
+  padding:16px;
+  max-width:850px;
+  margin:auto;
+}
+.stats-container {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  margin-bottom:20px;
+}
+.stat-box {
+  background:white;
+  padding:15px;
+  border-radius:var(--radius);
+  border:1px solid var(--border);
+  min-width:0;
+}
+.stat-header {
+  font-size:12px;
+  font-weight:600;
+  color:var(--muted);
+}
+.stat-value {
+  font-size:22px;
+  font-weight:700;
+  margin-top:7px;
+  overflow-wrap:anywhere;
+}
+.nav-tabs {
+  display:flex;
+  gap:4px;
+  background:#e2e8f0;
+  padding:4px;
+  border-radius:12px;
+  margin-bottom:20px;
+  overflow-x:auto;
+}
+.tab-item {
+  flex:1;
+  min-width:max-content;
+  padding:10px;
+  border:0;
+  background:transparent;
+  font-size:12px;
+  font-weight:600;
+  color:var(--muted);
+  border-radius:8px;
+  text-align:center;
+}
+.tab-item.active {
+  background:white;
+  color:var(--text);
+  box-shadow:0 1px 3px rgba(0,0,0,.08);
+}
+.section-head {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-bottom:14px;
+}
+.section-head h3 {font-size:16px;margin:0}
+.btn-primary {
+  background:var(--accent);
+  color:white;
+  border:0;
+  padding:10px 14px;
+  border-radius:10px;
+  font-size:13px;
+  font-weight:600;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+.btn-success {background:var(--success)}
+.btn-danger {background:var(--danger)}
+.btn-muted {background:#475569}
+.card-list {display:flex;flex-direction:column;gap:12px}
+.vendor-card,.order-card,.admin-card {
+  background:white;
+  padding:18px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  overflow-wrap:anywhere;
+}
+.vendor-top,.order-top {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+  margin-bottom:10px;
+}
+.vendor-title,.order-title {font-weight:800;font-size:14px}
+.vendor-meta,.order-time {
+  font-size:12px;
+  color:var(--muted);
+  margin-top:4px;
+  overflow-wrap:anywhere;
+}
+.order-price {
+  font-weight:700;
+  color:var(--success);
+  font-size:16px;
+  text-align:right;
+}
+.status-badge {
+  padding:4px 9px;
+  border-radius:6px;
+  font-size:11px;
+  font-weight:700;
+  display:inline-block;
+  overflow-wrap:anywhere;
+}
+.status-active,.status-approved,.status-completed {
+  background:var(--success-bg);
+  color:var(--success);
+}
+.status-pending,.status-pending_approval {
+  background:var(--warning-bg);
+  color:var(--warning);
+}
+.status-rejected,.status-expired {
+  background:var(--danger-bg);
+  color:var(--danger);
+}
+.ref-pill {
+  background:#eff6ff;
+  color:var(--accent);
+  font-family:monospace;
+  font-size:11px;
+  font-weight:800;
+  padding:2px 8px;
+  border-radius:6px;
+  border:1px solid #bfdbfe;
+  display:inline-block;
+  margin-top:4px;
+  overflow-wrap:anywhere;
+}
+.form-field {margin-bottom:14px}
+.form-field label {
+  display:block;
+  font-size:12px;
+  font-weight:600;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+.form-field input,.form-field select {
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  font-size:14px;
+  background:white;
+}
+.empty-box {
+  text-align:center;
+  padding:32px 16px;
+  background:white;
+  border-radius:14px;
+  border:1px dashed var(--border);
+  color:var(--muted);
+  font-size:13px;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+.notice {
+  padding:12px;
+  border-radius:10px;
+  background:#eff6ff;
+  color:#1e40af;
+  font-size:12px;
+  line-height:1.5;
+  margin-bottom:14px;
+}
+.error-box {
+  padding:12px;
+  border-radius:10px;
+  background:var(--danger-bg);
+  color:#991b1b;
+  font-size:12px;
+  line-height:1.5;
+  margin-bottom:12px;
+  overflow-wrap:anywhere;
+  white-space:pre-wrap;
+}
+.success-box {
+  padding:12px;
+  border-radius:10px;
+  background:var(--success-bg);
+  color:#166534;
+  font-size:12px;
+  line-height:1.5;
+  margin-bottom:12px;
+  overflow-wrap:anywhere;
+}
+.actions {
+  background:#f8fafc;
+  padding:12px;
+  border-radius:10px;
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  margin-top:8px;
+}
+.small-note {
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.5;
+  overflow-wrap:anywhere;
+}
+.hidden {display:none!important}
+a {
+  color:var(--accent);
+  font-weight:700;
+  overflow-wrap:anywhere;
+}
+.receipt-link {
+  display:inline-block;
+  margin-top:8px;
+  padding:8px 10px;
+  border-radius:8px;
+  background:#eff6ff;
+  font-size:12px;
+}
+@media(max-width:480px) {
+  .top-nav {align-items:flex-start}
+  .brand {font-size:13px}
+  .btn-primary {padding:9px 10px}
+  .vendor-card,.order-card,.admin-card {padding:14px}
+  .section-head {align-items:flex-start}
+  .vendor-top,.order-top {flex-wrap:wrap}
 }
 </style>
 </head>
 
 <body>
+
 <div id="auth-screen">
   <div class="auth-card">
     <div class="brand" style="justify-content:center;margin-bottom:16px">
       <i class="ph ph-shield-check" style="font-size:26px;color:var(--accent)"></i>
       BOOK.NOW
     </div>
+
     <div class="auth-title">Founder Login</div>
     <div class="auth-sub">Sign in with the authorised founder account.</div>
 
@@ -90,8 +345,7 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
       <div class="form-field">
         <label for="admin-email">Email Address</label>
         <input type="email" id="admin-email"
-          autocomplete="username"
-          placeholder="you@gmail.com"  required>
+          autocomplete="username" placeholder="you@gmail.com" required>
       </div>
 
       <div class="form-field">
@@ -104,7 +358,9 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
         Sign In
       </button>
     </form>
-    <div id="login-message" class="small-note" role="status" aria-live="polite" style="margin-top:12px"></div>
+
+    <div id="login-message" class="small-note" role="status"
+      aria-live="polite" style="margin-top:12px"></div>
   </div>
 </div>
 
@@ -114,7 +370,9 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
       <i class="ph ph-shield-check" style="color:var(--accent)"></i>
       BOOK.NOW Founder Panel
     </div>
-    <button class="btn-primary" style="background:#fee2e2;color:#991b1b;padding:8px 12px" id="admin-logout-btn">Log Out</button>
+    <button class="btn-primary"
+      style="background:#fee2e2;color:#991b1b;padding:8px 12px"
+      id="admin-logout-btn">Log Out</button>
   </div>
 
   <main class="container">
@@ -123,7 +381,7 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
       <div class="small-note">Manage vendors, subscription requests, bank settings and bookings.</div>
     </div>
 
-    <div id="global-message"></div>
+    <div id="global-message" class="small-note" role="status" aria-live="polite"></div>
 
     <div class="stats-container">
       <div class="stat-box">
@@ -153,13 +411,15 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
     <section id="vendors-section">
       <div class="section-head">
         <h3>Vendors &amp; Subscription Approvals</h3>
-        <button class="btn-primary" id="refresh-vendors-btn"><i class="ph ph-arrows-clockwise"></i> Refresh</button>
+        <button class="btn-primary" id="refresh-vendors-btn">
+          <i class="ph ph-arrows-clockwise"></i> Refresh
+        </button>
       </div>
 
       <div class="notice">
-        New subscription requests are reviewed from <strong>subscription_payment_requests</strong>.
-        Legacy proof links from <strong>vendors.pop_receipt_url</strong> are shown separately.
-        Always verify that payment has been received before approving.
+        Subscription requests are loaded through the founder-only database function.
+        Open the receipt and verify payment in your bank account before approving.
+        Rejected requests do not delete vendor data.
       </div>
 
       <div id="vendors-admin-list" class="card-list">
@@ -198,30 +458,41 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
 
         <div class="form-field">
           <label for="founder-acc-name">Account Holder Name</label>
-          <input type="text" id="founder-acc-name" placeholder="Account holder name" autocomplete="off">
+          <input type="text" id="founder-acc-name"
+            placeholder="Account holder name" autocomplete="off">
         </div>
 
         <div class="form-field">
           <label for="founder-acc-number">Account Number</label>
-          <input type="text" id="founder-acc-number" inputmode="numeric" placeholder="Account number" autocomplete="off">
+          <input type="text" id="founder-acc-number"
+            inputmode="numeric" placeholder="Account number" autocomplete="off">
         </div>
 
         <div class="form-field">
           <label for="founder-branch-code">Branch Code</label>
-          <input type="text" id="founder-branch-code" readonly style="background:#f1f5f9;color:var(--muted)" placeholder="Select bank above">
+          <input type="text" id="founder-branch-code" readonly
+            style="background:#f1f5f9;color:var(--muted)"
+            placeholder="Select bank above">
         </div>
 
-        <button class="btn-primary" id="save-founder-bank-btn" style="width:100%;margin-top:6px">Save Founder Bank Details</button>
+        <button class="btn-primary" id="save-founder-bank-btn"
+          style="width:100%;margin-top:6px">Save Founder Bank Details</button>
+
         <div id="bank-message" style="margin-top:12px"></div>
-        <div class="small-note" style="margin-top:10px">Saving is allowed only if the database founder-only policy accepts your account.</div>
+        <div class="small-note" style="margin-top:10px">
+          Saving is allowed only if the database founder-only policy accepts your account.
+        </div>
       </div>
     </section>
 
     <section id="orders-section" class="hidden">
       <div class="section-head">
         <h3>All Customer Bookings</h3>
-        <button class="btn-primary" id="refresh-orders-btn"><i class="ph ph-arrows-clockwise"></i> Refresh</button>
+        <button class="btn-primary" id="refresh-orders-btn">
+          <i class="ph ph-arrows-clockwise"></i> Refresh
+        </button>
       </div>
+
       <div id="orders-admin-list" class="card-list">
         <div class="empty-box">Loading bookings…</div>
       </div>
@@ -234,8 +505,13 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
   "use strict";
 
   const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
+
+  // Confirm this exact publishable key in Supabase Project Settings → API Keys.
+  const SUPABASE_ANON_KEY =
+    "sb_publishable_VKlDPkR9JvJrJ6E4bcz1HSg_OG5_xy5r";
+
   const FOUNDER_ID = "c0c85d2f-8473-49c3-a33a-92ff5acf1e94";
+  const PROOF_BUCKET = "subscription-proofs";
 
   const $ = id => document.getElementById(id);
 
@@ -266,6 +542,7 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
   function showInlineMessage(container, message, type = "success") {
     container.replaceChildren();
     if (!message) return;
+
     const div = document.createElement("div");
     div.className = type === "error" ? "error-box" : "success-box";
     div.textContent = message;
@@ -275,20 +552,11 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
   function money(value) {
     const amount = Number(value);
     if (!Number.isFinite(amount)) return "R0.00";
+
     return new Intl.NumberFormat("en-ZA", {
       style: "currency",
       currency: "ZAR"
     }).format(amount);
-  }
-
-  function safeUrl(value) {
-    if (!value || typeof value !== "string") return "";
-    try {
-      const url = new URL(value, window.location.origin);
-      return ["https:", "http:"].includes(url.protocol) ? url.href : "";
-    } catch {
-      return "";
-    }
   }
 
   function setDashboard(visible) {
@@ -297,15 +565,21 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
     $("admin-dashboard").style.display = visible ? "block" : "none";
   }
 
-  // Supabase is loaded from a CDN. Show an error instead of leaving a dead button.
-  if (!window.supabase || typeof window.supabase.createClient !== "function") {
+  if (!window.supabase ||
+      typeof window.supabase.createClient !== "function") {
     showStartupError(
-      "The Supabase library did not load. Check your internet connection, then refresh this page."
+      "The Supabase library did not load. Check your internet connection and refresh."
     );
     return;
   }
 
-  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const db = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
+
+  let authListenerRegistered = false;
+  let refreshInProgress = false;
 
   async function requireFounder() {
     const { data, error } = await db.auth.getUser();
@@ -342,7 +616,8 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
 
     $("founder-bank-select").addEventListener("change", () => {
       const selected = $("founder-bank-select").value;
-      $("founder-branch-code").value = selected ? selected.split("|")[1] : "";
+      $("founder-branch-code").value =
+        selected ? selected.split("|")[1] : "";
     });
 
     document.querySelectorAll("[data-tab]").forEach(button => {
@@ -367,28 +642,36 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
     } catch (error) {
       setDashboard(false);
       setLoginMessage(
-        "Could not check your session: " + (error.message || "Unknown error"),
+        "Could not check your session: " +
+        (error.message || "Unknown error"),
         true
       );
     }
 
-    db.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_OUT" || !session?.user) {
-        setDashboard(false);
-        return;
-      }
+    if (!authListenerRegistered) {
+      authListenerRegistered = true;
 
-      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
-        setTimeout(async () => {
-          try {
-            if (await requireFounder()) await loadAdminData();
-          } catch (error) {
-            console.error("Session verification failed:", error);
-            setLoginMessage("Session verification failed: " + error.message, true);
-          }
-        }, 0);
-      }
-    });
+      db.auth.onAuthStateChange((event, session) => {
+        if (event === "SIGNED_OUT" || !session?.user) {
+          setDashboard(false);
+          return;
+        }
+
+        if (event === "SIGNED_IN") {
+          setTimeout(async () => {
+            try {
+              if (await requireFounder()) await loadAdminData();
+            } catch (error) {
+              console.error("Session verification failed:", error);
+              setLoginMessage(
+                "Session verification failed: " + error.message,
+                true
+              );
+            }
+          }, 0);
+        }
+      });
+    }
   }
 
   async function signIn() {
@@ -406,18 +689,19 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
     setLoginMessage("");
 
     try {
-      const { data, error } = await db.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      const { data, error } = await db.auth.signInWithPassword({
+        email,
+        password
+      });
 
-      if (!data?.user) {
-        throw new Error("Supabase did not return a signed-in user.");
-      }
+      if (error) throw error;
+      if (!data?.user) throw new Error("Supabase did not return a signed-in user.");
 
       if (data.user.id !== FOUNDER_ID) {
         await db.auth.signOut();
         setDashboard(false);
         throw new Error(
-          "Access denied. The signed-in account is not the authorised founder account."
+          "Access denied. This account is not the authorised founder account."
         );
       }
 
@@ -437,6 +721,7 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
     try {
       const { error } = await db.auth.signOut();
       if (error) throw error;
+
       setDashboard(false);
       setLoginMessage("You have signed out.");
     } catch (error) {
@@ -455,25 +740,41 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
   }
 
   async function loadAdminData() {
+    if (refreshInProgress) return;
     if (!(await requireFounder())) return;
 
+    refreshInProgress = true;
     $("global-message").textContent = "Refreshing dashboard…";
 
-    const results = await Promise.allSettled([
-      loadVendorsAndPayments(),
-      loadOrders(),
-      loadFounderBank()
-    ]);
+    try {
+      const results = await Promise.allSettled([
+        loadVendorsAndPayments(),
+        loadOrders(),
+        loadFounderBank()
+      ]);
 
-    const failed = results.filter(result => result.status === "rejected");
-    if (failed.length) {
-      console.error("Some dashboard sections failed:", failed);
-      $("global-message").textContent =
-        "Dashboard opened, but one or more sections failed. Check the error shown in that section.";
-    } else {
-      $("global-message").textContent =
-        "Dashboard refresh finished. Check each section for any database errors.";
+      const failed = results.filter(result => result.status === "rejected");
+
+      if (failed.length) {
+        console.error("Some dashboard sections failed:", failed);
+        $("global-message").textContent =
+          "Dashboard refresh finished with errors. Check each section.";
+      } else {
+        $("global-message").textContent = "Dashboard refresh finished.";
+      }
+    } finally {
+      refreshInProgress = false;
     }
+  }
+
+  function findVendor(vendors, request) {
+    return vendors.find(v =>
+      String(v.id || "").toLowerCase() ===
+      String(request.vendor_id || "").toLowerCase()
+    ) || vendors.find(v =>
+      String(v.owner_id || "").toLowerCase() ===
+      String(request.owner_id || "").toLowerCase()
+    );
   }
 
   async function loadVendorsAndPayments() {
@@ -483,18 +784,28 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
     showMessage(vContainer, "Loading vendors and payment requests…");
     showMessage(legacyContainer, "Loading legacy proof records…");
 
-    // Load vendors using the confirmed vendors table columns.
     const { data: vendors, error: vendorError } = await db
       .from("vendors")
-      .select("id,name,category,owner_id,phone_number,address,subscription_status,subscription_expires_at,pending_payment_ref,pop_receipt_url,created_at")
+      .select(
+        "id,name,category,owner_id,phone_number,address,subscription_status,subscription_expires_at,pending_payment_ref,pop_receipt_url,created_at"
+      )
       .order("created_at", { ascending: false });
 
     if (vendorError) {
       $("stat-shops").textContent = "—";
       $("stat-active").textContent = "—";
       $("stat-pending").textContent = "—";
-      showMessage(vContainer, "Could not load vendors: " + vendorError.message, true);
-      showMessage(legacyContainer, "Legacy proofs could not be checked because vendor access failed.", true);
+
+      showMessage(
+        vContainer,
+        "Could not load vendors: " + vendorError.message,
+        true
+      );
+      showMessage(
+        legacyContainer,
+        "Legacy proofs could not be checked because vendor access failed.",
+        true
+      );
       return;
     }
 
@@ -509,23 +820,22 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
 
     $("stat-active").textContent = String(activeCount);
 
-    // IMPORTANT: use the secure founder-only RPC, not direct table access.
-    const { data: requests, error: requestError } = await db
-      .rpc("founder_list_subscription_payment_requests");
+    // Founder-only RPC. Do not query subscription_payment_requests directly.
+    const { data: requests, error: requestError } = await db.rpc(
+      "founder_list_subscription_payment_requests"
+    );
 
     if (requestError) {
       $("stat-pending").textContent = "—";
       showMessage(
         vContainer,
-        "Vendors loaded, but subscription payment requests could not be loaded: " +
-        requestError.message +
-        "\nCheck that founder_list_subscription_payment_requests() exists and that you are signed in as the founder.",
+        "Could not load subscription requests: " + requestError.message,
         true
       );
     } else {
       const requestRows = requests || [];
-      const pending = requestRows.filter(
-        request => String(request.status || "").toUpperCase() === "PENDING"
+      const pending = requestRows.filter(request =>
+        String(request.status || "").toUpperCase() === "PENDING"
       );
 
       $("stat-pending").textContent = String(pending.length);
@@ -535,7 +845,8 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
         showMessage(vContainer, "No pending subscription payment requests.");
       } else {
         pending.forEach(request => {
-          const vendor = vendorRows.find(v => v.id === request.vendor_id);
+          const vendor = findVendor(vendorRows, request);
+
           const card = document.createElement("div");
           card.className = "vendor-card";
 
@@ -543,9 +854,12 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
           top.className = "vendor-top";
 
           const details = document.createElement("div");
+          details.style.minWidth = "0";
+
           const title = document.createElement("div");
           title.className = "vendor-title";
-          title.textContent = (vendor?.name || "Unknown store") +
+          title.textContent =
+            (vendor?.name || "Unknown store") +
             " — " + (vendor?.category || "STORE");
 
           const meta = document.createElement("div");
@@ -557,24 +871,44 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
 
           const reference = document.createElement("span");
           reference.className = "ref-pill";
-          reference.textContent = "REF: " + (request.payment_reference || "N/A");
+          reference.textContent =
+            "REF: " + (request.payment_reference || "N/A");
 
           const proof = document.createElement("div");
           proof.className = "vendor-meta";
-          proof.textContent = "Private receipt path: " +
-            (request.receipt_path || "Not provided");
+          proof.textContent = request.receipt_path
+            ? "Payment receipt: uploaded privately"
+            : "Payment receipt: not provided";
 
           const owner = document.createElement("div");
           owner.className = "vendor-meta";
           owner.textContent = "Owner ID: " + (request.owner_id || "N/A");
 
           details.append(
-            title, meta, reference, document.createElement("br"), proof, owner
+            title,
+            meta,
+            reference,
+            document.createElement("br"),
+            proof,
+            owner
           );
+
+          if (request.receipt_path) {
+            const receiptButton = document.createElement("button");
+            receiptButton.type = "button";
+            receiptButton.className = "btn-primary";
+            receiptButton.style.marginTop = "8px";
+            receiptButton.textContent = "Open payment receipt";
+            receiptButton.addEventListener("click", () => {
+              openPrivateReceipt(request.receipt_path, receiptButton);
+            });
+            details.appendChild(receiptButton);
+          }
 
           const status = document.createElement("span");
           status.className = "status-badge status-pending";
           status.textContent = request.status || "PENDING";
+
           top.append(details, status);
 
           const actions = document.createElement("div");
@@ -582,21 +916,22 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
 
           const note = document.createElement("span");
           note.className = "small-note";
-          note.textContent = "Verify the bank payment before approving.";
+          note.textContent =
+            "Verify the bank payment before approving.";
 
           const approve = document.createElement("button");
           approve.className = "btn-primary btn-success";
           approve.textContent = "Approve payment";
-          approve.addEventListener("click", () =>
-            approvePaymentRequest(request.id, approve)
-          );
+          approve.addEventListener("click", () => {
+            approvePaymentRequest(request.id, approve);
+          });
 
           const reject = document.createElement("button");
           reject.className = "btn-primary btn-danger";
           reject.textContent = "Reject request";
-          reject.addEventListener("click", () =>
-            rejectPaymentRequest(request.id, reject)
-          );
+          reject.addEventListener("click", () => {
+            rejectPaymentRequest(request.id, reject);
+          });
 
           actions.append(note, approve, reject);
           card.append(top, actions);
@@ -605,8 +940,9 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
       }
     }
 
-    // Legacy payment proofs remain separate from new payment requests.
+    // Legacy proof links are separate and are not automatically approved.
     legacyContainer.replaceChildren();
+
     const legacy = vendorRows.filter(v => v.pop_receipt_url);
 
     if (!legacy.length) {
@@ -629,15 +965,22 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
           " · Legacy reference: " + (vendor.pending_payment_ref || "N/A");
 
         card.append(title, meta);
-        const url = safeUrl(vendor.pop_receipt_url);
 
-        if (url) {
+        let legacyUrl = "";
+        try {
+          const parsed = new URL(vendor.pop_receipt_url, window.location.origin);
+          if (["http:", "https:"].includes(parsed.protocol)) {
+            legacyUrl = parsed.href;
+          }
+        } catch (_) {}
+
+        if (legacyUrl) {
           const link = document.createElement("a");
-          link.href = url;
+          link.href = legacyUrl;
           link.target = "_blank";
           link.rel = "noopener noreferrer";
           link.textContent = "Open legacy proof of payment";
-          link.style.cssText = "display:inline-block;margin-top:10px";
+          link.className = "receipt-link";
           card.appendChild(link);
         } else {
           const warning = document.createElement("div");
@@ -652,9 +995,77 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
         note.style.marginTop = "8px";
         note.textContent =
           "Legacy proof only. Verify manually; this page does not approve legacy records automatically.";
+
         card.appendChild(note);
         legacyContainer.appendChild(card);
       });
+    }
+  }
+
+  async function openPrivateReceipt(receiptPath, button) {
+    if (!(await requireFounder())) return;
+
+    if (!receiptPath || typeof receiptPath !== "string") {
+      alert("No receipt path is available.");
+      return;
+    }
+
+    const parts = receiptPath.split("/");
+
+    if (
+      parts.length < 2 ||
+      parts.some(part =>
+        !part ||
+        part === "." ||
+        part === ".." ||
+        part.includes("\\")
+      )
+    ) {
+      alert("The receipt path is invalid.");
+      return;
+    }
+
+    const previousText = button.textContent;
+    button.disabled = true;
+    button.textContent = "Preparing receipt…";
+
+    try {
+      const { data, error } = await db.storage
+        .from(PROOF_BUCKET)
+        .createSignedUrl(receiptPath, 60);
+
+      if (error) throw error;
+      if (!data?.signedUrl) {
+        throw new Error("Supabase did not return a receipt URL.");
+      }
+
+      // Open synchronously after the async URL creation where possible.
+      // If the browser blocks the tab, display a direct temporary link.
+      const link = document.createElement("a");
+      link.href = data.signedUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.className = "receipt-link";
+      link.textContent = "Open secure receipt (expires in 60 seconds)";
+
+      const existing = button.parentElement.querySelector(
+        ".temporary-receipt-link"
+      );
+      if (existing) existing.remove();
+
+      link.classList.add("temporary-receipt-link");
+      button.insertAdjacentElement("afterend", link);
+      link.click();
+    } catch (error) {
+      console.error("Opening private receipt failed:", error);
+      alert(
+        "Could not open the receipt: " +
+        (error.message || "Unknown error") +
+        "\nCheck the private subscription-proofs bucket and founder access policy."
+      );
+    } finally {
+      button.disabled = false;
+      button.textContent = previousText;
     }
   }
 
@@ -662,25 +1073,32 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
     if (!(await requireFounder())) return;
 
     if (!confirm(
-      "Have you verified that this payment was received? Approve only after confirming the payment in your bank account."
+      "Have you verified that this payment was received in your bank account? Approve only after confirming the payment."
     )) return;
 
     button.disabled = true;
     button.textContent = "Approving…";
 
     try {
-      const { data, error } = await db.rpc("approve_subscription_payment", {
-        p_request_id: requestId
-      });
+      const { data, error } = await db.rpc(
+        "approve_subscription_payment",
+        { p_request_id: requestId }
+      );
+
       if (error) throw error;
 
-      let message = "Payment approval request completed.";
-      if (data?.subscription_expires_at) {
-        message += "\nSubscription expires: " +
-          new Date(data.subscription_expires_at).toLocaleString();
+      if (data && data.success === false) {
+        throw new Error(data.message || "Approval was not completed.");
       }
 
-      alert(message);
+      alert(
+        "Approval request completed.\n\n" +
+        (data?.subscription_expires_at
+          ? "Subscription expires: " +
+            new Date(data.subscription_expires_at).toLocaleString()
+          : "Refresh the dashboard to confirm the subscription status.")
+      );
+
       await loadAdminData();
     } catch (error) {
       console.error("Payment approval failed:", error);
@@ -693,20 +1111,31 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
 
   async function rejectPaymentRequest(requestId, button) {
     if (!(await requireFounder())) return;
-    if (!confirm("Reject this payment request? This will not activate the vendor.")) return;
+
+    if (!confirm(
+      "Reject this payment request? The vendor's business data will not be deleted."
+    )) return;
 
     button.disabled = true;
     button.textContent = "Rejecting…";
 
     try {
-      const { error } = await db.rpc("reject_subscription_payment", {
-        p_request_id: requestId
-      });
+      const { data, error } = await db.rpc(
+        "reject_subscription_payment",
+        { p_request_id: requestId }
+      );
 
       if (error) {
         throw new Error(
-          "The secure reject_subscription_payment database function is missing or rejected this request. No request was changed. " +
+          "The database rejected the operation. Confirm that the secure " +
+          "reject_subscription_payment(uuid) function exists. " +
           error.message
+        );
+      }
+
+      if (data?.success !== true) {
+        throw new Error(
+          data?.message || "The database did not confirm the rejection."
         );
       }
 
@@ -730,14 +1159,18 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
 
     if (error) {
       showInlineMessage(
-        $("bank-message"), "Could not load bank settings: " + error.message, "error"
+        $("bank-message"),
+        "Could not load bank settings: " + error.message,
+        "error"
       );
       return;
     }
 
     if (!data) {
       showInlineMessage(
-        $("bank-message"), "No platform settings row was found for id 1.", "error"
+        $("bank-message"),
+        "No platform settings row was found for id 1.",
+        "error"
       );
       return;
     }
@@ -756,6 +1189,8 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
         $("founder-bank-select").value = match.value;
         $("founder-branch-code").value =
           data.branch_code || match.value.split("|")[1];
+      } else {
+        $("founder-bank-select").value = "";
       }
     }
 
@@ -769,7 +1204,9 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
     const selection = $("founder-bank-select").value;
 
     if (!selection) {
-      showInlineMessage($("bank-message"), "Please select a bank.", "error");
+      showInlineMessage(
+        $("bank-message"), "Please select a bank.", "error"
+      );
       return;
     }
 
@@ -781,7 +1218,9 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
 
     if (!account_name || !account_number || !branch_code) {
       showInlineMessage(
-        $("bank-message"), "Complete all bank details before saving.", "error"
+        $("bank-message"),
+        "Complete all bank details before saving.",
+        "error"
       );
       return;
     }
@@ -810,13 +1249,15 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
       }
 
       showInlineMessage(
-        $("bank-message"), "Founder bank settings saved successfully."
+        $("bank-message"),
+        "Founder bank settings saved successfully."
       );
     } catch (error) {
       console.error("Saving bank settings failed:", error);
       showInlineMessage(
-        $("bank-message"), "Error saving settings: " +
-        (error.message || "Unknown error"), "error"
+        $("bank-message"),
+        "Error saving settings: " + (error.message || "Unknown error"),
+        "error"
       );
     } finally {
       button.disabled = false;
@@ -836,7 +1277,11 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
 
     if (error) {
       $("stat-orders").textContent = "—";
-      showMessage(container, "Could not load bookings: " + error.message, true);
+      showMessage(
+        container,
+        "Could not load bookings: " + error.message,
+        true
+      );
       return;
     }
 
@@ -855,6 +1300,7 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
 
       const top = document.createElement("div");
       top.className = "order-top";
+
       const details = document.createElement("div");
 
       const title = document.createElement("div");
@@ -875,9 +1321,12 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
 
       const statusText = String(order.status || "PENDING").toUpperCase();
       const status = document.createElement("span");
+
       status.className = "status-badge " +
         (statusText === "COMPLETED" ? "status-completed" :
-         statusText === "REJECTED" ? "status-rejected" : "status-pending");
+         statusText === "REJECTED" ? "status-rejected" :
+         "status-pending");
+
       status.style.marginLeft = "6px";
       status.textContent = statusText;
 
@@ -894,11 +1343,10 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
     });
   }
 
-  // Catch startup errors and show them on the login page.
   boot().catch(error => {
     console.error("BOOK.NOW admin startup failed:", error);
     showStartupError(
-      "The Admin page failed to start: " +
+      "The Founder Panel failed to start: " +
       (error.message || "Unknown JavaScript error") +
       ". Refresh the page and try again."
     );
