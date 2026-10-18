@@ -422,10 +422,8 @@ a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
       subscription_status, subscription_expires_at, pop_receipt_url,
       pending_payment_ref, is_admin.
     */
-    const { data: vendors, error: vendorError } = await db
-      .from("vendors")
-      .select("id,name,category,owner_id,phone_number,address,subscription_status,subscription_expires_at,pending_payment_ref,pop_receipt_url,created_at")
-      .order("created_at", { ascending: false });
+    const { data: requests, error: requestError } = await db
+  .rpc("founder_list_subscription_payment_requests");
 
     if (vendorError) {
       $("stat-shops").textContent = "—";
