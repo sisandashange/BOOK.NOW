@@ -235,38 +235,66 @@ button:disabled{opacity:.6;cursor:not-allowed}
     }
   }
 
-  async function saveFounderBankSettings() {
-    const button = $("save-founder-bank-btn");
-    const bankVal = $("founder-bank-select").value;
-    const account_name = $("founder-acc-name").value.trim();
-    const account_number = $("founder-acc-number").value.trim();
-    const branch_code = $("founder-branch-code").value.trim();
+  
+async function saveFounderBankSettings() {
+  const button = $("save-founder-bank-btn");
 
-    if (!bankVal || !account_number) return alert("Please select your bank and enter your account number.");
+  const bankVal = $("founder-bank-select").value;
+  const account_name = $("founder-acc-name").value.trim();
+  const account_number = $("founder-acc-number").value.trim();
+  const branch_code = $("founder-branch-code").value.trim();
 
-    const bank_name = bankVal.split("|")[0];
+  if (!bankVal || !account_name || !account_number || !branch_code) {
+    return alert("Please complete all bank details.");
+  }
 
-    button.disabled = true;
-    button.textContent = "Saving...";
+  const bank_name = bankVal.split("|")[0];
 
-    try {
-      const { error } = await db.from("platform_settings").upsert({
-        id: 1,
+  button.disabled = true;
+  button.textContent = "Saving...";
+
+  try {
+    // Confirm that a founder session exists.
+    const { data: { user }, error: authError } =
+      await db.auth.getUser();
+
+    if (authError || !user) {
+      throw new Error("Please sign in again.");
+    }
+
+    // Update the existing settings row.
+    // Do not use upsert: INSERT permission is not granted.
+    const { data, error } = await db
+      .from("platform_settings")
+      .update({
         bank_name,
         account_name,
         account_number,
         branch_code
-      });
+      })
+      .eq("id", 1)
+      .select("id")
+      .single();
 
-      if (error) throw error;
-      alert("Founder bank settings saved successfully! All vendors will now see these details.");
-    } catch (err) {
-      alert("Error saving settings: " + err.message);
-    } finally {
-      button.disabled = false;
-      button.textContent = "Save Founder Bank Details";
+    if (error) throw error;
+
+    if (!data) {
+      throw new Error(
+        "No settings row was updated. Check founder permissions."
+      );
     }
+
+    alert("Founder bank settings saved successfully!");
+
+  } catch (err) {
+    console.error("Founder settings save failed:", err.message);
+    alert("Error saving settings: " + err.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Save Founder Bank Details";
   }
+}
+
 
   window.loadAdminData = async function() {
     const { data: vendors, error: vErr } = await db.from("vendors").select("*").order("created_at", { ascending: false });
