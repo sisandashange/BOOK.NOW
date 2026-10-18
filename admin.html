@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -207,7 +206,7 @@ button:disabled {opacity:.6;cursor:not-allowed}
   background:var(--success-bg);
   color:var(--success);
 }
-.status-pending,.status-pending_approval {
+.status-pending,.status-pending_approval,.status-pending_payment {
   background:var(--warning-bg);
   color:var(--warning);
 }
@@ -344,14 +343,12 @@ a {
     <form id="admin-login-form">
       <div class="form-field">
         <label for="admin-email">Email Address</label>
-        <input type="email" id="admin-email"
-          autocomplete="username" placeholder="you@gmail.com" required>
+        <input type="email" id="admin-email" autocomplete="username" placeholder="you@gmail.com" required>
       </div>
 
       <div class="form-field">
         <label for="admin-password">Password</label>
-        <input type="password" id="admin-password"
-          autocomplete="current-password" placeholder="Password" required>
+        <input type="password" id="admin-password" autocomplete="current-password" placeholder="Password" required>
       </div>
 
       <button type="submit" class="btn-primary" id="admin-login-btn" style="width:100%">
@@ -359,8 +356,7 @@ a {
       </button>
     </form>
 
-    <div id="login-message" class="small-note" role="status"
-      aria-live="polite" style="margin-top:12px"></div>
+    <div id="login-message" class="small-note" role="status" aria-live="polite" style="margin-top:12px"></div>
   </div>
 </div>
 
@@ -370,15 +366,13 @@ a {
       <i class="ph ph-shield-check" style="color:var(--accent)"></i>
       BOOK.NOW Founder Panel
     </div>
-    <button class="btn-primary"
-      style="background:#fee2e2;color:#991b1b;padding:8px 12px"
-      id="admin-logout-btn">Log Out</button>
+    <button class="btn-primary" style="background:#fee2e2;color:#991b1b;padding:8px 12px" id="admin-logout-btn">Log Out</button>
   </div>
 
   <main class="container">
     <div style="margin-bottom:18px">
       <h2 style="margin-bottom:5px">Founder Dashboard</h2>
-      <div class="small-note">Manage vendors, subscription requests, bank settings and bookings.</div>
+      <div class="small-note">Manage stores, subscription requests, bank settings and bookings.</div>
     </div>
 
     <div id="global-message" class="small-note" role="status" aria-live="polite"></div>
@@ -403,14 +397,14 @@ a {
     </div>
 
     <div class="nav-tabs">
-      <button class="tab-item active" data-tab="vendors-section">Vendors &amp; Approvals</button>
+      <button class="tab-item active" data-tab="vendors-section">Stores &amp; Approvals</button>
       <button class="tab-item" data-tab="settings-section">Founder Bank Settings</button>
       <button class="tab-item" data-tab="orders-section">Platform Bookings</button>
     </div>
 
     <section id="vendors-section">
       <div class="section-head">
-        <h3>Vendors &amp; Subscription Approvals</h3>
+        <h3>Stores &amp; Subscription Approvals</h3>
         <button class="btn-primary" id="refresh-vendors-btn">
           <i class="ph ph-arrows-clockwise"></i> Refresh
         </button>
@@ -419,16 +413,11 @@ a {
       <div class="notice">
         Subscription requests are loaded through the founder-only database function.
         Open the receipt and verify payment in your bank account before approving.
-        Rejected requests do not delete vendor data.
+        Rejected requests do not delete store data.
       </div>
 
       <div id="vendors-admin-list" class="card-list">
-        <div class="empty-box">Loading vendors…</div>
-      </div>
-
-      <h3 style="font-size:16px;margin:24px 0 12px">Legacy Payment Proofs</h3>
-      <div id="legacy-admin-list" class="card-list">
-        <div class="empty-box">Loading legacy proofs…</div>
+        <div class="empty-box">Loading stores…</div>
       </div>
     </section>
 
@@ -458,30 +447,22 @@ a {
 
         <div class="form-field">
           <label for="founder-acc-name">Account Holder Name</label>
-          <input type="text" id="founder-acc-name"
-            placeholder="Account holder name" autocomplete="off">
+          <input type="text" id="founder-acc-name" placeholder="Account holder name" autocomplete="off">
         </div>
 
         <div class="form-field">
           <label for="founder-acc-number">Account Number</label>
-          <input type="text" id="founder-acc-number"
-            inputmode="numeric" placeholder="Account number" autocomplete="off">
+          <input type="text" id="founder-acc-number" inputmode="numeric" placeholder="Account number" autocomplete="off">
         </div>
 
         <div class="form-field">
           <label for="founder-branch-code">Branch Code</label>
-          <input type="text" id="founder-branch-code" readonly
-            style="background:#f1f5f9;color:var(--muted)"
-            placeholder="Select bank above">
+          <input type="text" id="founder-branch-code" readonly style="background:#f1f5f9;color:var(--muted)" placeholder="Select bank above">
         </div>
 
-        <button class="btn-primary" id="save-founder-bank-btn"
-          style="width:100%;margin-top:6px">Save Founder Bank Details</button>
+        <button class="btn-primary" id="save-founder-bank-btn" style="width:100%;margin-top:6px">Save Founder Bank Details</button>
 
         <div id="bank-message" style="margin-top:12px"></div>
-        <div class="small-note" style="margin-top:10px">
-          Saving is allowed only if the database founder-only policy accepts your account.
-        </div>
       </div>
     </section>
 
@@ -505,11 +486,7 @@ a {
   "use strict";
 
   const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
-
-  // Confirm this exact publishable key in Supabase Project Settings → API Keys.
-  const SUPABASE_ANON_KEY =
-    "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
-
+  const SUPABASE_ANON_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
   const FOUNDER_ID = "c0c85d2f-8473-49c3-a33a-92ff5acf1e94";
   const PROOF_BUCKET = "subscription-proofs";
 
@@ -565,20 +542,12 @@ a {
     $("admin-dashboard").style.display = visible ? "block" : "none";
   }
 
-  if (!window.supabase ||
-      typeof window.supabase.createClient !== "function") {
-    showStartupError(
-      "The Supabase library did not load. Check your internet connection and refresh."
-    );
+  if (!window.supabase || typeof window.supabase.createClient !== "function") {
+    showStartupError("The Supabase library did not load. Refresh the page.");
     return;
   }
 
-  const db = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-  );
-
-  let authListenerRegistered = false;
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   let refreshInProgress = false;
 
   async function requireFounder() {
@@ -592,10 +561,7 @@ a {
     if (data.user.id !== FOUNDER_ID) {
       await db.auth.signOut();
       setDashboard(false);
-      setLoginMessage(
-        "Access denied. This account is not authorised for founder administration.",
-        true
-      );
+      setLoginMessage("Access denied. Authorized founder account only.", true);
       return false;
     }
 
@@ -616,15 +582,12 @@ a {
 
     $("founder-bank-select").addEventListener("change", () => {
       const selected = $("founder-bank-select").value;
-      $("founder-branch-code").value =
-        selected ? selected.split("|")[1] : "";
+      $("founder-branch-code").value = selected ? selected.split("|")[1] : "";
     });
 
     document.querySelectorAll("[data-tab]").forEach(button => {
       button.addEventListener("click", () => switchTab(button.dataset.tab));
     });
-
-    setLoginMessage("Checking your existing session…");
 
     try {
       const { data, error } = await db.auth.getSession();
@@ -632,45 +595,14 @@ a {
 
       if (data?.session) {
         if (await requireFounder()) {
-          setLoginMessage("");
           await loadAdminData();
         }
       } else {
         setDashboard(false);
-        setLoginMessage("");
       }
     } catch (error) {
       setDashboard(false);
-      setLoginMessage(
-        "Could not check your session: " +
-        (error.message || "Unknown error"),
-        true
-      );
-    }
-
-    if (!authListenerRegistered) {
-      authListenerRegistered = true;
-
-      db.auth.onAuthStateChange((event, session) => {
-        if (event === "SIGNED_OUT" || !session?.user) {
-          setDashboard(false);
-          return;
-        }
-
-        if (event === "SIGNED_IN") {
-          setTimeout(async () => {
-            try {
-              if (await requireFounder()) await loadAdminData();
-            } catch (error) {
-              console.error("Session verification failed:", error);
-              setLoginMessage(
-                "Session verification failed: " + error.message,
-                true
-              );
-            }
-          }, 0);
-        }
-      });
+      setLoginMessage("Could not check session: " + error.message, true);
     }
   }
 
@@ -680,37 +612,28 @@ a {
     const password = $("admin-password").value;
 
     if (!email || !password) {
-      setLoginMessage("Enter your email address and password.", true);
+      setLoginMessage("Enter email and password.", true);
       return;
     }
 
     button.disabled = true;
     button.textContent = "Signing in…";
-    setLoginMessage("");
 
     try {
-      const { data, error } = await db.auth.signInWithPassword({
-        email,
-        password
-      });
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
 
       if (error) throw error;
-      if (!data?.user) throw new Error("Supabase did not return a signed-in user.");
 
       if (data.user.id !== FOUNDER_ID) {
         await db.auth.signOut();
         setDashboard(false);
-        throw new Error(
-          "Access denied. This account is not the authorised founder account."
-        );
+        throw new Error("Access denied. Authorized founder account only.");
       }
 
       setDashboard(true);
-      setLoginMessage("");
       await loadAdminData();
     } catch (error) {
-      console.error("Founder sign-in failed:", error);
-      setLoginMessage(error.message || "Sign-in failed. Please try again.", true);
+      setLoginMessage(error.message || "Sign-in failed.", true);
     } finally {
       button.disabled = false;
       button.textContent = "Sign In";
@@ -718,15 +641,9 @@ a {
   }
 
   async function signOut() {
-    try {
-      const { error } = await db.auth.signOut();
-      if (error) throw error;
-
-      setDashboard(false);
-      setLoginMessage("You have signed out.");
-    } catch (error) {
-      setLoginMessage("Sign-out failed: " + error.message, true);
-    }
+    await db.auth.signOut();
+    setDashboard(false);
+    setLoginMessage("You have signed out.");
   }
 
   function switchTab(tabId) {
@@ -747,287 +664,139 @@ a {
     $("global-message").textContent = "Refreshing dashboard…";
 
     try {
-      const results = await Promise.allSettled([
-        loadVendorsAndPayments(),
+      await Promise.all([
+        loadStoresAndPayments(),
         loadOrders(),
         loadFounderBank()
       ]);
-
-      const failed = results.filter(result => result.status === "rejected");
-
-      if (failed.length) {
-        console.error("Some dashboard sections failed:", failed);
-        $("global-message").textContent =
-          "Dashboard refresh finished with errors. Check each section.";
-      } else {
-        $("global-message").textContent = "Dashboard refresh finished.";
-      }
+      $("global-message").textContent = "Dashboard refresh finished.";
+    } catch (err) {
+      $("global-message").textContent = "Dashboard refreshed with errors.";
     } finally {
       refreshInProgress = false;
     }
   }
 
-  function findVendor(vendors, request) {
-    return vendors.find(v =>
-      String(v.id || "").toLowerCase() ===
-      String(request.vendor_id || "").toLowerCase()
-    ) || vendors.find(v =>
-      String(v.owner_id || "").toLowerCase() ===
-      String(request.owner_id || "").toLowerCase()
-    );
-  }
-
-  async function loadVendorsAndPayments() {
+  async function loadStoresAndPayments() {
     const vContainer = $("vendors-admin-list");
-    const legacyContainer = $("legacy-admin-list");
+    showMessage(vContainer, "Loading stores and payment requests…");
 
-    showMessage(vContainer, "Loading vendors and payment requests…");
-    showMessage(legacyContainer, "Loading legacy proof records…");
-
-    const { data: vendors, error: vendorError } = await db
-      .from("vendors")
-      .select(
-        "id,name,category,owner_id,phone_number,address,subscription_status,subscription_expires_at,pending_payment_ref,pop_receipt_url,created_at"
-      )
+    // Query 'stores' table directly
+    const { data: stores, error: storeError } = await db
+      .from("stores")
+      .select("*")
       .order("created_at", { ascending: false });
 
-    if (vendorError) {
+    if (storeError) {
       $("stat-shops").textContent = "—";
       $("stat-active").textContent = "—";
       $("stat-pending").textContent = "—";
-
-      showMessage(
-        vContainer,
-        "Could not load vendors: " + vendorError.message,
-        true
-      );
-      showMessage(
-        legacyContainer,
-        "Legacy proofs could not be checked because vendor access failed.",
-        true
-      );
+      showMessage(vContainer, "Could not load stores: " + storeError.message, true);
       return;
     }
 
-    const vendorRows = vendors || [];
-    $("stat-shops").textContent = String(vendorRows.length);
+    const storeRows = stores || [];
+    $("stat-shops").textContent = String(storeRows.length);
 
-    const activeCount = vendorRows.filter(v =>
-      String(v.subscription_status || "").toUpperCase() === "ACTIVE" &&
-      v.subscription_expires_at &&
-      new Date(v.subscription_expires_at).getTime() > Date.now()
+    const activeCount = storeRows.filter(s =>
+      s.status === "active" &&
+      s.subscription_expires_at &&
+      new Date(s.subscription_expires_at).getTime() > Date.now()
     ).length;
 
     $("stat-active").textContent = String(activeCount);
 
-    // Founder-only RPC. Do not query subscription_payment_requests directly.
-    const { data: requests, error: requestError } = await db.rpc(
-      "founder_list_subscription_payment_requests"
-    );
+    // Call RPC function to list payment requests
+    const { data: requests, error: requestError } = await db.rpc("founder_list_subscription_payment_requests");
 
     if (requestError) {
       $("stat-pending").textContent = "—";
-      showMessage(
-        vContainer,
-        "Could not load subscription requests: " + requestError.message,
-        true
-      );
-    } else {
-      const requestRows = requests || [];
-      const pending = requestRows.filter(request =>
-        String(request.status || "").toUpperCase() === "PENDING"
-      );
+      showMessage(vContainer, "Could not load subscription requests: " + requestError.message, true);
+      return;
+    }
 
-      $("stat-pending").textContent = String(pending.length);
-      vContainer.replaceChildren();
+    const requestRows = requests || [];
+    const pendingRequests = requestRows.filter(r => r.status === "PENDING");
 
-      if (!pending.length) {
-        showMessage(vContainer, "No pending subscription payment requests.");
-      } else {
-        pending.forEach(request => {
-          const vendor = findVendor(vendorRows, request);
+    $("stat-pending").textContent = String(pendingRequests.length);
+    vContainer.replaceChildren();
 
-          const card = document.createElement("div");
-          card.className = "vendor-card";
+    if (!pendingRequests.length) {
+      showMessage(vContainer, "No pending subscription payment requests.");
+      return;
+    }
 
-          const top = document.createElement("div");
-          top.className = "vendor-top";
+    pendingRequests.forEach(request => {
+      const store = storeRows.find(s => s.id === request.store_id);
 
-          const details = document.createElement("div");
-          details.style.minWidth = "0";
+      const card = document.createElement("div");
+      card.className = "vendor-card";
 
-          const title = document.createElement("div");
-          title.className = "vendor-title";
-          title.textContent =
-            (vendor?.name || "Unknown store") +
-            " — " + (vendor?.category || "STORE");
+      const top = document.createElement("div");
+      top.className = "vendor-top";
 
-          const meta = document.createElement("div");
-          meta.className = "vendor-meta";
-          meta.textContent =
-            "Payment: " + (request.payment_type || "N/A") +
-            " · Amount: " + money(request.amount) +
-            " · Phone: " + (vendor?.phone_number || "Not provided");
+      const details = document.createElement("div");
+      details.style.minWidth = "0";
 
-          const reference = document.createElement("span");
-          reference.className = "ref-pill";
-          reference.textContent =
-            "REF: " + (request.payment_reference || "N/A");
+      const title = document.createElement("div");
+      title.className = "vendor-title";
+      title.textContent = (store?.store_name || "Unknown Store") + " — " + (store?.category || "STORE");
 
-          const proof = document.createElement("div");
-          proof.className = "vendor-meta";
-          proof.textContent = request.receipt_path
-            ? "Payment receipt: uploaded privately"
-            : "Payment receipt: not provided";
+      const meta = document.createElement("div");
+      meta.className = "vendor-meta";
+      meta.textContent = "Amount: " + money(request.amount) + " · Phone: " + (store?.phone_number || "N/A");
 
-          const owner = document.createElement("div");
-          owner.className = "vendor-meta";
-          owner.textContent = "Owner ID: " + (request.owner_id || "N/A");
+      const reference = document.createElement("span");
+      reference.className = "ref-pill";
+      reference.textContent = "REF: " + (request.payment_reference || "N/A");
 
-          details.append(
-            title,
-            meta,
-            reference,
-            document.createElement("br"),
-            proof,
-            owner
-          );
+      details.append(title, meta, reference);
 
-          if (request.receipt_path) {
-            const receiptButton = document.createElement("button");
-            receiptButton.type = "button";
-            receiptButton.className = "btn-primary";
-            receiptButton.style.marginTop = "8px";
-            receiptButton.textContent = "Open payment receipt";
-            receiptButton.addEventListener("click", () => {
-              openPrivateReceipt(request.receipt_path, receiptButton);
-            });
-            details.appendChild(receiptButton);
-          }
-
-          const status = document.createElement("span");
-          status.className = "status-badge status-pending";
-          status.textContent = request.status || "PENDING";
-
-          top.append(details, status);
-
-          const actions = document.createElement("div");
-          actions.className = "actions";
-
-          const note = document.createElement("span");
-          note.className = "small-note";
-          note.textContent =
-            "Verify the bank payment before approving.";
-
-          const approve = document.createElement("button");
-          approve.className = "btn-primary btn-success";
-          approve.textContent = "Approve payment";
-          approve.addEventListener("click", () => {
-            approvePaymentRequest(request.id, approve);
-          });
-
-          const reject = document.createElement("button");
-          reject.className = "btn-primary btn-danger";
-          reject.textContent = "Reject request";
-          reject.addEventListener("click", () => {
-            rejectPaymentRequest(request.id, reject);
-          });
-
-          actions.append(note, approve, reject);
-          card.append(top, actions);
-          vContainer.appendChild(card);
-        });
+      if (request.receipt_path) {
+        const receiptButton = document.createElement("button");
+        receiptButton.type = "button";
+        receiptButton.className = "btn-primary";
+        receiptButton.style.marginTop = "8px";
+        receiptButton.textContent = "Open Payment Receipt";
+        receiptButton.addEventListener("click", () => openPrivateReceipt(request.receipt_path, receiptButton));
+        details.appendChild(document.createElement("br"));
+        details.appendChild(receiptButton);
       }
-    }
 
-    // Legacy proof links are separate and are not automatically approved.
-    legacyContainer.replaceChildren();
+      const status = document.createElement("span");
+      status.className = "status-badge status-pending";
+      status.textContent = request.status;
 
-    const legacy = vendorRows.filter(v => v.pop_receipt_url);
+      top.append(details, status);
 
-    if (!legacy.length) {
-      showMessage(legacyContainer, "No legacy payment proof links found.");
-    } else {
-      legacy.forEach(vendor => {
-        const card = document.createElement("div");
-        card.className = "vendor-card";
+      const actions = document.createElement("div");
+      actions.className = "actions";
 
-        const title = document.createElement("div");
-        title.className = "vendor-title";
-        title.textContent = vendor.name || "Unnamed store";
+      const note = document.createElement("span");
+      note.className = "small-note";
+      note.textContent = "Verify bank payment before approving.";
 
-        const meta = document.createElement("div");
-        meta.className = "vendor-meta";
-        meta.textContent =
-          "Status: " + (vendor.subscription_status || "PENDING") +
-          " · Phone: " + (vendor.phone_number || "Not provided") +
-          " · Address: " + (vendor.address || "Not provided") +
-          " · Legacy reference: " + (vendor.pending_payment_ref || "N/A");
+      const approve = document.createElement("button");
+      approve.className = "btn-primary btn-success";
+      approve.textContent = "Approve Payment";
+      approve.addEventListener("click", () => approvePaymentRequest(request.id, approve));
 
-        card.append(title, meta);
+      const reject = document.createElement("button");
+      reject.className = "btn-primary btn-danger";
+      reject.textContent = "Reject Request";
+      reject.addEventListener("click", () => rejectPaymentRequest(request.id, reject));
 
-        let legacyUrl = "";
-        try {
-          const parsed = new URL(vendor.pop_receipt_url, window.location.origin);
-          if (["http:", "https:"].includes(parsed.protocol)) {
-            legacyUrl = parsed.href;
-          }
-        } catch (_) {}
-
-        if (legacyUrl) {
-          const link = document.createElement("a");
-          link.href = legacyUrl;
-          link.target = "_blank";
-          link.rel = "noopener noreferrer";
-          link.textContent = "Open legacy proof of payment";
-          link.className = "receipt-link";
-          card.appendChild(link);
-        } else {
-          const warning = document.createElement("div");
-          warning.className = "small-note";
-          warning.textContent =
-            "The legacy proof URL is not a valid HTTP or HTTPS link.";
-          card.appendChild(warning);
-        }
-
-        const note = document.createElement("div");
-        note.className = "small-note";
-        note.style.marginTop = "8px";
-        note.textContent =
-          "Legacy proof only. Verify manually; this page does not approve legacy records automatically.";
-
-        card.appendChild(note);
-        legacyContainer.appendChild(card);
-      });
-    }
+      actions.append(note, approve, reject);
+      card.append(top, actions);
+      vContainer.appendChild(card);
+    });
   }
 
   async function openPrivateReceipt(receiptPath, button) {
     if (!(await requireFounder())) return;
 
-    if (!receiptPath || typeof receiptPath !== "string") {
-      alert("No receipt path is available.");
-      return;
-    }
-
-    const parts = receiptPath.split("/");
-
-    if (
-      parts.length < 2 ||
-      parts.some(part =>
-        !part ||
-        part === "." ||
-        part === ".." ||
-        part.includes("\\")
-      )
-    ) {
-      alert("The receipt path is invalid.");
-      return;
-    }
-
-    const previousText = button.textContent;
     button.disabled = true;
-    button.textContent = "Preparing receipt…";
+    button.textContent = "Opening…";
 
     try {
       const { data, error } = await db.storage
@@ -1035,145 +804,72 @@ a {
         .createSignedUrl(receiptPath, 60);
 
       if (error) throw error;
-      if (!data?.signedUrl) {
-        throw new Error("Supabase did not return a receipt URL.");
-      }
 
-      // Open synchronously after the async URL creation where possible.
-      // If the browser blocks the tab, display a direct temporary link.
-      const link = document.createElement("a");
-      link.href = data.signedUrl;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.className = "receipt-link";
-      link.textContent = "Open secure receipt (expires in 60 seconds)";
-
-      const existing = button.parentElement.querySelector(
-        ".temporary-receipt-link"
-      );
-      if (existing) existing.remove();
-
-      link.classList.add("temporary-receipt-link");
-      button.insertAdjacentElement("afterend", link);
-      link.click();
+      window.open(data.signedUrl, "_blank");
     } catch (error) {
-      console.error("Opening private receipt failed:", error);
-      alert(
-        "Could not open the receipt: " +
-        (error.message || "Unknown error") +
-        "\nCheck the private subscription-proofs bucket and founder access policy."
-      );
+      alert("Could not open receipt: " + error.message);
     } finally {
       button.disabled = false;
-      button.textContent = previousText;
+      button.textContent = "Open Payment Receipt";
     }
   }
 
   async function approvePaymentRequest(requestId, button) {
     if (!(await requireFounder())) return;
 
-    if (!confirm(
-      "Have you verified that this payment was received in your bank account? Approve only after confirming the payment."
-    )) return;
+    if (!confirm("Confirm you received payment in your bank account?")) return;
 
     button.disabled = true;
     button.textContent = "Approving…";
 
     try {
-      const { data, error } = await db.rpc(
-        "approve_subscription_payment",
-        { p_request_id: requestId }
-      );
+      const { data, error } = await db.rpc("approve_subscription_payment", { p_request_id: requestId });
 
       if (error) throw error;
 
-      if (data && data.success === false) {
-        throw new Error(data.message || "Approval was not completed.");
-      }
+      if (data && data.success === false) throw new Error(data.message);
 
-      alert(
-        "Approval request completed.\n\n" +
-        (data?.subscription_expires_at
-          ? "Subscription expires: " +
-            new Date(data.subscription_expires_at).toLocaleString()
-          : "Refresh the dashboard to confirm the subscription status.")
-      );
-
+      alert("Store activated for 30 days!");
       await loadAdminData();
     } catch (error) {
-      console.error("Payment approval failed:", error);
-      alert("Approval failed: " + (error.message || "Unknown error"));
+      alert("Approval failed: " + error.message);
     } finally {
       button.disabled = false;
-      button.textContent = "Approve payment";
+      button.textContent = "Approve Payment";
     }
   }
 
   async function rejectPaymentRequest(requestId, button) {
     if (!(await requireFounder())) return;
 
-    if (!confirm(
-      "Reject this payment request? The vendor's business data will not be deleted."
-    )) return;
+    if (!confirm("Reject this payment request? Store data will remain intact.")) return;
 
     button.disabled = true;
     button.textContent = "Rejecting…";
 
     try {
-      const { data, error } = await db.rpc(
-        "reject_subscription_payment",
-        { p_request_id: requestId }
-      );
+      const { data, error } = await db.rpc("reject_subscription_payment", { p_request_id: requestId });
 
-      if (error) {
-        throw new Error(
-          "The database rejected the operation. Confirm that the secure " +
-          "reject_subscription_payment(uuid) function exists. " +
-          error.message
-        );
-      }
+      if (error) throw error;
 
-      if (data?.success !== true) {
-        throw new Error(
-          data?.message || "The database did not confirm the rejection."
-        );
-      }
-
-      alert("Payment request rejected.");
+      alert("Request rejected.");
       await loadAdminData();
     } catch (error) {
-      console.error("Payment rejection failed:", error);
-      alert("Rejection failed: " + (error.message || "Unknown error"));
+      alert("Rejection failed: " + error.message);
     } finally {
       button.disabled = false;
-      button.textContent = "Reject request";
+      button.textContent = "Reject Request";
     }
   }
 
   async function loadFounderBank() {
     const { data, error } = await db
       .from("platform_settings")
-      .select("id,bank_name,account_name,account_number,branch_code")
+      .select("*")
       .eq("id", 1)
       .maybeSingle();
 
-    if (error) {
-      showInlineMessage(
-        $("bank-message"),
-        "Could not load bank settings: " + error.message,
-        "error"
-      );
-      return;
-    }
-
-    if (!data) {
-      showInlineMessage(
-        $("bank-message"),
-        "No platform settings row was found for id 1.",
-        "error"
-      );
-      return;
-    }
+    if (error || !data) return;
 
     $("founder-acc-name").value = data.account_name || "";
     $("founder-acc-number").value = data.account_number || "";
@@ -1181,20 +877,9 @@ a {
 
     if (data.bank_name) {
       const options = [...$("founder-bank-select").options];
-      const match = options.find(option =>
-        option.value.startsWith(data.bank_name + "|")
-      );
-
-      if (match) {
-        $("founder-bank-select").value = match.value;
-        $("founder-branch-code").value =
-          data.branch_code || match.value.split("|")[1];
-      } else {
-        $("founder-bank-select").value = "";
-      }
+      const match = options.find(o => o.value.startsWith(data.bank_name + "|"));
+      if (match) $("founder-bank-select").value = match.value;
     }
-
-    showInlineMessage($("bank-message"), "");
   }
 
   async function saveFounderBank() {
@@ -1204,61 +889,35 @@ a {
     const selection = $("founder-bank-select").value;
 
     if (!selection) {
-      showInlineMessage(
-        $("bank-message"), "Please select a bank.", "error"
-      );
+      showInlineMessage($("bank-message"), "Please select a bank.", "error");
       return;
     }
 
-    const [bank_name, selectedBranchCode] = selection.split("|");
+    const [bank_name, selectedBranch] = selection.split("|");
     const account_name = $("founder-acc-name").value.trim();
     const account_number = $("founder-acc-number").value.trim();
-    const branch_code =
-      $("founder-branch-code").value.trim() || selectedBranchCode;
-
-    if (!account_name || !account_number || !branch_code) {
-      showInlineMessage(
-        $("bank-message"),
-        "Complete all bank details before saving.",
-        "error"
-      );
-      return;
-    }
+    const branch_code = $("founder-branch-code").value.trim() || selectedBranch;
 
     button.disabled = true;
     button.textContent = "Saving…";
 
     try {
-      const { data, error } = await db
+      const { error } = await db
         .from("platform_settings")
         .update({
           bank_name,
           account_name,
-          account_number: account_number.replace(/\s/g, ""),
-          branch_code
+          account_number,
+          branch_code,
+          updated_at: new Date()
         })
-        .eq("id", 1)
-        .select("id")
-        .single();
+        .eq("id", 1);
 
       if (error) throw error;
-      if (!data) {
-        throw new Error(
-          "No settings row was updated. Check the founder-only database policy."
-        );
-      }
 
-      showInlineMessage(
-        $("bank-message"),
-        "Founder bank settings saved successfully."
-      );
+      showInlineMessage($("bank-message"), "Bank details saved successfully.");
     } catch (error) {
-      console.error("Saving bank settings failed:", error);
-      showInlineMessage(
-        $("bank-message"),
-        "Error saving settings: " + (error.message || "Unknown error"),
-        "error"
-      );
+      showInlineMessage($("bank-message"), "Saving failed: " + error.message, "error");
     } finally {
       button.disabled = false;
       button.textContent = "Save Founder Bank Details";
@@ -1273,15 +932,11 @@ a {
       .from("orders")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(200);
+      .limit(100);
 
     if (error) {
       $("stat-orders").textContent = "—";
-      showMessage(
-        container,
-        "Could not load bookings: " + error.message,
-        true
-      );
+      showMessage(container, "Could not load bookings: " + error.message, true);
       return;
     }
 
@@ -1290,7 +945,7 @@ a {
     container.replaceChildren();
 
     if (!rows.length) {
-      showMessage(container, "No customer bookings were returned.");
+      showMessage(container, "No customer bookings found.");
       return;
     }
 
@@ -1305,52 +960,29 @@ a {
 
       const title = document.createElement("div");
       title.className = "order-title";
-      title.textContent =
-        (order.customer_name || "Customer") +
-        " (" + (order.customer_phone || "N/A") + ")";
+      title.textContent = (order.customer_name || "Customer") + " (" + (order.customer_phone || "N/A") + ")";
 
       const time = document.createElement("div");
       time.className = "order-time";
-      time.textContent = order.created_at
-        ? new Date(order.created_at).toLocaleString()
-        : "Date unavailable";
+      time.textContent = order.created_at ? new Date(order.created_at).toLocaleString() : "N/A";
 
       const reference = document.createElement("span");
       reference.className = "ref-pill";
       reference.textContent = "REF: " + (order.payment_ref || "N/A");
 
-      const statusText = String(order.status || "PENDING").toUpperCase();
-      const status = document.createElement("span");
-
-      status.className = "status-badge " +
-        (statusText === "COMPLETED" ? "status-completed" :
-         statusText === "REJECTED" ? "status-rejected" :
-         "status-pending");
-
-      status.style.marginLeft = "6px";
-      status.textContent = statusText;
-
-      details.append(title, time, reference, status);
-      top.append(details);
+      details.append(title, time, reference);
 
       const price = document.createElement("div");
       price.className = "order-price";
       price.textContent = money(order.gross_amount);
 
-      top.append(price);
+      top.append(details, price);
       card.append(top);
       container.appendChild(card);
     });
   }
 
-  boot().catch(error => {
-    console.error("BOOK.NOW admin startup failed:", error);
-    showStartupError(
-      "The Founder Panel failed to start: " +
-      (error.message || "Unknown JavaScript error") +
-      ". Refresh the page and try again."
-    );
-  });
+  document.addEventListener("DOMContentLoaded", boot);
 })();
 </script>
 </body>
