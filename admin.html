@@ -1,988 +1,814 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BOOK.NOW | Founder Admin</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOOK.NOW Founder Control Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <style>
-    :root {
-      --navy: #101b35;
-      --blue: #315efb;
-      --bg: #f4f6fb;
-      --white: #fff;
-      --text: #18233b;
-      --muted: #718096;
-      --border: #e5eaf3;
-      --green: #12805c;
-      --red: #c43d4b;
-      --orange: #a45b00;
-      --shadow: 0 12px 35px rgba(16, 27, 53, .07);
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: "Plus Jakarta Sans", sans-serif;
-    }
-
-    button, input, select { font: inherit; }
-    button { cursor: pointer; }
-
-    .hidden { display: none !important; }
-
-    .login-wrap {
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 20px;
-    }
-
-    .login-card {
-      background: var(--white);
-      width: 100%;
-      max-width: 420px;
-      border-radius: 22px;
-      padding: 30px;
-      box-shadow: var(--shadow);
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 28px;
-    }
-
-    .brand-icon {
-      width: 46px;
-      height: 46px;
-      display: grid;
-      place-items: center;
-      border-radius: 14px;
-      color: white;
-      background: var(--blue);
-      font-size: 23px;
-      font-weight: 800;
-    }
-
-    h1, h2, h3, p { margin-top: 0; }
-    h1 { font-size: 25px; margin-bottom: 7px; }
-    h2 { font-size: 20px; }
-    h3 { font-size: 15px; }
-
-    .muted { color: var(--muted); }
-    .small { font-size: 12px; line-height: 1.6; }
-
-    .field { margin-bottom: 16px; }
-
-    .field label {
-      display: block;
-      margin-bottom: 7px;
-      font-size: 12px;
-      font-weight: 800;
-    }
-
-    input, select {
-      width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 11px;
-      padding: 12px 13px;
-      background: white;
-      color: var(--text);
-      outline: none;
-    }
-
-    input:focus, select:focus {
-      border-color: var(--blue);
-      box-shadow: 0 0 0 3px rgba(49, 94, 251, .1);
-    }
-
-    .btn {
-      border: 0;
-      border-radius: 10px;
-      padding: 11px 15px;
-      font-weight: 800;
-      font-size: 12px;
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-      gap: 7px;
-    }
-
-    .btn-primary { background: var(--blue); color: white; }
-    .btn-dark { background: var(--navy); color: white; }
-    .btn-light { background: #eef2ff; color: var(--blue); }
-    .btn-danger { background: #fff0f1; color: var(--red); }
-    .btn-success { background: #e8f8f1; color: var(--green); }
-    .btn:disabled { opacity: .55; cursor: not-allowed; }
-    .full { width: 100%; }
-
-    .message {
-      padding: 12px;
-      border-radius: 10px;
-      font-size: 12px;
-      line-height: 1.6;
-      margin: 12px 0;
-      overflow-wrap: anywhere;
-    }
-
-    .message.error { background: #fff0f1; color: var(--red); }
-    .message.success { background: #e8f8f1; color: var(--green); }
-    .message.info { background: #eef2ff; color: #2646b8; }
-
-    .topbar {
-      background: var(--navy);
-      color: white;
-      padding: 15px 22px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 15px;
-    }
-
-    .topbar .brand { margin: 0; }
-    .topbar .brand-icon { background: var(--blue); }
-    .topbar .muted { color: #bdc8dc; }
-
-    .layout {
-      max-width: 1400px;
-      margin: auto;
-      padding: 24px;
-    }
-
-    .welcome {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin-bottom: 22px;
-    }
-
-    .tabs {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 12px;
-      margin-bottom: 18px;
-    }
-
-    .tab {
-      white-space: nowrap;
-      border: 1px solid var(--border);
-      background: white;
-      color: var(--muted);
-      border-radius: 10px;
-      padding: 11px 15px;
-      font-weight: 800;
-      font-size: 12px;
-    }
-
-    .tab.active {
-      background: var(--navy);
-      color: white;
-      border-color: var(--navy);
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
-      margin-bottom: 22px;
-    }
-
-    .stat, .panel, .item-card {
-      background: white;
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      box-shadow: var(--shadow);
-    }
-
-    .stat { padding: 18px; }
-    .stat-label { font-size: 12px; color: var(--muted); font-weight: 700; }
-    .stat-value { font-size: 27px; font-weight: 800; margin-top: 8px; }
-    .panel { padding: 20px; margin-bottom: 18px; }
-    .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-    }
-
-    .item-card { padding: 17px; box-shadow: none; min-width: 0; }
-    .item-card p { margin-bottom: 8px; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
-    .item-title { font-size: 15px; font-weight: 800; margin-bottom: 10px; overflow-wrap: anywhere; }
-    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 5px 9px;
-      border-radius: 999px;
-      font-size: 10px;
-      font-weight: 800;
-      background: #eef2f7;
-      color: #536078;
-    }
-
-    .badge.pending { background: #fff4df; color: var(--orange); }
-    .badge.active, .badge.approved { background: #e5f8ef; color: var(--green); }
-    .badge.rejected, .badge.cancelled { background: #fff0f1; color: var(--red); }
-
-    .table-wrap { overflow-x: auto; }
-
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      min-width: 650px;
-      font-size: 12px;
-    }
-
-    th, td {
-      padding: 13px 10px;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-      vertical-align: top;
-    }
-
-    th { color: var(--muted); font-size: 11px; }
-    td { overflow-wrap: anywhere; }
-    a { color: var(--blue); }
-
-    .empty {
-      padding: 30px 15px;
-      text-align: center;
-      color: var(--muted);
-      font-size: 13px;
-      background: #fafbfe;
-      border: 1px dashed var(--border);
-      border-radius: 12px;
-    }
-
-    .loading { opacity: .65; pointer-events: none; }
-
-    @media (max-width: 850px) {
-      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .cards { grid-template-columns: 1fr; }
-      .layout { padding: 15px; }
-    }
-
-    @media (max-width: 480px) {
-      .stats { gap: 9px; }
-      .stat { padding: 13px; }
-      .stat-value { font-size: 22px; }
-      .topbar { padding: 13px; }
-      .topbar .muted { display: none; }
-      .login-card { padding: 22px; }
-    }
-  </style>
+<style>
+:root {
+  --primary:#0f172a;
+  --accent:#2563eb;
+  --bg:#f8fafc;
+  --text:#0f172a;
+  --muted:#64748b;
+  --border:#e2e8f0;
+  --success:#16a34a;
+  --success-bg:#f0fdf4;
+  --warning:#d97706;
+  --warning-bg:#fffbeb;
+  --danger:#dc2626;
+  --danger-bg:#fef2f2;
+  --radius:16px;
+}
+*{box-sizing:border-box;font-family:'Plus Jakarta Sans',sans-serif;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);padding-bottom:50px}
+button,input,select{font:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.6;cursor:not-allowed}
+#auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-card{background:white;padding:28px;border-radius:20px;border:1px solid var(--border);width:100%;max-width:400px}
+.auth-title{text-align:center;font-size:20px;font-weight:700;margin-bottom:6px}
+.auth-sub{text-align:center;font-size:13px;color:var(--muted);margin-bottom:24px}
+.top-nav{background:white;padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:20;gap:10px}
+.brand{font-size:16px;font-weight:800;display:flex;align-items:center;gap:7px;color:var(--primary)}
+.container{padding:16px;max-width:850px;margin:auto}
+.stats-container{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.stat-box{background:white;padding:15px;border-radius:var(--radius);border:1px solid var(--border);min-width:0}
+.stat-header{font-size:12px;font-weight:600;color:var(--muted)}
+.stat-value{font-size:22px;font-weight:700;margin-top:7px;overflow-wrap:anywhere}
+.nav-tabs{display:flex;gap:4px;background:#e2e8f0;padding:4px;border-radius:12px;margin-bottom:20px;overflow-x:auto}
+.tab-item{flex:1;min-width:max-content;padding:10px;border:0;background:transparent;font-size:12px;font-weight:600;color:var(--muted);border-radius:8px;text-align:center}
+.tab-item.active{background:white;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.section-head h3{font-size:16px;margin:0}
+.btn-primary{background:var(--accent);color:white;border:0;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn-success{background:var(--success)}
+.btn-danger{background:var(--danger)}
+.btn-muted{background:#475569}
+.card-list{display:flex;flex-direction:column;gap:12px}
+.vendor-card,.order-card,.admin-card{background:white;padding:18px;border-radius:14px;border:1px solid var(--border);overflow-wrap:anywhere}
+.vendor-top,.order-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.vendor-title,.order-title{font-weight:800;font-size:14px}
+.vendor-meta,.order-time{font-size:12px;color:var(--muted);margin-top:4px;overflow-wrap:anywhere}
+.order-price{font-weight:700;color:var(--success);font-size:16px;text-align:right}
+.status-badge{padding:4px 9px;border-radius:6px;font-size:11px;font-weight:700;display:inline-block;overflow-wrap:anywhere}
+.status-active,.status-approved,.status-completed{background:var(--success-bg);color:var(--success)}
+.status-pending,.status-pending_approval{background:var(--warning-bg);color:var(--warning)}
+.status-rejected,.status-expired{background:var(--danger-bg);color:var(--danger)}
+.ref-pill{background:#eff6ff;color:var(--accent);font-family:monospace;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;border:1px solid #bfdbfe;display:inline-block;margin-top:4px;overflow-wrap:anywhere}
+.form-field{margin-bottom:14px}
+.form-field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.form-field input,.form-field select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);font-size:14px;background:white}
+.empty-box{text-align:center;padding:32px 16px;background:white;border-radius:14px;border:1px dashed var(--border);color:var(--muted);font-size:13px}
+.notice{padding:12px;border-radius:10px;background:#eff6ff;color:#1e40af;font-size:12px;line-height:1.5;margin-bottom:14px}
+.error-box{padding:12px;border-radius:10px;background:var(--danger-bg);color:#991b1b;font-size:12px;line-height:1.5;margin-bottom:12px;overflow-wrap:anywhere}
+.success-box{padding:12px;border-radius:10px;background:var(--success-bg);color:#166534;font-size:12px;line-height:1.5;margin-bottom:12px}
+.actions{background:#f8fafc;padding:12px;border-radius:10px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin-top:8px}
+.small-note{font-size:11px;color:var(--muted);line-height:1.5}
+.hidden{display:none!important}
+a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
+@media(max-width:480px){
+  .top-nav{align-items:flex-start}
+  .brand{font-size:13px}
+  .btn-primary{padding:9px 10px}
+  .vendor-card,.order-card,.admin-card{padding:14px}
+  .section-head{align-items:flex-start}
+}
+</style>
 </head>
 
 <body>
-  <section id="loginScreen" class="login-wrap">
-    <div class="login-card">
-      <div class="brand">
-        <div class="brand-icon">B</div>
-        <div>
-          <strong>BOOK.NOW</strong>
-          <div class="muted small">Founder administration</div>
-        </div>
-      </div>
-
-      <h1>Founder Login</h1>
-      <p class="muted small">Sign in with the authorised founder account.</p>
-
-      <form id="loginForm">
-        <div class="field">
-          <label for="email">Email address</label>
-          <input id="email" type="email" value="Mfanarhshange43@gmail.com" autocomplete="username" required>
-        </div>
-
-        <div class="field">
-          <label for="password">Password</label>
-          <input id="password" type="password" autocomplete="current-password" required>
-        </div>
-
-        <button class="btn btn-primary full" id="loginButton" type="submit">Sign in securely</button>
-      </form>
-
-      <div id="loginMessage" aria-live="polite"></div>
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="brand" style="justify-content:center;margin-bottom:16px">
+      <i class="ph ph-shield-check" style="font-size:26px;color:var(--accent)"></i>
+      BOOK.NOW
     </div>
-  </section>
+    <div class="auth-title">Founder Login</div>
+    <div class="auth-sub">Sign in with the authorised founder account.</div>
 
-  <section id="adminApp" class="hidden">
-    <header class="topbar">
-      <div class="brand">
-        <div class="brand-icon">B</div>
-        <div>
-          <strong>BOOK.NOW</strong>
-          <div class="muted small">Founder control panel</div>
-        </div>
+    <div class="form-field">
+      <label for="admin-email">Email Address</label>
+      <input type="email" id="admin-email" autocomplete="username" value="Mfanarhshange43@gmail.com" required>
+    </div>
+
+    <div class="form-field">
+      <label for="admin-password">Password</label>
+      <input type="password" id="admin-password" autocomplete="current-password" placeholder="Password" required>
+    </div>
+
+    <button class="btn-primary" id="admin-login-btn" style="width:100%">Sign In</button>
+    <div id="login-message" class="small-note" role="status" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<div id="admin-dashboard" class="hidden">
+  <div class="top-nav">
+    <div class="brand">
+      <i class="ph ph-shield-check" style="color:var(--accent)"></i>
+      BOOK.NOW Founder Panel
+    </div>
+    <button class="btn-primary" style="background:#fee2e2;color:#991b1b;padding:8px 12px" id="admin-logout-btn">Log Out</button>
+  </div>
+
+  <main class="container">
+    <div style="margin-bottom:18px">
+      <h2 style="margin-bottom:5px">Founder Dashboard</h2>
+      <div class="small-note">Manage vendors, subscription requests, bank settings and bookings.</div>
+    </div>
+
+    <div id="global-message"></div>
+
+    <div class="stats-container">
+      <div class="stat-box">
+        <div class="stat-header">Total Registered Shops</div>
+        <div class="stat-value" id="stat-shops">—</div>
       </div>
-      <button id="logoutButton" class="btn btn-light" type="button">Log out</button>
-    </header>
+      <div class="stat-box">
+        <div class="stat-header">Pending Payment Requests</div>
+        <div class="stat-value" id="stat-pending">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-header">Active Subscriptions</div>
+        <div class="stat-value" id="stat-active">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-header">Customer Bookings</div>
+        <div class="stat-value" id="stat-orders">—</div>
+      </div>
+    </div>
 
-    <main class="layout">
-      <div class="welcome">
-        <div>
-          <h1>Founder Dashboard</h1>
-          <p class="muted small">Manage vendor subscriptions, payment requests, bank settings and bookings.</p>
-        </div>
-        <button id="refreshButton" class="btn btn-primary" type="button">↻ Refresh data</button>
+    <div class="nav-tabs">
+      <button class="tab-item active" data-tab="vendors-section">Vendors &amp; Approvals</button>
+      <button class="tab-item" data-tab="settings-section">Founder Bank Settings</button>
+      <button class="tab-item" data-tab="orders-section">Platform Bookings</button>
+    </div>
+
+    <section id="vendors-section">
+      <div class="section-head">
+        <h3>Vendors &amp; Subscription Approvals</h3>
+        <button class="btn-primary" id="refresh-vendors-btn"><i class="ph ph-arrows-clockwise"></i> Refresh</button>
       </div>
 
-      <div id="globalMessage" aria-live="polite"></div>
+      <div class="notice">
+        New subscription requests are reviewed from <strong>subscription_payment_requests</strong>.
+        Legacy proof links from <strong>vendors.pop_receipt_url</strong> are shown separately.
+        Always verify that payment has been received before approving.
+      </div>
 
-      <section class="stats">
-        <div class="stat">
-          <div class="stat-label">Vendors loaded</div>
-          <div class="stat-value" id="vendorCount">—</div>
+      <div id="vendors-admin-list" class="card-list">
+        <div class="empty-box">Loading vendors…</div>
+      </div>
+
+      <h3 style="font-size:16px;margin:24px 0 12px">Legacy Payment Proofs</h3>
+      <div id="legacy-admin-list" class="card-list">
+        <div class="empty-box">Loading legacy proofs…</div>
+      </div>
+    </section>
+
+    <section id="settings-section" class="hidden">
+      <div class="section-head">
+        <h3><i class="ph ph-bank"></i> Founder EFT Receiving Account</h3>
+      </div>
+
+      <div class="admin-card">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5">
+          These details are for subscription payments. Check your bank details carefully before saving.
+        </p>
+
+        <div class="form-field">
+          <label for="founder-bank-select">Select Bank</label>
+          <select id="founder-bank-select">
+            <option value="">-- Choose Your Bank --</option>
+            <option value="First National Bank (FNB)|250655">First National Bank (FNB)</option>
+            <option value="Capitec Bank|470010">Capitec Bank</option>
+            <option value="Standard Bank|051001">Standard Bank</option>
+            <option value="ABSA Bank|632005">ABSA Bank</option>
+            <option value="Nedbank|198765">Nedbank</option>
+            <option value="TymeBank|678910">TymeBank</option>
+            <option value="Discovery Bank|679000">Discovery Bank</option>
+          </select>
         </div>
-        <div class="stat">
-          <div class="stat-label">Pending payment requests</div>
-          <div class="stat-value" id="pendingCount">—</div>
+
+        <div class="form-field">
+          <label for="founder-acc-name">Account Holder Name</label>
+          <input type="text" id="founder-acc-name" placeholder="Account holder name" autocomplete="off">
         </div>
-        <div class="stat">
-          <div class="stat-label">Orders loaded</div>
-          <div class="stat-value" id="orderCount">—</div>
+
+        <div class="form-field">
+          <label for="founder-acc-number">Account Number</label>
+          <input type="text" id="founder-acc-number" inputmode="numeric" placeholder="Account number" autocomplete="off">
         </div>
-        <div class="stat">
-          <div class="stat-label">Active vendors</div>
-          <div class="stat-value" id="activeCount">—</div>
+
+        <div class="form-field">
+          <label for="founder-branch-code">Branch Code</label>
+          <input type="text" id="founder-branch-code" readonly style="background:#f1f5f9;color:var(--muted)" placeholder="Select bank above">
         </div>
-      </section>
 
-      <nav class="tabs" aria-label="Admin sections">
-        <button class="tab active" data-tab="vendorsTab" type="button">Vendors</button>
-        <button class="tab" data-tab="paymentsTab" type="button">Subscription Payments</button>
-        <button class="tab" data-tab="bankTab" type="button">Bank Settings</button>
-        <button class="tab" data-tab="ordersTab" type="button">Platform Bookings</button>
-      </nav>
+        <button class="btn-primary" id="save-founder-bank-btn" style="width:100%;margin-top:6px">Save Founder Bank Details</button>
+        <div id="bank-message" style="margin-top:12px"></div>
+        <div class="small-note" style="margin-top:10px">Saving is allowed only if the database founder-only policy accepts your account.</div>
+      </div>
+    </section>
 
-      <section id="vendorsTab" class="tab-panel">
-        <div class="panel">
-          <div class="panel-heading">
-            <div>
-              <h2>Vendor Management</h2>
-              <p class="muted small">Review vendor accounts and subscription status.</p>
-            </div>
-            <button id="reloadVendorsButton" class="btn btn-light" type="button">Reload vendors</button>
-          </div>
-          <div id="vendorsMessage"></div>
-          <div id="vendorsList" class="cards">
-            <div class="empty">Loading vendors…</div>
-          </div>
-        </div>
-      </section>
+    <section id="orders-section" class="hidden">
+      <div class="section-head">
+        <h3>All Customer Bookings</h3>
+        <button class="btn-primary" id="refresh-orders-btn"><i class="ph ph-arrows-clockwise"></i> Refresh</button>
+      </div>
+      <div id="orders-admin-list" class="card-list">
+        <div class="empty-box">Loading bookings…</div>
+      </div>
+    </section>
+  </main>
+</div>
 
-      <section id="paymentsTab" class="tab-panel hidden">
-        <div class="panel">
-          <div class="panel-heading">
-            <div>
-              <h2>Subscription Payment Requests</h2>
-              <p class="muted small">Check payment proof before approving a subscription.</p>
-            </div>
-            <button id="reloadPaymentsButton" class="btn btn-light" type="button">Reload payments</button>
-          </div>
-          <div class="message info">
-            Approvals are processed through the secure database function. Payment approval should only happen after you verify the payment yourself.
-          </div>
-          <div id="paymentsMessage"></div>
-          <div id="paymentsList" class="cards">
-            <div class="empty">Loading payment requests…</div>
-          </div>
-        </div>
-      </section>
+<script>
+(function () {
+  "use strict";
 
-      <section id="bankTab" class="tab-panel hidden">
-        <div class="panel">
-          <h2>Platform Bank Settings</h2>
-          <p class="muted small">Update the bank details displayed to vendors when they make subscription payments.</p>
-          <div id="bankMessage"></div>
+  const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
+  const FOUNDER_ID = "c0c85d2f-8473-49c3-a33a-92ff5acf1e94";
 
-          <form id="bankForm">
-            <div class="field">
-              <label for="bankName">Bank name</label>
-              <input id="bankName" required>
-            </div>
-            <div class="field">
-              <label for="accountHolder">Account holder</label>
-              <input id="accountHolder" required>
-            </div>
-            <div class="field">
-              <label for="accountNumber">Account number</label>
-              <input id="accountNumber" required>
-            </div>
-            <div class="field">
-              <label for="branchCode">Branch code</label>
-              <input id="branchCode" required>
-            </div>
-            <div class="field">
-              <label for="accountType">Account type</label>
-              <input id="accountType" placeholder="e.g. Current or Savings" required>
-            </div>
-            <div class="field">
-              <label for="paymentReference">Payment reference instructions</label>
-              <input id="paymentReference" placeholder="e.g. Use your vendor name">
-            </div>
-            <button class="btn btn-primary" id="saveBankButton" type="submit">Save bank settings</button>
-          </form>
-        </div>
-      </section>
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const $ = id => document.getElementById(id);
 
-      <section id="ordersTab" class="tab-panel hidden">
-        <div class="panel">
-          <div class="panel-heading">
-            <div>
-              <h2>Platform Bookings</h2>
-              <p class="muted small">Orders and bookings returned by the database.</p>
-            </div>
-            <button id="reloadOrdersButton" class="btn btn-light" type="button">Reload bookings</button>
-          </div>
-          <div id="ordersMessage"></div>
-          <div id="ordersList" class="table-wrap">
-            <div class="empty">Loading bookings…</div>
-          </div>
-        </div>
-      </section>
-    </main>
-  </section>
+  function showMessage(container, message, isError = false) {
+    container.replaceChildren();
+    const div = document.createElement("div");
+    div.className = isError ? "error-box" : "empty-box";
+    div.textContent = message;
+    container.appendChild(div);
+  }
 
-  <script>
-    "use strict";
+  function showInlineMessage(container, message, type = "success") {
+    container.replaceChildren();
+    if (!message) return;
+    const div = document.createElement("div");
+    div.className = type === "error" ? "error-box" : "success-box";
+    div.textContent = message;
+    container.appendChild(div);
+  }
 
-    const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
-    const FOUNDER_ID = "c0c85d2f-8473-49c3-a33a-92ff5acf1e94";
+  function money(value) {
+    const amount = Number(value);
+    if (!Number.isFinite(amount)) return "R0.00";
+    return new Intl.NumberFormat("en-ZA", {
+      style: "currency",
+      currency: "ZAR"
+    }).format(amount);
+  }
 
-    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    const $ = (id) => document.getElementById(id);
-
-    let currentUser = null;
-    let vendorsCache = [];
-    let paymentRequestsCache = [];
-    let ordersCache = [];
-
-    function escapeHTML(value) {
-      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;"
-      })[char]);
-    }
-
-    function showMessage(targetId, message, type = "info") {
-      const target = $(targetId);
-      if (!target) return;
-
-      target.replaceChildren();
-
-      if (!message) return;
-
-      const div = document.createElement("div");
-      div.className = `message ${type}`;
-      div.textContent = message;
-      target.appendChild(div);
-    }
-
-    function formatDate(value) {
-      if (!value) return "Not set";
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return String(value);
-      return date.toLocaleString("en-ZA", {
-        dateStyle: "medium",
-        timeStyle: "short"
-      });
-    }
-
-    function money(value) {
-      const number = Number(value);
-      if (!Number.isFinite(number)) return "R0.00";
-      return new Intl.NumberFormat("en-ZA", {
-        style: "currency",
-        currency: "ZAR"
-      }).format(number);
-    }
-
-    function statusClass(status) {
-      const normal = String(status || "").toLowerCase();
-      if (normal.includes("active") || normal.includes("approved")) return "active";
-      if (normal.includes("reject") || normal.includes("cancel")) return "rejected";
-      if (normal.includes("pending")) return "pending";
+  function safeUrl(value) {
+    if (!value || typeof value !== "string") return "";
+    try {
+      const url = new URL(value, window.location.origin);
+      return ["https:", "http:"].includes(url.protocol) ? url.href : "";
+    } catch {
       return "";
     }
-
-    function setSignedIn(isSignedIn) {
-      $("loginScreen").classList.toggle("hidden", isSignedIn);
-      $("adminApp").classList.toggle("hidden", !isSignedIn);
-    }
-
-    async function requireFounder() {
-      const { data, error } = await db.auth.getUser();
-
-      if (error || !data?.user) {
-        currentUser = null;
-        setSignedIn(false);
-        return false;
-      }
-
-      if (data.user.id !== FOUNDER_ID) {
-        await db.auth.signOut();
-        currentUser = null;
-        setSignedIn(false);
-        showMessage(
-          "loginMessage",
-          "Access denied. This account is not authorised for founder administration.",
-          "error"
-        );
-        return false;
-      }
-
-      currentUser = data.user;
-      setSignedIn(true);
-      return true;
-    }
-
-    async function loadAdminData() {
-      if (!(await requireFounder())) return;
-
-      showMessage("globalMessage", "Refreshing dashboard data…", "info");
-
-      await Promise.allSettled([
-        loadVendors(),
-        loadPaymentRequests(),
-        loadOrders(),
-        loadBankSettings()
-      ]);
-
-      updateStats();
-      showMessage("globalMessage", "Refresh completed. Check any section displaying a database error.", "success");
-    }
-
-    async function loadVendors() {
-  const container = $("vendorsList");
-  container.innerHTML = '<div class="empty">Loading vendors…</div>';
-
-  const { data, error } = await db
-    .from("vendors")
-    .select("id,owner_id,name,email,phone,subscription_status,subscription_expires_at,is_admin,created_at,pop_receipt_url")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    vendorsCache = [];
-    container.innerHTML =
-      '<div class="empty">Vendor records could not be loaded. Check the database columns and permissions.</div>';
-
-    showMessage(
-      "vendorsMessage",
-      `Could not load vendors: ${error.message}`,
-      "error"
-    );
-
-    updateStats();
-    return;
   }
 
-  vendorsCache = data || [];
-  showMessage("vendorsMessage", "", "info");
-
-  if (vendorsCache.length === 0) {
-    container.innerHTML =
-      '<div class="empty">No vendor records were returned.</div>';
-    updateStats();
-    return;
+  function setLoginMessage(message, isError = false) {
+    $("login-message").textContent = message || "";
+    $("login-message").style.color = isError ? "#b91c1c" : "var(--muted)";
   }
 
-  container.innerHTML = vendorsCache.map((vendor) => {
-    const name = vendor.name || "Unnamed vendor";
-    const status = vendor.subscription_status || "UNKNOWN";
-    const receiptUrl = safeHttpUrl(vendor.pop_receipt_url);
+  function setDashboard(visible) {
+    $("auth-screen").classList.toggle("hidden", visible);
+    $("admin-dashboard").classList.toggle("hidden", !visible);
+    $("admin-dashboard").style.display = visible ? "block" : "none";
+  }
 
-    return `
-      <article class="item-card">
-        <div class="item-title">${escapeHTML(name)}</div>
-        <p><strong>Vendor ID:</strong> ${escapeHTML(vendor.id)}</p>
-        <p><strong>Owner ID:</strong> ${escapeHTML(vendor.owner_id)}</p>
-        <p><strong>Email:</strong> ${escapeHTML(vendor.email || "Not provided")}</p>
-        <p><strong>Phone:</strong> ${escapeHTML(vendor.phone || "Not provided")}</p>
-        <p>
-          <strong>Subscription:</strong>
-          <span class="badge ${statusClass(status)}">${escapeHTML(status)}</span>
-        </p>
-        <p><strong>Expires:</strong> ${escapeHTML(formatDate(vendor.subscription_expires_at))}</p>
-        <p><strong>Registered:</strong> ${escapeHTML(formatDate(vendor.created_at))}</p>
-        ${
-          receiptUrl
-            ? `<p><a href="${escapeHTML(receiptUrl)}" target="_blank" rel="noopener noreferrer">Open legacy payment receipt</a></p>`
-            : ""
-        }
-      </article>
-    `;
-  }).join("");
+  async function requireFounder() {
+    const { data, error } = await db.auth.getUser();
 
-  updateStats();
-}
-
-    async function loadPaymentRequests() {
-      const container = $("paymentsList");
-      container.innerHTML = '<div class="empty">Loading payment requests…</div>';
-
-      /*
-       * This table has direct client grants revoked. The page therefore
-       * requires a founder-only database RPC named
-       * list_subscription_payment_requests().
-       * The RPC should return only the fields displayed below and must check
-       * auth.uid() against the founder UUID before returning any rows.
-       */
-      const { data, error } = await db.rpc("list_subscription_payment_requests");
-
-      if (error) {
-        paymentRequestsCache = [];
-        container.innerHTML = '<div class="empty">Payment requests could not be loaded. Create the founder-only list_subscription_payment_requests() database function before using this section.</div>';
-        showMessage(
-          "paymentsMessage",
-          `Payment request list unavailable: ${error.message}`,
-          "error"
-        );
-        updateStats();
-        return;
-      }
-
-      paymentRequestsCache = Array.isArray(data) ? data : [];
-      showMessage("paymentsMessage", "", "info");
-
-      if (!paymentRequestsCache.length) {
-        container.innerHTML = '<div class="empty">No subscription payment requests were returned.</div>';
-        updateStats();
-        return;
-      }
-
-      container.innerHTML = paymentRequestsCache.map((request) => {
-        const status = request.status || "UNKNOWN";
-        const canReview = status === "PENDING";
-        const receipt = safeHttpUrl(request.receipt_url || request.receipt_path);
-
-        return `
-          <article class="item-card">
-            <div class="item-title">Payment ${escapeHTML(request.payment_reference || request.id || "Request")}</div>
-            <p><strong>Request ID:</strong> ${escapeHTML(request.id)}</p>
-            <p><strong>Vendor ID:</strong> ${escapeHTML(request.vendor_id)}</p>
-            <p><strong>Owner ID:</strong> ${escapeHTML(request.owner_id)}</p>
-            <p><strong>Amount:</strong> ${escapeHTML(money(request.amount))}</p>
-            <p><strong>Type:</strong> ${escapeHTML(request.payment_type || "Not provided")}</p>
-            <p><strong>Submitted:</strong> ${escapeHTML(formatDate(request.created_at))}</p>
-            <p><strong>Status:</strong> <span class="badge ${statusClass(status)}">${escapeHTML(status)}</span></p>
-            ${receipt ? `<p><a href="${escapeHTML(receipt)}" target="_blank" rel="noopener noreferrer">Open payment proof</a></p>` : '<p class="muted">No receipt URL was provided by the database function.</p>'}
-            ${canReview ? `
-              <div class="actions">
-                <button class="btn btn-success" type="button" data-approve-request="${escapeHTML(request.id)}">Approve payment</button>
-                <button class="btn btn-danger" type="button" data-reject-request="${escapeHTML(request.id)}">Reject payment</button>
-              </div>
-            ` : ""}
-          </article>
-        `;
-      }).join("");
-
-      updateStats();
+    if (error || !data?.user) {
+      setDashboard(false);
+      return false;
     }
 
-    async function approvePaymentRequest(requestId) {
-      if (!requestId) return;
-
-      const confirmed = window.confirm(
-        "Have you verified that this payment was received in the bank account? Only approve if payment is confirmed."
-      );
-
-      if (!confirmed) return;
-
-      showMessage("paymentsMessage", "Approving payment…", "info");
-
-      const { data, error } = await db.rpc("approve_subscription_payment", {
-        p_request_id: requestId
-      });
-
-      if (error) {
-        showMessage("paymentsMessage", `Approval failed: ${error.message}`, "error");
-        return;
-      }
-
-      showMessage("paymentsMessage", "The database accepted the approval request.", "success");
-      await Promise.allSettled([loadPaymentRequests(), loadVendors()]);
-      updateStats();
-    }
-
-    async function rejectPaymentRequest(requestId) {
-      if (!requestId) return;
-
-      const confirmed = window.confirm("Reject this pending subscription payment request?");
-      if (!confirmed) return;
-
-      /*
-       * This action requires a separately created secure database function.
-       * The page deliberately does not update the table directly.
-       */
-      const { error } = await db.rpc("reject_subscription_payment", {
-        p_request_id: requestId
-      });
-
-      if (error) {
-        showMessage(
-          "paymentsMessage",
-          `Rejection failed: ${error.message}. The secure reject_subscription_payment() database function may not exist yet.`,
-          "error"
-        );
-        return;
-      }
-
-      showMessage("paymentsMessage", "The database accepted the rejection request.", "success");
-      await loadPaymentRequests();
-      updateStats();
-    }
-
-    function safeHttpUrl(value) {
-      if (!value || typeof value !== "string") return "";
-      try {
-        const url = new URL(value, window.location.origin);
-        if (url.protocol !== "https:" && url.protocol !== "http:") return "";
-        return url.href;
-      } catch {
-        return "";
-      }
-    }
-
-    async function loadBankSettings() {
-      const { data, error } = await db
-        .from("platform_settings")
-        .select("*")
-        .eq("id", 1)
-        .maybeSingle();
-
-      if (error) {
-        showMessage("bankMessage", `Could not load bank settings: ${error.message}`, "error");
-        return;
-      }
-
-      if (!data) {
-        showMessage("bankMessage", "No platform settings row with id 1 was returned.", "info");
-        return;
-      }
-
-      $("bankName").value = data.bank_name || "";
-      $("accountHolder").value = data.account_holder || "";
-      $("accountNumber").value = data.account_number || "";
-      $("branchCode").value = data.branch_code || "";
-      $("accountType").value = data.account_type || "";
-      $("paymentReference").value = data.payment_reference || "";
-      showMessage("bankMessage", "", "info");
-    }
-
-    async function saveBankSettings(event) {
-      event.preventDefault();
-
-      if (!(await requireFounder())) return;
-
-      const payload = {
-        bank_name: $("bankName").value.trim(),
-        account_holder: $("accountHolder").value.trim(),
-        account_number: $("accountNumber").value.trim(),
-        branch_code: $("branchCode").value.trim(),
-        account_type: $("accountType").value.trim(),
-        payment_reference: $("paymentReference").value.trim()
-      };
-
-      const button = $("saveBankButton");
-      button.disabled = true;
-      button.textContent = "Saving…";
-
-      const { error } = await db
-        .from("platform_settings")
-        .update(payload)
-        .eq("id", 1);
-
-      button.disabled = false;
-      button.textContent = "Save bank settings";
-
-      if (error) {
-        showMessage("bankMessage", `Could not save bank settings: ${error.message}`, "error");
-        return;
-      }
-
-      showMessage("bankMessage", "Bank settings saved.", "success");
-    }
-
-    async function loadOrders() {
-      const container = $("ordersList");
-      container.innerHTML = '<div class="empty">Loading bookings…</div>';
-
-      const { data, error } = await db
-        .from("orders")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(200);
-
-      if (error) {
-        ordersCache = [];
-        container.innerHTML = "";
-        showMessage("ordersMessage", `Could not load bookings: ${error.message}`, "error");
-        container.innerHTML = '<div class="empty">Bookings could not be loaded. Check orders table grants and RLS policies.</div>';
-        updateStats();
-        return;
-      }
-
-      ordersCache = data || [];
-      showMessage("ordersMessage", "", "info");
-
-      if (!ordersCache.length) {
-        container.innerHTML = '<div class="empty">No bookings were returned.</div>';
-        updateStats();
-        return;
-      }
-
-      const columns = Object.keys(ordersCache[0]);
-      const displayColumns = columns.slice(0, 8);
-
-      container.innerHTML = `
-        <table>
-          <thead>
-            <tr>${displayColumns.map((column) => `<th>${escapeHTML(column.replaceAll("_", " "))}</th>`).join("")}</tr>
-          </thead>
-          <tbody>
-            ${ordersCache.map((order) => `
-              <tr>
-                ${displayColumns.map((column) => {
-                  let value = order[column];
-                  if (value && typeof value === "object") value = JSON.stringify(value);
-                  if (column.includes("created_at") || column.includes("updated_at")) value = formatDate(value);
-                  return `<td>${escapeHTML(value ?? "—")}</td>`;
-                }).join("")}
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      `;
-
-      updateStats();
-    }
-
-    function updateStats() {
-      $("vendorCount").textContent = String(vendorsCache.length);
-      $("pendingCount").textContent = String(
-        paymentRequestsCache.filter((request) => request.status === "PENDING").length
-      );
-      $("orderCount").textContent = String(ordersCache.length);
-      $("activeCount").textContent = String(
-        vendorsCache.filter((vendor) => {
-          if (vendor.subscription_status !== "ACTIVE") return false;
-          if (!vendor.subscription_expires_at) return false;
-          return new Date(vendor.subscription_expires_at).getTime() > Date.now();
-        }).length
-      );
-    }
-
-    async function signIn(event) {
-      event.preventDefault();
-
-      const button = $("loginButton");
-      button.disabled = true;
-      button.textContent = "Signing in…";
-      showMessage("loginMessage", "", "info");
-
-      const email = $("email").value.trim();
-      const password = $("password").value;
-
-      const { error } = await db.auth.signInWithPassword({ email, password });
-
-      button.disabled = false;
-      button.textContent = "Sign in securely";
-
-      if (error) {
-        showMessage("loginMessage", error.message, "error");
-        return;
-      }
-
-      if (!(await requireFounder())) return;
-
-      await loadAdminData();
-    }
-
-    async function signOut() {
+    if (data.user.id !== FOUNDER_ID) {
       await db.auth.signOut();
-      currentUser = null;
-      setSignedIn(false);
-      showMessage("loginMessage", "You have signed out.", "success");
+      setDashboard(false);
+      setLoginMessage("Access denied. This account is not authorised for founder administration.", true);
+      return false;
     }
 
-    function switchTab(tabId) {
-      document.querySelectorAll(".tab").forEach((tab) => {
-        tab.classList.toggle("active", tab.dataset.tab === tabId);
-      });
+    setDashboard(true);
+    return true;
+  }
 
-      document.querySelectorAll(".tab-panel").forEach((panel) => {
-        panel.classList.toggle("hidden", panel.id !== tabId);
-      });
+  async function boot() {
+    $("admin-login-btn").addEventListener("click", signIn);
+    $("admin-password").addEventListener("keydown", event => {
+      if (event.key === "Enter") signIn();
+    });
+
+    $("admin-logout-btn").addEventListener("click", signOut);
+    $("refresh-vendors-btn").addEventListener("click", loadAdminData);
+    $("refresh-orders-btn").addEventListener("click", loadOrders);
+    $("save-founder-bank-btn").addEventListener("click", saveFounderBank);
+
+    $("founder-bank-select").addEventListener("change", () => {
+      const selected = $("founder-bank-select").value;
+      $("founder-branch-code").value = selected ? selected.split("|")[1] : "";
+    });
+
+    document.querySelectorAll("[data-tab]").forEach(button => {
+      button.addEventListener("click", () => switchTab(button.dataset.tab));
+    });
+
+    const { data, error } = await db.auth.getSession();
+
+    if (!error && data?.session && await requireFounder()) {
+      await loadAdminData();
+    } else {
+      setDashboard(false);
     }
-
-    $("loginForm").addEventListener("submit", signIn);
-    $("logoutButton").addEventListener("click", signOut);
-    $("refreshButton").addEventListener("click", loadAdminData);
-    $("reloadVendorsButton").addEventListener("click", loadVendors);
-    $("reloadPaymentsButton").addEventListener("click", loadPaymentRequests);
-    $("reloadOrdersButton").addEventListener("click", loadOrders);
-    $("bankForm").addEventListener("submit", saveBankSettings);
-
-    document.querySelectorAll(".tab").forEach((tab) => {
-      tab.addEventListener("click", () => switchTab(tab.dataset.tab));
-    });
-
-    $("paymentsList").addEventListener("click", async (event) => {
-      const approveButton = event.target.closest("[data-approve-request]");
-      const rejectButton = event.target.closest("[data-reject-request]");
-
-      if (approveButton) {
-        await approvePaymentRequest(approveButton.dataset.approveRequest);
-      } else if (rejectButton) {
-        await rejectPaymentRequest(rejectButton.dataset.rejectRequest);
-      }
-    });
 
     db.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT" || !session?.user) {
-        currentUser = null;
-        setSignedIn(false);
+        setDashboard(false);
         return;
       }
 
-      if (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") {
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
         setTimeout(async () => {
           if (await requireFounder()) await loadAdminData();
         }, 0);
       }
     });
+  }
 
-    (async function initialise() {
-      const { data, error } = await db.auth.getSession();
+  async function signIn() {
+    const button = $("admin-login-btn");
+    const email = $("admin-email").value.trim();
+    const password = $("admin-password").value;
 
-      if (error || !data?.session) {
-        setSignedIn(false);
-        return;
+    if (!email || !password) {
+      setLoginMessage("Enter your email address and password.", true);
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Signing in…";
+    setLoginMessage("");
+
+    try {
+      const { error } = await db.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+
+      if (!(await requireFounder())) return;
+
+      setLoginMessage("");
+      await loadAdminData();
+    } catch (error) {
+      setLoginMessage(error.message || "Sign-in failed.", true);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Sign In";
+    }
+  }
+
+  async function signOut() {
+    await db.auth.signOut();
+    setDashboard(false);
+    setLoginMessage("You have signed out.");
+  }
+
+  function switchTab(tabId) {
+    ["vendors-section", "settings-section", "orders-section"].forEach(id => {
+      $(id).classList.toggle("hidden", id !== tabId);
+    });
+
+    document.querySelectorAll("[data-tab]").forEach(button => {
+      button.classList.toggle("active", button.dataset.tab === tabId);
+    });
+  }
+
+  async function loadAdminData() {
+    if (!(await requireFounder())) return;
+
+    $("global-message").textContent = "Refreshing dashboard…";
+
+    await Promise.allSettled([
+      loadVendorsAndPayments(),
+      loadOrders(),
+      loadFounderBank()
+    ]);
+
+    $("global-message").textContent = "Dashboard refresh finished. Check each section for any database errors.";
+  }
+
+  async function loadVendorsAndPayments() {
+    const vContainer = $("vendors-admin-list");
+    const legacyContainer = $("legacy-admin-list");
+
+    showMessage(vContainer, "Loading vendors and payment requests…");
+    showMessage(legacyContainer, "Loading legacy proof records…");
+
+    /*
+      These column names match the confirmed vendors table schema:
+      id, name, category, commission_rate, created_at, owner_id,
+      image_url, store_image_url, phone_number, bank_name,
+      account_holder, account_number, branch_code, address,
+      subscription_status, subscription_expires_at, pop_receipt_url,
+      pending_payment_ref, is_admin.
+    */
+    const { data: vendors, error: vendorError } = await db
+      .from("vendors")
+      .select("id,name,category,owner_id,phone_number,address,subscription_status,subscription_expires_at,pending_payment_ref,pop_receipt_url,created_at")
+      .order("created_at", { ascending: false });
+
+    if (vendorError) {
+      $("stat-shops").textContent = "—";
+      $("stat-active").textContent = "—";
+      $("stat-pending").textContent = "—";
+      showMessage(vContainer, "Could not load vendors: " + vendorError.message, true);
+      showMessage(legacyContainer, "Legacy proofs could not be checked because vendor access failed.", true);
+      return;
+    }
+
+    const vendorRows = vendors || [];
+    $("stat-shops").textContent = String(vendorRows.length);
+
+    const activeCount = vendorRows.filter(v =>
+      v.subscription_status === "ACTIVE" &&
+      v.subscription_expires_at &&
+      new Date(v.subscription_expires_at).getTime() > Date.now()
+    ).length;
+
+    $("stat-active").textContent = String(activeCount);
+
+    const { data: requests, error: requestError } = await db
+      .from("subscription_payment_requests")
+      .select("id,vendor_id,owner_id,payment_reference,amount,payment_type,receipt_path,status,created_at")
+      .order("created_at", { ascending: false });
+
+    if (requestError) {
+      $("stat-pending").textContent = "—";
+      showMessage(
+        vContainer,
+        "Vendors loaded, but subscription payment requests could not be loaded: " + requestError.message,
+        true
+      );
+    } else {
+      const pending = (requests || []).filter(
+        request => String(request.status || "").toUpperCase() === "PENDING"
+      );
+
+      $("stat-pending").textContent = String(pending.length);
+      vContainer.replaceChildren();
+
+      if (!pending.length) {
+        showMessage(vContainer, "No pending subscription payment requests.");
+      } else {
+        pending.forEach(request => {
+          const vendor = vendorRows.find(v => v.id === request.vendor_id);
+          const card = document.createElement("div");
+          card.className = "vendor-card";
+
+          const top = document.createElement("div");
+          top.className = "vendor-top";
+
+          const details = document.createElement("div");
+          const title = document.createElement("div");
+          title.className = "vendor-title";
+          title.textContent = (vendor?.name || "Unknown store") + " — " + (vendor?.category || "STORE");
+
+          const meta = document.createElement("div");
+          meta.className = "vendor-meta";
+          meta.textContent =
+            "Payment: " + (request.payment_type || "N/A") +
+            " · Amount: " + money(request.amount) +
+            " · Phone: " + (vendor?.phone_number || "Not provided");
+
+          const reference = document.createElement("span");
+          reference.className = "ref-pill";
+          reference.textContent = "REF: " + (request.payment_reference || "N/A");
+
+          const proof = document.createElement("div");
+          proof.className = "vendor-meta";
+          proof.textContent = "Private receipt path: " + (request.receipt_path || "Not provided");
+
+          const owner = document.createElement("div");
+          owner.className = "vendor-meta";
+          owner.textContent = "Owner ID: " + (request.owner_id || "N/A");
+
+          details.append(title, meta, reference, document.createElement("br"), proof, owner);
+
+          const status = document.createElement("span");
+          status.className = "status-badge status-pending";
+          status.textContent = request.status || "PENDING";
+
+          top.append(details, status);
+
+          const actions = document.createElement("div");
+          actions.className = "actions";
+
+          const note = document.createElement("span");
+          note.className = "small-note";
+          note.textContent = "Verify the bank payment before approving.";
+
+          const approve = document.createElement("button");
+          approve.className = "btn-primary btn-success";
+          approve.textContent = "Approve payment";
+          approve.addEventListener("click", () => approvePaymentRequest(request.id, approve));
+
+          const reject = document.createElement("button");
+          reject.className = "btn-primary btn-danger";
+          reject.textContent = "Reject request";
+          reject.addEventListener("click", () => rejectPaymentRequest(request.id, reject));
+
+          actions.append(note, approve, reject);
+          card.append(top, actions);
+          vContainer.appendChild(card);
+        });
+      }
+    }
+
+    legacyContainer.replaceChildren();
+
+    const legacy = vendorRows.filter(v => v.pop_receipt_url);
+
+    if (!legacy.length) {
+      showMessage(legacyContainer, "No legacy payment proof links found.");
+    } else {
+      legacy.forEach(vendor => {
+        const card = document.createElement("div");
+        card.className = "vendor-card";
+
+        const title = document.createElement("div");
+        title.className = "vendor-title";
+        title.textContent = vendor.name || "Unnamed store";
+
+        const meta = document.createElement("div");
+        meta.className = "vendor-meta";
+        meta.textContent =
+          "Status: " + (vendor.subscription_status || "PENDING") +
+          " · Phone: " + (vendor.phone_number || "Not provided") +
+          " · Address: " + (vendor.address || "Not provided") +
+          " · Legacy reference: " + (vendor.pending_payment_ref || "N/A");
+
+        const url = safeUrl(vendor.pop_receipt_url);
+
+        card.append(title, meta);
+
+        if (url) {
+          const link = document.createElement("a");
+          link.href = url;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = "Open legacy proof of payment";
+          link.style.cssText = "display:inline-block;margin-top:10px";
+          card.appendChild(link);
+        } else {
+          const warning = document.createElement("div");
+          warning.className = "small-note";
+          warning.textContent = "The legacy proof URL is not a valid HTTP or HTTPS link.";
+          card.appendChild(warning);
+        }
+
+        const note = document.createElement("div");
+        note.className = "small-note";
+        note.style.marginTop = "8px";
+        note.textContent = "Legacy proof only. Verify manually; this page does not approve legacy records automatically.";
+
+        card.appendChild(note);
+        legacyContainer.appendChild(card);
+      });
+    }
+  }
+
+  async function approvePaymentRequest(requestId, button) {
+    if (!(await requireFounder())) return;
+
+    if (!confirm("Have you verified that this payment was received? Approve only after confirming the payment in your bank account.")) {
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Approving…";
+
+    try {
+      const { data, error } = await db.rpc("approve_subscription_payment", {
+        p_request_id: requestId
+      });
+
+      if (error) throw error;
+
+      let message = "Payment approval request completed.";
+      if (data?.subscription_expires_at) {
+        message += "\nSubscription expires: " + new Date(data.subscription_expires_at).toLocaleString();
       }
 
-      if (await requireFounder()) {
-        await loadAdminData();
+      alert(message);
+      await loadAdminData();
+    } catch (error) {
+      console.error("Payment approval failed:", error);
+      alert("Approval failed: " + (error.message || "Unknown error"));
+    } finally {
+      button.disabled = false;
+      button.textContent = "Approve payment";
+    }
+  }
+
+  async function rejectPaymentRequest(requestId, button) {
+    if (!(await requireFounder())) return;
+
+    if (!confirm("Reject this payment request? This will not activate the vendor.")) {
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Rejecting…";
+
+    try {
+      const { error } = await db.rpc("reject_subscription_payment", {
+        p_request_id: requestId
+      });
+
+      if (error) {
+        throw new Error(
+          "The secure reject_subscription_payment database function is missing or rejected this request. No request was changed. " +
+          error.message
+        );
       }
-    })();
-  </script>
+
+      alert("Payment request rejected.");
+      await loadAdminData();
+    } catch (error) {
+      alert("Rejection failed: " + (error.message || "Unknown error"));
+    } finally {
+      button.disabled = false;
+      button.textContent = "Reject request";
+    }
+  }
+
+  async function loadFounderBank() {
+    const { data, error } = await db
+      .from("platform_settings")
+      .select("id,bank_name,account_name,account_number,branch_code")
+      .eq("id", 1)
+      .maybeSingle();
+
+    if (error) {
+      showInlineMessage($("bank-message"), "Could not load bank settings: " + error.message, "error");
+      return;
+    }
+
+    if (!data) {
+      showInlineMessage($("bank-message"), "No platform settings row was found for id 1.", "error");
+      return;
+    }
+
+    $("founder-acc-name").value = data.account_name || "";
+    $("founder-acc-number").value = data.account_number || "";
+    $("founder-branch-code").value = data.branch_code || "";
+
+    if (data.bank_name) {
+      const options = [...$("founder-bank-select").options];
+      const match = options.find(option => option.value.startsWith(data.bank_name + "|"));
+
+      if (match) {
+        $("founder-bank-select").value = match.value;
+        $("founder-branch-code").value = data.branch_code || match.value.split("|")[1];
+      }
+    }
+
+    showInlineMessage($("bank-message"), "");
+  }
+
+  async function saveFounderBank() {
+    if (!(await requireFounder())) return;
+
+    const button = $("save-founder-bank-btn");
+    const selection = $("founder-bank-select").value;
+
+    if (!selection) {
+      showInlineMessage($("bank-message"), "Please select a bank.", "error");
+      return;
+    }
+
+    const [bank_name, selectedBranchCode] = selection.split("|");
+    const account_name = $("founder-acc-name").value.trim();
+    const account_number = $("founder-acc-number").value.trim();
+    const branch_code = $("founder-branch-code").value.trim() || selectedBranchCode;
+
+    if (!account_name || !account_number || !branch_code) {
+      showInlineMessage($("bank-message"), "Complete all bank details before saving.", "error");
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Saving…";
+
+    try {
+      const { data, error } = await db
+        .from("platform_settings")
+        .update({
+          bank_name,
+          account_name,
+          account_number: account_number.replace(/\s/g, ""),
+          branch_code
+        })
+        .eq("id", 1)
+        .select("id")
+        .single();
+
+      if (error) throw error;
+      if (!data) throw new Error("No settings row was updated. Check the founder-only database policy.");
+
+      showInlineMessage($("bank-message"), "Founder bank settings saved successfully.");
+    } catch (error) {
+      console.error("Saving bank settings failed:", error);
+      showInlineMessage($("bank-message"), "Error saving settings: " + (error.message || "Unknown error"), "error");
+    } finally {
+      button.disabled = false;
+      button.textContent = "Save Founder Bank Details";
+    }
+  }
+
+  async function loadOrders() {
+    const container = $("orders-admin-list");
+    showMessage(container, "Loading bookings…");
+
+    const { data: orders, error } = await db
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    if (error) {
+      $("stat-orders").textContent = "—";
+      showMessage(container, "Could not load bookings: " + error.message, true);
+      return;
+    }
+
+    const rows = orders || [];
+    $("stat-orders").textContent = String(rows.length);
+    container.replaceChildren();
+
+    if (!rows.length) {
+      showMessage(container, "No customer bookings were returned.");
+      return;
+    }
+
+    rows.forEach(order => {
+      const card = document.createElement("div");
+      card.className = "order-card";
+
+      const top = document.createElement("div");
+      top.className = "order-top";
+
+      const details = document.createElement("div");
+
+      const title = document.createElement("div");
+      title.className = "order-title";
+      title.textContent =
+        (order.customer_name || "Customer") +
+        " (" + (order.customer_phone || "N/A") + ")";
+
+      const time = document.createElement("div");
+      time.className = "order-time";
+      time.textContent = order.created_at
+        ? new Date(order.created_at).toLocaleString()
+        : "Date unavailable";
+
+      const reference = document.createElement("span");
+      reference.className = "ref-pill";
+      reference.textContent = "REF: " + (order.payment_ref || "N/A");
+
+      const statusText = String(order.status || "PENDING").toUpperCase();
+      const status = document.createElement("span");
+      status.className = "status-badge " +
+        (statusText === "COMPLETED" ? "status-completed" :
+         statusText === "REJECTED" ? "status-rejected" : "status-pending");
+      status.style.marginLeft = "6px";
+      status.textContent = statusText;
+
+      details.append(title, time, reference, status);
+      top.append(details);
+
+      const price = document.createElement("div");
+      price.className = "order-price";
+      price.textContent = money(order.gross_amount);
+
+      top.append(price);
+      card.append(top);
+      container.appendChild(card);
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", boot);
+})();
+</script>
 </body>
 </html>
