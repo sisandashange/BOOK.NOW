@@ -152,6 +152,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
       <button class="tab-item" id="tab-services-btn">Services</button>
       <button class="tab-item" id="tab-settlement-btn">Settlement</button>
       <button class="tab-item" id="tab-moneystore-btn">Money Store</button>
+      <button class="tab-item" id="tab-bank-btn">Bank EFT Settings</button>
     </div>
 
     <section id="orders-tab">
@@ -193,6 +194,35 @@ button:disabled{opacity:.6;cursor:not-allowed}
           <div class="finance-value" style="color:var(--accent);">R299.00/mo</div>
           <div class="finance-note">Flat monthly platform access fee</div>
         </div>
+      </div>
+    </section>
+
+    <!-- BANK EFT SETTINGS TAB -->
+    <section id="bank-tab" style="display:none">
+      <div class="section-head">
+        <h3><i class="ph ph-bank"></i> Vendor Bank Account (EFT)</h3>
+      </div>
+      <div class="card" style="background:white; padding:16px; border-radius:var(--radius); border:1px solid var(--border);">
+        <p style="font-size:12px; color:var(--muted); margin-bottom:14px; line-height:1.4;">
+          Enter your personal or business bank account details below. These details will be displayed to customers when they select <strong>Instant EFT</strong> so funds clear directly into your account.
+        </p>
+        <div class="form-field">
+          <label for="bank-name">Bank Name</label>
+          <input type="text" id="bank-name" placeholder="e.g. FNB, Capitec, Standard Bank, ABSA">
+        </div>
+        <div class="form-field">
+          <label for="account-holder">Account Holder Name</label>
+          <input type="text" id="account-holder" placeholder="e.g. John Doe / Business (Pty) Ltd">
+        </div>
+        <div class="form-field">
+          <label for="account-number">Account Number</label>
+          <input type="text" id="account-number" placeholder="e.g. 62810293847">
+        </div>
+        <div class="form-field">
+          <label for="branch-code">Branch Code</label>
+          <input type="text" id="branch-code" placeholder="e.g. 250655">
+        </div>
+        <button class="btn-primary" id="save-bank-btn" style="margin-top:6px;">Save Banking Details</button>
       </div>
     </section>
   </main>
@@ -301,13 +331,15 @@ button:disabled{opacity:.6;cursor:not-allowed}
       orders: $("orders-tab"), 
       services: $("services-tab"), 
       settlement: $("settlement-tab"),
-      moneystore: $("moneystore-tab")
+      moneystore: $("moneystore-tab"),
+      bank: $("bank-tab")
     };
     Object.entries(tabs).forEach(([key, el]) => { if(el) el.style.display = key === name ? "block" : "none"; });
     $("tab-orders-btn").classList.toggle("active", name === "orders");
     $("tab-services-btn").classList.toggle("active", name === "services");
     $("tab-settlement-btn").classList.toggle("active", name === "settlement");
     $("tab-moneystore-btn").classList.toggle("active", name === "moneystore");
+    if($("tab-bank-btn")) $("tab-bank-btn").classList.toggle("active", name === "bank");
   }
 
   function bindButtons() {
@@ -316,6 +348,12 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
     $("open-scanner-btn").addEventListener("click", openQrScanner);
     $("close-qr-scanner-btn").addEventListener("click", closeQrScanner);
+
+    $("tab-bank-btn").addEventListener("click", () => {
+      showTab("bank");
+      populateBankForm();
+    });
+    $("save-bank-btn").addEventListener("click", saveVendorBankDetails);
 
     $("service-photos").addEventListener("change", (e) => {
       const files = Array.from(e.target.files);
@@ -432,6 +470,50 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
     $("save-biz-btn").addEventListener("click", saveBusiness);
     $("save-service-btn").addEventListener("click", saveService);
+  }
+
+  function populateBankForm() {
+    if (!activeVendor) return;
+    $("bank-name").value = activeVendor.bank_name || "";
+    $("account-holder").value = activeVendor.account_holder || "";
+    $("account-number").value = activeVendor.account_number || "";
+    $("branch-code").value = activeVendor.branch_code || "";
+  }
+
+  async function saveVendorBankDetails() {
+    if (!activeVendor) return;
+    const button = $("save-bank-btn");
+    
+    const bank_name = $("bank-name").value.trim();
+    const account_holder = $("account-holder").value.trim();
+    const account_number = $("account-number").value.trim();
+    const branch_code = $("branch-code").value.trim();
+
+    if (!bank_name || !account_number) {
+      return alert("Please enter at least your Bank Name and Account Number.");
+    }
+
+    setButtonLoading(button, true, "Saving Bank Details...");
+
+    try {
+      const { error } = await db
+        .from("vendors")
+        .update({ bank_name, account_holder, account_number, branch_code })
+        .eq("id", activeVendor.id);
+
+      if (error) throw error;
+
+      activeVendor.bank_name = bank_name;
+      activeVendor.account_holder = account_holder;
+      activeVendor.account_number = account_number;
+      activeVendor.branch_code = branch_code;
+
+      alert("Banking details updated successfully!");
+    } catch (err) {
+      alert("Error saving bank details: " + err.message);
+    } finally {
+      setButtonLoading(button, false, "Save Banking Details");
+    }
   }
 
   function openQrScanner() {
