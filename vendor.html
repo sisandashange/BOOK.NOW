@@ -91,6 +91,9 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .ref-pill { background: #eff6ff; color: var(--accent); font-family: monospace; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 6px; border: 1px solid #bfdbfe; display: inline-block; }
 .queue-pill { background: #fef3c7; color: #b45309; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; border: 1px solid #fde68a; display: inline-block; }
 
+.operating-hours-box { background: #f8fafc; border: 1px solid var(--border); padding: 14px; border-radius: 12px; margin-top: 14px; }
+.operating-title { font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+
 @media(max-width:400px){.container{padding:12px}.top-nav{padding:12px}.brand{font-size:13px}.finance-card{padding:11px}.finance-value{font-size:17px}.tab-item{font-size:11px}}
 
 #subscription-gate {
@@ -232,9 +235,8 @@ button:disabled{opacity:.6;cursor:not-allowed}
       <div id="services-list" class="card-list"><div class="empty-box">No services added yet.</div></div>
     </section>
 
-    <!-- STORE PROFILE & LOCATION MANAGER TAB -->
     <section id="profile-tab" style="display:none">
-      <div class="section-head"><h3><i class="ph ph-storefront"></i> Store Profile &amp; Location Manager</h3></div>
+      <div class="section-head"><h3><i class="ph ph-storefront"></i> Store Profile &amp; Operating Hours</h3></div>
       <div class="card" style="background:white; padding:16px; border-radius:var(--radius); border:1px solid var(--border);">
         <div class="form-field"><label for="store-name-input">Business Name</label><input type="text" id="store-name-input" placeholder="e.g. Maboneng Barbershop"></div>
         <div class="form-field"><label for="store-category-input">Business Category</label>
@@ -246,11 +248,32 @@ button:disabled{opacity:.6;cursor:not-allowed}
         </div>
         <div class="form-field"><label for="store-phone-input">WhatsApp / Contact Number</label><input type="tel" id="store-phone-input" placeholder="e.g. 0821234567"></div>
         <div class="form-field"><label for="store-address-input">Store Physical Location / Address</label><input type="text" id="store-address-input" placeholder="e.g. 12 Fox Street, Maboneng, Johannesburg"></div>
-        <button class="btn-primary" id="save-profile-btn" style="margin-top:6px;">Save Profile &amp; Location</button>
+
+        <div class="operating-hours-box">
+          <div class="operating-title"><i class="ph ph-clock" style="color:var(--accent);"></i> Store Schedule & Closure Controls</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div class="form-field"><label for="opening-time">Opening Time</label><input type="time" id="opening-time" value="08:00"></div>
+            <div class="form-field"><label for="closing-time">Closing Time</label><input type="time" id="closing-time" value="17:00"></div>
+          </div>
+
+          <div class="form-field">
+            <label for="manual-store-status">Manual Operating Status Override</label>
+            <select id="manual-store-status">
+              <option value="OPEN">Open for Bookings (Normal Schedule)</option>
+              <option value="CLOSED">Temporarily Closed (Pause New Bookings)</option>
+            </select>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div class="form-field"><label for="holiday-start-date">Holiday Start Date</label><input type="date" id="holiday-start-date"></div>
+            <div class="form-field"><label for="holiday-end-date">Holiday End Date</label><input type="date" id="holiday-end-date"></div>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="save-profile-btn" style="margin-top:14px;">Save Profile &amp; Operating Hours</button>
       </div>
     </section>
 
-    <!-- BANK & EFT SETTINGS TAB -->
     <section id="bank-tab" style="display:none">
       <div class="section-head"><h3><i class="ph ph-bank"></i> Customer Payout Bank Account Setup (EFT)</h3></div>
       <div class="card" style="background:white; padding:16px; border-radius:var(--radius); border:1px solid var(--border);">
@@ -309,7 +332,6 @@ button:disabled{opacity:.6;cursor:not-allowed}
   </main>
 </div>
 
-<!-- QR SCANNER MODAL FOR VENDORS -->
 <div id="qr-scanner-modal" class="modal">
   <div class="modal-sheet" style="text-align:center;">
     <div class="section-head">
@@ -727,6 +749,12 @@ button:disabled{opacity:.6;cursor:not-allowed}
     $("store-category-input").value = activeVendor.category || "BARBER";
     $("store-phone-input").value = activeVendor.phone_number || "";
     $("store-address-input").value = activeVendor.address || "";
+
+    $("opening-time").value = activeVendor.opening_time || "08:00";
+    $("closing-time").value = activeVendor.closing_time || "17:00";
+    $("manual-store-status").value = activeVendor.manual_status || "OPEN";
+    $("holiday-start-date").value = activeVendor.holiday_start_date || "";
+    $("holiday-end-date").value = activeVendor.holiday_end_date || "";
   }
 
   async function saveStoreProfile() {
@@ -738,6 +766,12 @@ button:disabled{opacity:.6;cursor:not-allowed}
     const phone_number = $("store-phone-input").value.trim();
     const address = $("store-address-input").value.trim();
 
+    const opening_time = $("opening-time").value;
+    const closing_time = $("closing-time").value;
+    const manual_status = $("manual-store-status").value;
+    const holiday_start_date = $("holiday-start-date").value || null;
+    const holiday_end_date = $("holiday-end-date").value || null;
+
     if (!name) {
       alert("Business name is required.");
       return;
@@ -748,7 +782,18 @@ button:disabled{opacity:.6;cursor:not-allowed}
     try {
       const { data, error } = await db
         .from("stores")
-        .update({ store_name: name, category, phone_number, address, updated_at: new Date() })
+        .update({
+          store_name: name,
+          category,
+          phone_number,
+          address,
+          opening_time,
+          closing_time,
+          manual_status,
+          holiday_start_date,
+          holiday_end_date,
+          updated_at: new Date()
+        })
         .eq("id", activeVendor.id)
         .select()
         .single();
@@ -762,11 +807,11 @@ button:disabled{opacity:.6;cursor:not-allowed}
       const selectedOption = $("vendor-select").selectedOptions[0];
       if (selectedOption) selectedOption.textContent = name;
 
-      alert("Store profile & location updated successfully!");
+      alert("Store profile & operating hours saved successfully!");
     } catch (error) {
       alert("Error saving profile: " + error.message);
     } finally {
-      setButtonLoading(button, false, "Save Profile & Location");
+      setButtonLoading(button, false, "Save Profile & Operating Hours");
     }
   }
 
@@ -1101,7 +1146,10 @@ button:disabled{opacity:.6;cursor:not-allowed}
           category,
           profile_id: user.id,
           status: "pending_payment",
-          is_first_time: true
+          is_first_time: true,
+          manual_status: "OPEN",
+          opening_time: "08:00",
+          closing_time: "17:00"
         }])
         .select()
         .single();
@@ -1416,7 +1464,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
     try {
       const { data: bookingsData, error: bErr } = await db
         .from("bookings")
-        .select("booked_price, service_items(price, sale_price)")
+        .select("booked_price")
         .eq("store_id", activeVendor.id)
         .eq("status", "completed");
 
@@ -1425,8 +1473,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
       let totalEarned = 0;
       if (bookingsData) {
         bookingsData.forEach(b => {
-          // ✅ Uses booked_price if available, falling back to service price
-          const price = Number(b.booked_price !== null && b.booked_price !== undefined ? b.booked_price : (b.service_items?.sale_price || b.service_items?.price || 0));
+          const price = Number(b.booked_price ?? 0);
           totalEarned += price;
         });
       }
@@ -1581,8 +1628,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
         ? `${booking.customer_name} — ${booking.customer_phone || ""}`
         : "Service booking";
 
-      // ✅ Uses booked_price if available, falling back to service item price
-      const amountVal = Number(booking.booked_price !== null && booking.booked_price !== undefined ? booking.booked_price : (booking.service_items?.sale_price || booking.service_items?.price || 0));
+      const amountVal = Number(booking.booked_price ?? 0);
       const gross = document.createElement("div");
       gross.className = "order-price";
       gross.textContent = money(amountVal);
@@ -1633,7 +1679,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
     try {
       const { data: bookings, error } = await db
         .from("bookings")
-        .select("*, service_items(title, price, sale_price)")
+        .select("*, service_items(title)")
         .eq("store_id", activeVendor.id)
         .order("created_at", { ascending: false });
 
@@ -1652,9 +1698,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
       } else {
         bookings.forEach(booking => {
           const statusText = String(booking.status || "pending").toUpperCase();
-          
-          // ✅ Uses booked_price if available, locking in the price at checkout
-          const amountVal = Number(booking.booked_price !== null && booking.booked_price !== undefined ? booking.booked_price : (booking.service_items?.sale_price || booking.service_items?.price || 0));
+          const amountVal = Number(booking.booked_price ?? 0);
 
           if (statusText === "COMPLETED") {
             revenue += amountVal;
@@ -1689,11 +1733,11 @@ button:disabled{opacity:.6;cursor:not-allowed}
           time.className = "order-time";
 
           const date = booking.created_at ? new Date(booking.created_at) : null;
+          const formattedDate = date && !Number.isNaN(date.getTime())
+            ? date.toLocaleString("en-ZA", { timeZone: "Africa/Johannesburg", dateStyle: "medium", timeStyle: "short" })
+            : "Date unavailable";
 
-          time.textContent =
-            date && !Number.isNaN(date.getTime())
-              ? date.toLocaleString()
-              : "Date unavailable";
+          time.innerHTML = `<strong>Customer Details:</strong> ${booking.customer_name || 'Guest'} (${booking.customer_phone || 'N/A'})<br><strong>Booked Date & Time:</strong> ${formattedDate}`;
 
           const status = document.createElement("div");
           status.className = "order-status status-" + statusText.toLowerCase();
