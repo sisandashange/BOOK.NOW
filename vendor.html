@@ -359,6 +359,59 @@ button:disabled{opacity:.6;cursor:not-allowed}
   </div>
 </div>
 
+<div id="subscription-gate" style="display:none">
+  <div class="subscription-card">
+    <div style="text-align:center">
+      <div style="font-size:36px;color:#2563eb">🏦</div>
+      <h2 id="subscription-heading">Store Subscription</h2>
+      <p id="subscription-description" style="color:#64748b;font-size:13px">
+        Complete payment to access your business dashboard.
+      </p>
+    </div>
+
+    <div class="subscription-bank">
+      <strong>BOOK.NOW EFT Payment Details</strong><br>
+      Bank: FNB / First National Bank<br>
+      Account name: BOOK NOW Platform (Pty) Ltd<br>
+      Account number: 62810293847<br>
+      Branch code: 250655
+
+      <hr style="border:0;border-top:1px solid #e2e8f0;margin:12px 0">
+
+      Payment reference:
+      <span id="subscription-reference" class="subscription-reference"></span>
+
+      <div style="margin-top:12px">
+        Amount due:
+        <strong id="subscription-amount" style="color:#166534"></strong>
+      </div>
+    </div>
+
+    <div id="subscription-review-message" class="subscription-message" style="display:none">
+      <strong>Application under review</strong><br>
+      Your proof of payment has been submitted. Your store/business will be activated within 24 hours once approved by the administrator.
+    </div>
+
+    <div id="subscription-upload-section">
+      <label for="subscription-proof-file" style="font-size:13px;font-weight:700">
+        Upload proof of payment (photo or PDF)
+      </label>
+      <input
+        type="file"
+        id="subscription-proof-file"
+        accept="image/jpeg,image/png,image/webp,application/pdf"
+      >
+      <button class="btn-primary" id="subscription-submit-btn">
+        Confirm Payment
+      </button>
+    </div>
+
+    <button class="btn-primary subscription-logout" id="subscription-logout-btn">
+      Sign Out
+    </button>
+  </div>
+</div>
+
 <script>
 (() => {
   "use strict";
