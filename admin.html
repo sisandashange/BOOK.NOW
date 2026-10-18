@@ -4,7 +4,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BOOK.NOW Founder Control Panel</title>
+<meta name="theme-color" content="#ffffff">
+<title>BOOK.NOW | Founder Dashboard</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -12,317 +13,133 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-:root {
-  --primary:#0f172a;
+:root{
+  --primary:#172033;
   --accent:#2563eb;
-  --bg:#f8fafc;
-  --text:#0f172a;
-  --muted:#64748b;
-  --border:#e2e8f0;
-  --success:#16a34a;
-  --success-bg:#f0fdf4;
-  --warning:#d97706;
-  --warning-bg:#fffbeb;
-  --danger:#dc2626;
-  --danger-bg:#fef2f2;
+  --accent-light:#eff6ff;
+  --bg:#f7f8fa;
+  --surface:#ffffff;
+  --text:#172033;
+  --muted:#667085;
+  --border:#e7eaf0;
+  --success:#16834a;
+  --success-bg:#ecfdf3;
+  --warning:#a86405;
+  --warning-bg:#fff8e6;
+  --danger:#b42318;
+  --danger-bg:#fff1f0;
   --radius:16px;
+  --shadow:0 2px 8px rgba(16,24,40,.025);
 }
-* {
-  box-sizing:border-box;
-  font-family:'Plus Jakarta Sans',sans-serif;
-  -webkit-tap-highlight-color:transparent;
+*{box-sizing:border-box;font-family:'Plus Jakarta Sans',sans-serif;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);padding-bottom:32px}
+button,input,select{font:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.55;cursor:not-allowed}
+.hidden{display:none!important}
+a{color:var(--accent);font-weight:700;overflow-wrap:anywhere}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #bfdbfe;outline-offset:2px}
+#auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-card{background:white;padding:30px;border-radius:22px;border:1px solid var(--border);width:100%;max-width:400px;box-shadow:0 12px 40px rgba(16,24,40,.06)}
+.auth-title{text-align:center;font-size:23px;font-weight:800;margin-bottom:7px;letter-spacing:-.7px}
+.auth-sub{text-align:center;font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6}
+.top-nav{background:white;padding:15px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:20;gap:12px}
+.brand{font-size:15px;font-weight:800;display:flex;align-items:center;gap:9px;color:var(--primary);letter-spacing:-.3px}
+.brand i{font-size:23px;color:var(--accent)}
+.nav-right{display:flex;align-items:center;gap:12px}
+.container{padding:25px 20px;max-width:1120px;margin:auto}
+.page-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:23px}
+.page-heading h1{font-size:28px;letter-spacing:-1.1px;margin:0 0 7px}
+.page-heading p{margin:0;color:var(--muted);font-size:13px;line-height:1.6}
+.account-label{font-size:11px;color:var(--muted);background:#f1f5f9;border-radius:20px;padding:7px 10px;white-space:nowrap}
+#global-message{font-size:12px;color:var(--muted);margin:0 0 16px;line-height:1.5}
+.stats-container{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:23px}
+.stat-box{background:white;padding:19px;border-radius:var(--radius);border:1px solid var(--border);min-width:0;box-shadow:var(--shadow)}
+.stat-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.stat-header{font-size:12px;font-weight:600;color:var(--muted);line-height:1.5}
+.stat-icon{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:var(--accent-light);color:var(--accent);font-size:18px;flex-shrink:0}
+.stat-value{font-size:28px;font-weight:800;letter-spacing:-1px;margin-top:13px;overflow-wrap:anywhere}
+.stat-caption{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5}
+.nav-tabs{display:flex;gap:5px;background:#edf0f5;padding:5px;border-radius:12px;margin-bottom:23px;overflow-x:auto;scrollbar-width:thin}
+.tab-item{flex:1;min-width:max-content;padding:11px 14px;border:0;background:transparent;font-size:12px;font-weight:700;color:#667085;border-radius:9px;text-align:center;white-space:nowrap}
+.tab-item.active{background:white;color:var(--text);box-shadow:0 1px 4px rgba(16,24,40,.09)}
+.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+.section-head h2{font-size:18px;letter-spacing:-.5px;margin:0}
+.section-description{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.6}
+.btn{border:1px solid var(--border);background:white;color:var(--text);padding:10px 13px;border-radius:10px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:background .15s;white-space:nowrap}
+.btn:hover{background:#f8fafc}
+.btn-primary{background:var(--accent);color:white;border-color:var(--accent)}
+.btn-primary:hover{background:#1d4ed8}
+.btn-success{background:var(--success);border-color:var(--success);color:white}
+.btn-danger{background:var(--danger);border-color:var(--danger);color:white}
+.btn-muted{background:#475569;color:white;border-color:#475569}
+.btn-logout{background:#fff1f0;color:#a62b25;border-color:#ffe0de}
+.card-list{display:flex;flex-direction:column;gap:12px}
+.vendor-card,.order-card,.admin-card{background:white;padding:20px;border-radius:var(--radius);border:1px solid var(--border);overflow-wrap:anywhere;box-shadow:var(--shadow)}
+.vendor-top,.order-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:12px}
+.vendor-title,.order-title{font-weight:800;font-size:14px;line-height:1.5}
+.vendor-meta,.order-time{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.65;overflow-wrap:anywhere}
+.order-price{font-weight:800;color:var(--success);font-size:17px;text-align:right;line-height:1.5}
+.price-note{font-size:11px;font-weight:500;color:var(--muted);max-width:210px;text-align:right;line-height:1.5;margin-top:4px}
+.status-badge{padding:5px 9px;border-radius:7px;font-size:10px;font-weight:800;display:inline-block;overflow-wrap:anywhere;letter-spacing:.2px}
+.status-active,.status-approved,.status-completed,.status-confirmed,.status-paid{background:var(--success-bg);color:var(--success)}
+.status-pending,.status-pending_approval,.status-pending_payment,.status-unpaid{background:var(--warning-bg);color:var(--warning)}
+.status-rejected,.status-expired,.status-cancelled,.status-failed{background:var(--danger-bg);color:var(--danger)}
+.ref-pill{background:#eff6ff;color:#245bb5;font-family:monospace;font-size:11px;font-weight:800;padding:5px 8px;border-radius:7px;border:1px solid #dbeafe;display:inline-block;margin-top:8px;overflow-wrap:anywhere}
+.form-field{margin-bottom:15px}
+.form-field label{display:block;font-size:12px;font-weight:700;color:#475467;margin-bottom:7px}
+.form-field input,.form-field select,.search-input{width:100%;padding:12px;border-radius:10px;border:1px solid #dfe3ea;font-size:13px;background:white;color:var(--text);min-width:0}
+.form-field input:focus,.form-field select:focus,.search-input:focus{border-color:#93b4ff;outline:3px solid #eff6ff}
+.empty-box{text-align:center;padding:30px 16px;background:white;border-radius:14px;border:1px dashed #d9dee8;color:var(--muted);font-size:12px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+.notice{padding:13px 15px;border-radius:11px;background:#eff6ff;color:#244c94;font-size:12px;line-height:1.7;margin-bottom:15px}
+.error-box{padding:13px 15px;border-radius:11px;background:var(--danger-bg);color:#991b1b;font-size:12px;line-height:1.7;margin-bottom:12px;overflow-wrap:anywhere;white-space:pre-wrap}
+.success-box{padding:13px 15px;border-radius:11px;background:var(--success-bg);color:#166534;font-size:12px;line-height:1.7;margin-bottom:12px;overflow-wrap:anywhere}
+.actions{background:#f8fafc;padding:12px;border-radius:10px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:9px;margin-top:13px}
+.actions-buttons{display:flex;gap:8px;flex-wrap:wrap}
+.small-note{font-size:11px;color:var(--muted);line-height:1.6;overflow-wrap:anywhere}
+.analytics-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 20px}
+.analytics-card{background:white;border:1px solid var(--border);border-radius:13px;padding:15px}
+.analytics-label{font-size:11px;color:var(--muted);font-weight:600;line-height:1.5}
+.analytics-value{font-size:22px;font-weight:800;margin-top:8px;letter-spacing:-.6px}
+.filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(145px,200px);gap:10px;margin-bottom:15px}
+.booking-detail{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:10px}
+.booking-detail span{font-size:11px;color:var(--muted);line-height:1.6}
+.receipt-link{display:inline-block;margin-top:8px;padding:8px 10px;border-radius:8px;background:#eff6ff;font-size:12px}
+.hidden{display:none!important}
+@media(min-width:800px){
+  .dashboard-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
 }
-body {
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  padding-bottom:50px;
+@media(max-width:760px){
+  .container{padding:20px 14px}
+  .top-nav{padding:13px 14px}
+  .stats-container{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .stat-box{padding:15px}
+  .stat-value{font-size:25px}
+  .analytics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .page-heading h1{font-size:25px}
 }
-button,input,select {font:inherit}
-button {cursor:pointer}
-button:disabled {opacity:.6;cursor:not-allowed}
-#auth-screen {
-  min-height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:20px;
-}
-.auth-card {
-  background:white;
-  padding:28px;
-  border-radius:20px;
-  border:1px solid var(--border);
-  width:100%;
-  max-width:400px;
-}
-.auth-title {
-  text-align:center;
-  font-size:20px;
-  font-weight:700;
-  margin-bottom:6px;
-}
-.auth-sub {
-  text-align:center;
-  font-size:13px;
-  color:var(--muted);
-  margin-bottom:24px;
-}
-.top-nav {
-  background:white;
-  padding:14px 16px;
-  border-bottom:1px solid var(--border);
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  position:sticky;
-  top:0;
-  z-index:20;
-  gap:10px;
-}
-.brand {
-  font-size:16px;
-  font-weight:800;
-  display:flex;
-  align-items:center;
-  gap:7px;
-  color:var(--primary);
-}
-.container {
-  padding:16px;
-  max-width:850px;
-  margin:auto;
-}
-.stats-container {
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:12px;
-  margin-bottom:20px;
-}
-.stat-box {
-  background:white;
-  padding:15px;
-  border-radius:var(--radius);
-  border:1px solid var(--border);
-  min-width:0;
-}
-.stat-header {
-  font-size:12px;
-  font-weight:600;
-  color:var(--muted);
-}
-.stat-value {
-  font-size:22px;
-  font-weight:700;
-  margin-top:7px;
-  overflow-wrap:anywhere;
-}
-.nav-tabs {
-  display:flex;
-  gap:4px;
-  background:#e2e8f0;
-  padding:4px;
-  border-radius:12px;
-  margin-bottom:20px;
-  overflow-x:auto;
-}
-.tab-item {
-  flex:1;
-  min-width:max-content;
-  padding:10px;
-  border:0;
-  background:transparent;
-  font-size:12px;
-  font-weight:600;
-  color:var(--muted);
-  border-radius:8px;
-  text-align:center;
-}
-.tab-item.active {
-  background:white;
-  color:var(--text);
-  box-shadow:0 1px 3px rgba(0,0,0,.08);
-}
-.section-head {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-  margin-bottom:14px;
-}
-.section-head h3 {font-size:16px;margin:0}
-.btn-primary {
-  background:var(--accent);
-  color:white;
-  border:0;
-  padding:10px 14px;
-  border-radius:10px;
-  font-size:13px;
-  font-weight:600;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:6px;
-}
-.btn-success {background:var(--success)}
-.btn-danger {background:var(--danger)}
-.btn-muted {background:#475569}
-.card-list {display:flex;flex-direction:column;gap:12px}
-.vendor-card,.order-card,.admin-card {
-  background:white;
-  padding:18px;
-  border-radius:14px;
-  border:1px solid var(--border);
-  overflow-wrap:anywhere;
-}
-.vendor-top,.order-top {
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
-  gap:10px;
-  margin-bottom:10px;
-}
-.vendor-title,.order-title {font-weight:800;font-size:14px}
-.vendor-meta,.order-time {
-  font-size:12px;
-  color:var(--muted);
-  margin-top:4px;
-  overflow-wrap:anywhere;
-}
-.order-price {
-  font-weight:700;
-  color:var(--success);
-  font-size:16px;
-  text-align:right;
-}
-.status-badge {
-  padding:4px 9px;
-  border-radius:6px;
-  font-size:11px;
-  font-weight:700;
-  display:inline-block;
-  overflow-wrap:anywhere;
-}
-.status-active,.status-approved,.status-completed {
-  background:var(--success-bg);
-  color:var(--success);
-}
-.status-pending,.status-pending_approval,.status-pending_payment {
-  background:var(--warning-bg);
-  color:var(--warning);
-}
-.status-rejected,.status-expired,.status-cancelled {
-  background:var(--danger-bg);
-  color:var(--danger);
-}
-.ref-pill {
-  background:#eff6ff;
-  color:var(--accent);
-  font-family:monospace;
-  font-size:11px;
-  font-weight:800;
-  padding:2px 8px;
-  border-radius:6px;
-  border:1px solid #bfdbfe;
-  display:inline-block;
-  margin-top:4px;
-  overflow-wrap:anywhere;
-}
-.form-field {margin-bottom:14px}
-.form-field label {
-  display:block;
-  font-size:12px;
-  font-weight:600;
-  color:var(--muted);
-  margin-bottom:6px;
-}
-.form-field input,.form-field select {
-  width:100%;
-  padding:12px;
-  border-radius:10px;
-  border:1px solid var(--border);
-  font-size:14px;
-  background:white;
-}
-.empty-box {
-  text-align:center;
-  padding:32px 16px;
-  background:white;
-  border-radius:14px;
-  border:1px dashed var(--border);
-  color:var(--muted);
-  font-size:13px;
-  white-space:pre-wrap;
-  overflow-wrap:anywhere;
-}
-.notice {
-  padding:12px;
-  border-radius:10px;
-  background:#eff6ff;
-  color:#1e40af;
-  font-size:12px;
-  line-height:1.5;
-  margin-bottom:14px;
-}
-.error-box {
-  padding:12px;
-  border-radius:10px;
-  background:var(--danger-bg);
-  color:#991b1b;
-  font-size:12px;
-  line-height:1.5;
-  margin-bottom:12px;
-  overflow-wrap:anywhere;
-  white-space:pre-wrap;
-}
-.success-box {
-  padding:12px;
-  border-radius:10px;
-  background:var(--success-bg);
-  color:#166534;
-  font-size:12px;
-  line-height:1.5;
-  margin-bottom:12px;
-  overflow-wrap:anywhere;
-}
-.actions {
-  background:#f8fafc;
-  padding:12px;
-  border-radius:10px;
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:space-between;
-  align-items:center;
-  gap:8px;
-  margin-top:8px;
-}
-.small-note {
-  font-size:11px;
-  color:var(--muted);
-  line-height:1.5;
-  overflow-wrap:anywhere;
-}
-.hidden {display:none!important}
-a {
-  color:var(--accent);
-  font-weight:700;
-  overflow-wrap:anywhere;
-}
-.receipt-link {
-  display:inline-block;
-  margin-top:8px;
-  padding:8px 10px;
-  border-radius:8px;
-  background:#eff6ff;
-  font-size:12px;
-}
-@media(max-width:480px) {
-  .top-nav {align-items:flex-start}
-  .brand {font-size:13px}
-  .btn-primary {padding:9px 10px}
-  .vendor-card,.order-card,.admin-card {padding:14px}
-  .section-head {align-items:flex-start}
-  .vendor-top,.order-top {flex-wrap:wrap}
+@media(max-width:480px){
+  .brand{font-size:12px;gap:6px}
+  .brand i{font-size:20px}
+  .btn{padding:9px 10px;font-size:11px}
+  .container{padding:19px 12px}
+  .page-heading{display:block}
+  .page-heading h1{font-size:24px}
+  .account-label{display:inline-block;margin-top:12px}
+  .stat-header{font-size:11px}
+  .stat-icon{width:29px;height:29px;font-size:16px}
+  .stat-value{font-size:24px}
+  .tab-item{padding:10px 12px}
+  .vendor-card,.order-card,.admin-card{padding:15px}
+  .section-head{align-items:center}
+  .section-head h2{font-size:16px}
+  .vendor-top,.order-top{flex-direction:column}
+  .order-price{text-align:left;max-width:100%}
+  .price-note{text-align:left;max-width:100%}
+  .filters{grid-template-columns:1fr}
+  .actions{align-items:stretch}
+  .actions-buttons{width:100%}
+  .actions-buttons .btn{flex:1}
 }
 </style>
 </head>
@@ -330,101 +147,94 @@ a {
 <body>
 <div id="auth-screen">
   <div class="auth-card">
-    <div class="brand" style="justify-content:center;margin-bottom:16px">
-      <i class="ph ph-shield-check" style="font-size:26px;color:var(--accent)"></i>
-      BOOK.NOW
+    <div class="brand" style="justify-content:center;margin-bottom:20px">
+      <i class="ph ph-shield-check"></i> BOOK.NOW
     </div>
     <div class="auth-title">Founder Login</div>
-    <div class="auth-sub">Sign in with the authorised founder account.</div>
+    <div class="auth-sub">Sign in with the authorised founder account to manage your platform.</div>
     <div id="startup-message" class="error-box hidden" role="alert"></div>
-
     <form id="admin-login-form">
       <div class="form-field">
-        <label for="admin-email">Email Address</label>
+        <label for="admin-email">Email address</label>
         <input type="email" id="admin-email" autocomplete="username" placeholder="you@gmail.com" required>
       </div>
       <div class="form-field">
         <label for="admin-password">Password</label>
-        <input type="password" id="admin-password" autocomplete="current-password" placeholder="Password" required>
+        <input type="password" id="admin-password" autocomplete="current-password" placeholder="Your password" required>
       </div>
-      <button type="submit" class="btn-primary" id="admin-login-btn" style="width:100%">Sign In</button>
+      <button type="submit" class="btn btn-primary" id="admin-login-btn" style="width:100%;padding:13px">Sign in to dashboard</button>
     </form>
-    <div id="login-message" class="small-note" role="status" aria-live="polite" style="margin-top:12px"></div>
+    <div id="login-message" class="small-note" role="status" aria-live="polite" style="margin-top:13px"></div>
   </div>
 </div>
 
 <div id="admin-dashboard" class="hidden">
-  <div class="top-nav">
-    <div class="brand">
-      <i class="ph ph-shield-check" style="color:var(--accent)"></i>
-      BOOK.NOW Founder Panel
+  <header class="top-nav">
+    <div class="brand"><i class="ph ph-shield-check"></i> BOOK.NOW Founder</div>
+    <div class="nav-right">
+      <span class="account-label">Founder account</span>
+      <button class="btn btn-logout" id="admin-logout-btn">Log out <i class="ph ph-sign-out"></i></button>
     </div>
-    <button class="btn-primary" style="background:#fee2e2;color:#991b1b;padding:8px 12px" id="admin-logout-btn">Log Out</button>
-  </div>
+  </header>
 
   <main class="container">
-    <div style="margin-bottom:18px">
-      <h2 style="margin-bottom:5px">Founder Dashboard</h2>
-      <div class="small-note">Manage stores, subscription requests, bank settings and bookings.</div>
+    <div class="page-heading">
+      <div>
+        <h1>Founder Dashboard</h1>
+        <p>Manage shops, subscriptions, payments and customer bookings.</p>
+      </div>
     </div>
 
-    <div id="global-message" class="small-note" role="status" aria-live="polite"></div>
+    <div id="global-message" role="status" aria-live="polite">Loading dashboard…</div>
 
     <div class="stats-container">
       <div class="stat-box">
-        <div class="stat-header">Total Registered Shops</div>
+        <div class="stat-top"><div class="stat-header">Registered shops</div><div class="stat-icon"><i class="ph ph-storefront"></i></div></div>
         <div class="stat-value" id="stat-shops">—</div>
+        <div class="stat-caption">Shops registered on the platform</div>
       </div>
       <div class="stat-box">
-        <div class="stat-header">Pending Payment Requests</div>
+        <div class="stat-top"><div class="stat-header">Pending payment requests</div><div class="stat-icon"><i class="ph ph-receipt"></i></div></div>
         <div class="stat-value" id="stat-pending">—</div>
+        <div class="stat-caption">Require founder review</div>
       </div>
       <div class="stat-box">
-        <div class="stat-header">Active Subscriptions</div>
+        <div class="stat-top"><div class="stat-header">Active subscriptions</div><div class="stat-icon"><i class="ph ph-check-circle"></i></div></div>
         <div class="stat-value" id="stat-active">—</div>
+        <div class="stat-caption">Active and not expired</div>
       </div>
       <div class="stat-box">
-        <div class="stat-header">Customer Bookings</div>
+        <div class="stat-top"><div class="stat-header">Customer bookings</div><div class="stat-icon"><i class="ph ph-calendar-check"></i></div></div>
         <div class="stat-value" id="stat-orders">—</div>
+        <div class="stat-caption">Total records in bookings</div>
       </div>
     </div>
 
-    <div class="nav-tabs">
-      <button class="tab-item active" data-tab="vendors-section">Stores &amp; Approvals</button>
-      <button class="tab-item" data-tab="settings-section">Founder Bank Settings</button>
-      <button class="tab-item" data-tab="orders-section">Platform Bookings</button>
-    </div>
+    <nav class="nav-tabs" aria-label="Founder dashboard sections">
+      <button class="tab-item active" data-tab="vendors-section">Shops &amp; approvals</button>
+      <button class="tab-item" data-tab="settings-section">Bank settings</button>
+      <button class="tab-item" data-tab="orders-section">Platform bookings</button>
+    </nav>
 
     <section id="vendors-section">
       <div class="section-head">
-        <h3>Stores &amp; Subscription Approvals</h3>
-        <button class="btn-primary" id="refresh-vendors-btn">
-          <i class="ph ph-arrows-clockwise"></i> Refresh
-        </button>
+        <div><h2>Shops &amp; approvals</h2><div class="section-description">Review subscription payment requests and manage approvals.</div></div>
+        <button class="btn btn-primary" id="refresh-vendors-btn"><i class="ph ph-arrows-clockwise"></i> Refresh</button>
       </div>
-      <div class="notice">
-        Subscription requests are loaded through the founder-only database function.
-        Open the receipt and verify payment in your bank account before approving.
-        Rejected requests do not delete store data.
-      </div>
-      <div id="vendors-admin-list" class="card-list">
-        <div class="empty-box">Loading stores…</div>
-      </div>
+      <div class="notice">Verify each payment in your bank account before approving it. Open the receipt to inspect the submitted proof. Rejecting a request should not delete the shop's data.</div>
+      <div id="vendors-admin-list" class="card-list"><div class="empty-box">Loading shops…</div></div>
     </section>
 
     <section id="settings-section" class="hidden">
       <div class="section-head">
-        <h3><i class="ph ph-bank"></i> Founder EFT Receiving Account</h3>
+        <div><h2>Founder bank settings</h2><div class="section-description">Receiving details for subscription payments.</div></div>
       </div>
       <div class="admin-card">
-        <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5">
-          These details are for subscription payments. Check your bank details carefully before saving.
-        </p>
-
+        <div class="notice">Check your account details carefully before saving. These are platform payment settings, not vendor bank details.</div>
         <div class="form-field">
-          <label for="founder-bank-select">Select Bank</label>
+          <label for="founder-bank-select">Bank</label>
           <select id="founder-bank-select">
-            <option value="">-- Choose Your Bank --</option>
+            <option value="">Choose your bank</option>
             <option value="First National Bank (FNB)|250655">First National Bank (FNB)</option>
             <option value="Capitec Bank|470010">Capitec Bank</option>
             <option value="Standard Bank|051001">Standard Bank</option>
@@ -434,35 +244,40 @@ a {
             <option value="Discovery Bank|679000">Discovery Bank</option>
           </select>
         </div>
-
-        <div class="form-field">
-          <label for="founder-acc-name">Account Holder Name</label>
-          <input type="text" id="founder-acc-name" placeholder="Account holder name" autocomplete="off">
-        </div>
-        <div class="form-field">
-          <label for="founder-acc-number">Account Number</label>
-          <input type="text" id="founder-acc-number" inputmode="numeric" placeholder="Account number" autocomplete="off">
-        </div>
-        <div class="form-field">
-          <label for="founder-branch-code">Branch Code</label>
-          <input type="text" id="founder-branch-code" readonly style="background:#f1f5f9;color:var(--muted)" placeholder="Select bank above">
-        </div>
-
-        <button class="btn-primary" id="save-founder-bank-btn" style="width:100%;margin-top:6px">Save Founder Bank Details</button>
+        <div class="form-field"><label for="founder-acc-name">Account holder name</label><input type="text" id="founder-acc-name" placeholder="Account holder name" autocomplete="off"></div>
+        <div class="form-field"><label for="founder-acc-number">Account number</label><input type="text" id="founder-acc-number" inputmode="numeric" placeholder="Account number" autocomplete="off"></div>
+        <div class="form-field"><label for="founder-branch-code">Branch code</label><input type="text" id="founder-branch-code" readonly style="background:#f8fafc;color:var(--muted)" placeholder="Choose bank above"></div>
+        <button class="btn btn-primary" id="save-founder-bank-btn" style="width:100%">Save bank details</button>
         <div id="bank-message" style="margin-top:12px"></div>
       </div>
     </section>
 
     <section id="orders-section" class="hidden">
       <div class="section-head">
-        <h3>All Customer Bookings</h3>
-        <button class="btn-primary" id="refresh-orders-btn">
-          <i class="ph ph-arrows-clockwise"></i> Refresh
-        </button>
+        <div><h2>Platform bookings</h2><div class="section-description">Review booking activity, appointment times and payment status.</div></div>
+        <button class="btn btn-primary" id="refresh-orders-btn"><i class="ph ph-arrows-clockwise"></i> Refresh</button>
       </div>
-      <div id="orders-admin-list" class="card-list">
-        <div class="empty-box">Loading bookings…</div>
+
+      <div class="analytics-grid">
+        <div class="analytics-card"><div class="analytics-label">Total bookings</div><div class="analytics-value" id="analytics-total">—</div></div>
+        <div class="analytics-card"><div class="analytics-label">Pending bookings</div><div class="analytics-value" id="analytics-pending">—</div></div>
+        <div class="analytics-card"><div class="analytics-label">Completed bookings</div><div class="analytics-value" id="analytics-completed">—</div></div>
+        <div class="analytics-card"><div class="analytics-label">Paid bookings</div><div class="analytics-value" id="analytics-paid">—</div></div>
       </div>
+
+      <div class="filters">
+        <input class="search-input" id="booking-search" type="search" placeholder="Search customer, phone, reference or service…" aria-label="Search bookings">
+        <select class="search-input" id="booking-status-filter" aria-label="Filter bookings by status">
+          <option value="all">All booking statuses</option>
+          <option value="pending">Pending</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+
+      <div id="booking-results-note" class="small-note" style="margin-bottom:12px"></div>
+      <div id="orders-admin-list" class="card-list"><div class="empty-box">Loading bookings…</div></div>
     </section>
   </main>
 </div>
@@ -471,726 +286,574 @@ a {
 (function(){
 "use strict";
 
-const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
-const FOUNDER_ID = "c0c85d2f-8473-49c3-a33a-92ff5acf1e94";
-const PROOF_BUCKET = "subscription-proofs";
+const SUPABASE_URL="https://pvplhsiafklaoqrpdhpd.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
+const FOUNDER_ID="c0c85d2f-8473-49c3-a33a-92ff5acf1e94";
+const PROOF_BUCKET="subscription-proofs";
+const $=id=>document.getElementById(id);
 
-const $ = id => document.getElementById(id);
+let refreshInProgress=false;
+let allBookings=[];
+let serviceById={};
 
-function setLoginMessage(message, isError = false) {
-  const target = $("login-message");
-  if (!target) return;
-  target.textContent = message || "";
-  target.style.color = isError ? "#b91c1c" : "var(--muted)";
+function setLoginMessage(message,isError=false){
+  const target=$("login-message");
+  if(!target)return;
+  target.textContent=message||"";
+  target.style.color=isError?"#b42318":"var(--muted)";
 }
-
-function showStartupError(message) {
-  const target = $("startup-message");
-  if (target) {
-    target.textContent = message;
-    target.classList.remove("hidden");
-  }
-  setLoginMessage(message, true);
+function showStartupError(message){
+  const target=$("startup-message");
+  if(target){target.textContent=message;target.classList.remove("hidden");}
+  setLoginMessage(message,true);
 }
-
-function showMessage(container, message, isError = false) {
+function showMessage(container,message,isError=false){
   container.replaceChildren();
-  const div = document.createElement("div");
-  div.className = isError ? "error-box" : "empty-box";
-  div.textContent = message;
+  const div=document.createElement("div");
+  div.className=isError?"error-box":"empty-box";
+  div.textContent=message;
   container.appendChild(div);
 }
-
-function showInlineMessage(container, message, type = "success") {
+function showInlineMessage(container,message,type="success"){
   container.replaceChildren();
-  if (!message) return;
-  const div = document.createElement("div");
-  div.className = type === "error" ? "error-box" : "success-box";
-  div.textContent = message;
+  if(!message)return;
+  const div=document.createElement("div");
+  div.className=type==="error"?"error-box":"success-box";
+  div.textContent=message;
   container.appendChild(div);
 }
-
-function money(value) {
-  const amount = Number(value);
-  if (!Number.isFinite(amount)) return "R0.00";
-  return new Intl.NumberFormat("en-ZA", {
-    style: "currency",
-    currency: "ZAR"
-  }).format(amount);
+function money(value){
+  const amount=Number(value);
+  if(value===null||value===undefined||value===""||!Number.isFinite(amount))return "Price unavailable";
+  return new Intl.NumberFormat("en-ZA",{style:"currency",currency:"ZAR"}).format(amount);
+}
+function setDashboard(visible){
+  $("auth-screen").classList.toggle("hidden",visible);
+  $("admin-dashboard").classList.toggle("hidden",!visible);
+  $("admin-dashboard").style.display=visible?"block":"none";
+}
+function safeDate(value,includeSeconds=false){
+  if(!value)return "Not provided";
+  const date=new Date(value);
+  if(Number.isNaN(date.getTime()))return "Not provided";
+  return date.toLocaleString("en-ZA",{
+    timeZone:"Africa/Johannesburg",
+    year:"numeric",month:"short",day:"2-digit",
+    hour:"2-digit",minute:"2-digit",
+    ...(includeSeconds?{second:"2-digit"}:{})
+  });
+}
+function badgeClass(value){
+  const safe=String(value||"pending").toLowerCase().replace(/[^a-z0-9_-]/g,"");
+  return "status-badge status-"+safe;
+}
+function addText(parent,tag,className,text){
+  const element=document.createElement(tag);
+  if(className)element.className=className;
+  element.textContent=text;
+  parent.appendChild(element);
+  return element;
 }
 
-function setDashboard(visible) {
-  $("auth-screen").classList.toggle("hidden", visible);
-  $("admin-dashboard").classList.toggle("hidden", !visible);
-  $("admin-dashboard").style.display = visible ? "block" : "none";
-}
-
-if (!window.supabase || typeof window.supabase.createClient !== "function") {
-  showStartupError("The Supabase library did not load. Refresh the page.");
+if(!window.supabase||typeof window.supabase.createClient!=="function"){
+  showStartupError("The Supabase library did not load. Check your internet connection and refresh.");
   return;
 }
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-let refreshInProgress = false;
-
-async function requireFounder() {
-  const { data, error } = await db.auth.getUser();
-
-  if (error || !data?.user) {
-    setDashboard(false);
-    return false;
-  }
-
-  if (data.user.id !== FOUNDER_ID) {
+async function requireFounder(){
+  const {data,error}=await db.auth.getUser();
+  if(error||!data?.user){setDashboard(false);return false;}
+  if(data.user.id!==FOUNDER_ID){
     await db.auth.signOut();
     setDashboard(false);
-    setLoginMessage("Access denied. Authorized founder account only.", true);
+    setLoginMessage("Access denied. Authorised founder account only.",true);
     return false;
   }
-
   setDashboard(true);
   return true;
 }
 
-async function boot() {
-  $("admin-login-form").addEventListener("submit", event => {
-    event.preventDefault();
-    signIn();
+async function boot(){
+  $("admin-login-form").addEventListener("submit",event=>{event.preventDefault();signIn();});
+  $("admin-logout-btn").addEventListener("click",signOut);
+  $("refresh-vendors-btn").addEventListener("click",loadAdminData);
+  $("refresh-orders-btn").addEventListener("click",loadOrders);
+  $("save-founder-bank-btn").addEventListener("click",saveFounderBank);
+
+  $("founder-bank-select").addEventListener("change",()=>{
+    const selected=$("founder-bank-select").value;
+    $("founder-branch-code").value=selected?selected.split("|")[1]:"";
   });
 
-  $("admin-logout-btn").addEventListener("click", signOut);
-  $("refresh-vendors-btn").addEventListener("click", loadAdminData);
-  $("refresh-orders-btn").addEventListener("click", loadOrders);
-  $("save-founder-bank-btn").addEventListener("click", saveFounderBank);
+  $("booking-search").addEventListener("input",renderBookings);
+  $("booking-status-filter").addEventListener("change",renderBookings);
 
-  $("founder-bank-select").addEventListener("change", () => {
-    const selected = $("founder-bank-select").value;
-    $("founder-branch-code").value = selected ? selected.split("|")[1] : "";
+  document.querySelectorAll("[data-tab]").forEach(button=>{
+    button.addEventListener("click",()=>{
+      switchTab(button.dataset.tab);
+      if(button.dataset.tab==="orders-section"&&allBookings.length===0)loadOrders();
+    });
   });
 
-  document.querySelectorAll("[data-tab]").forEach(button => {
-    button.addEventListener("click", () => switchTab(button.dataset.tab));
-  });
-
-  try {
-    const { data, error } = await db.auth.getSession();
-    if (error) throw error;
-
-    if (data?.session) {
-      if (await requireFounder()) await loadAdminData();
-    } else {
+  try{
+    const {data,error}=await db.auth.getSession();
+    if(error)throw error;
+    if(data?.session){
+      if(await requireFounder())await loadAdminData();
+    }else{
       setDashboard(false);
     }
-  } catch (error) {
+  }catch(error){
     setDashboard(false);
-    setLoginMessage("Could not check session: " + error.message, true);
+    setLoginMessage("Could not check session: "+error.message,true);
   }
 }
 
-async function signIn() {
-  const button = $("admin-login-btn");
-  const email = $("admin-email").value.trim();
-  const password = $("admin-password").value;
-
-  if (!email || !password) {
-    setLoginMessage("Enter email and password.", true);
-    return;
-  }
-
-  button.disabled = true;
-  button.textContent = "Signing in…";
-
-  try {
-    const { data, error } = await db.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-
-    if (data.user.id !== FOUNDER_ID) {
+async function signIn(){
+  const button=$("admin-login-btn");
+  const email=$("admin-email").value.trim();
+  const password=$("admin-password").value;
+  if(!email||!password){setLoginMessage("Enter your email and password.",true);return;}
+  button.disabled=true;
+  button.textContent="Signing in…";
+  try{
+    const {data,error}=await db.auth.signInWithPassword({email,password});
+    if(error)throw error;
+    if(data.user.id!==FOUNDER_ID){
       await db.auth.signOut();
       setDashboard(false);
-      throw new Error("Access denied. Authorized founder account only.");
+      throw new Error("Access denied. Authorised founder account only.");
     }
-
     setDashboard(true);
     await loadAdminData();
-  } catch (error) {
-    setLoginMessage(error.message || "Sign-in failed.", true);
-  } finally {
-    button.disabled = false;
-    button.textContent = "Sign In";
+  }catch(error){
+    setLoginMessage(error.message||"Sign-in failed.",true);
+  }finally{
+    button.disabled=false;
+    button.textContent="Sign in to dashboard";
   }
 }
 
-async function signOut() {
+async function signOut(){
   await db.auth.signOut();
   setDashboard(false);
   setLoginMessage("You have signed out.");
 }
 
-function switchTab(tabId) {
-  ["vendors-section", "settings-section", "orders-section"].forEach(id => {
-    $(id).classList.toggle("hidden", id !== tabId);
+function switchTab(tabId){
+  ["vendors-section","settings-section","orders-section"].forEach(id=>{
+    $(id).classList.toggle("hidden",id!==tabId);
   });
-
-  document.querySelectorAll("[data-tab]").forEach(button => {
-    button.classList.toggle("active", button.dataset.tab === tabId);
+  document.querySelectorAll("[data-tab]").forEach(button=>{
+    button.classList.toggle("active",button.dataset.tab===tabId);
   });
 }
 
-async function loadAdminData() {
-  if (refreshInProgress) return;
-  if (!(await requireFounder())) return;
-
-  refreshInProgress = true;
-  $("global-message").textContent = "Refreshing dashboard…";
-
-  try {
-    const results = await Promise.allSettled([
+async function loadAdminData(){
+  if(refreshInProgress)return;
+  if(!(await requireFounder()))return;
+  refreshInProgress=true;
+  $("global-message").textContent="Refreshing dashboard…";
+  try{
+    const results=await Promise.allSettled([
       loadStoresAndPayments(),
       loadOrders(),
       loadFounderBank()
     ]);
-
-    const failed = results.some(result => result.status === "rejected");
-
-    $("global-message").textContent = failed
-      ? "Dashboard refreshed with one or more errors. Check the messages below."
-      : "Dashboard refresh finished.";
-  } finally {
-    refreshInProgress = false;
+    const failed=results.some(result=>result.status==="rejected");
+    $("global-message").textContent=failed
+      ?"Dashboard refreshed with errors. Review the affected section."
+      :"Dashboard refreshed successfully.";
+  }finally{
+    refreshInProgress=false;
   }
 }
 
-async function loadStoresAndPayments() {
-  const container = $("vendors-admin-list");
-  showMessage(container, "Loading stores and payment requests…");
+async function loadStoresAndPayments(){
+  const container=$("vendors-admin-list");
+  showMessage(container,"Loading shops and payment requests…");
 
-  const { data: stores, error: storeError } = await db
-    .from("stores")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const {data:stores,error:storeError}=await db
+    .from("stores").select("*").order("created_at",{ascending:false});
 
-  if (storeError) {
-    $("stat-shops").textContent = "—";
-    $("stat-active").textContent = "—";
-    $("stat-pending").textContent = "—";
-    showMessage(container, "Could not load stores: " + storeError.message, true);
+  if(storeError){
+    $("stat-shops").textContent="—";
+    $("stat-active").textContent="—";
+    $("stat-pending").textContent="—";
+    showMessage(container,"Could not load shops: "+storeError.message,true);
     throw storeError;
   }
 
-  const storeRows = stores || [];
-  $("stat-shops").textContent = String(storeRows.length);
+  const storeRows=stores||[];
+  $("stat-shops").textContent=String(storeRows.length);
 
-  const activeCount = storeRows.filter(store =>
-    store.status === "active" &&
+  const activeCount=storeRows.filter(store=>
+    String(store.status||"").toLowerCase()==="active" &&
     store.subscription_expires_at &&
-    new Date(store.subscription_expires_at).getTime() > Date.now()
+    new Date(store.subscription_expires_at).getTime()>Date.now()
   ).length;
+  $("stat-active").textContent=String(activeCount);
 
-  $("stat-active").textContent = String(activeCount);
-
-  const { data: requests, error: requestError } = await db.rpc(
-    "founder_list_subscription_payment_requests"
-  );
-
-  if (requestError) {
-    $("stat-pending").textContent = "—";
-    showMessage(container, "Could not load subscription requests: " + requestError.message, true);
+  const {data:requests,error:requestError}=await db.rpc("founder_list_subscription_payment_requests");
+  if(requestError){
+    $("stat-pending").textContent="—";
+    showMessage(container,"Could not load subscription requests: "+requestError.message,true);
     throw requestError;
   }
 
-  const requestRows = requests || [];
-  const pendingRequests = requestRows.filter(
-    request => String(request.status || "").toUpperCase() === "PENDING"
+  const requestRows=requests||[];
+  const pendingRequests=requestRows.filter(request=>
+    String(request.status||"").toUpperCase()==="PENDING"
   );
-
-  $("stat-pending").textContent = String(pendingRequests.length);
+  $("stat-pending").textContent=String(pendingRequests.length);
   container.replaceChildren();
 
-  if (!pendingRequests.length) {
-    showMessage(container, "No pending subscription payment requests.");
+  if(!pendingRequests.length){
+    showMessage(container,"No pending subscription payment requests.");
     return;
   }
 
-  pendingRequests.forEach(request => {
-    const store = storeRows.find(item => item.id === request.store_id);
-    const card = document.createElement("div");
-    card.className = "vendor-card";
+  pendingRequests.forEach(request=>{
+    const store=storeRows.find(item=>item.id===request.store_id);
+    const card=document.createElement("article");
+    card.className="vendor-card";
 
-    const top = document.createElement("div");
-    top.className = "vendor-top";
+    const top=document.createElement("div");
+    top.className="vendor-top";
+    const details=document.createElement("div");
+    details.style.minWidth="0";
 
-    const details = document.createElement("div");
-    details.style.minWidth = "0";
+    addText(details,"div","vendor-title",(store?.store_name||"Unknown shop")+" — "+(store?.category||"STORE"));
+    addText(details,"div","vendor-meta","Request amount: "+money(request.amount));
+    addText(details,"div","vendor-meta","Shop contact: "+(store?.phone_number||"Not available"));
 
-    const title = document.createElement("div");
-    title.className = "vendor-title";
-    title.textContent =
-      (store?.store_name || "Unknown Store") + " — " +
-      (store?.category || "STORE");
+    const reference=document.createElement("span");
+    reference.className="ref-pill";
+    reference.textContent="REF: "+(request.payment_reference||"N/A");
+    details.appendChild(reference);
 
-    const meta = document.createElement("div");
-    meta.className = "vendor-meta";
-    meta.textContent =
-      "Amount: " + money(request.amount) +
-      " · Phone: " + (store?.phone_number || "N/A");
-
-    const reference = document.createElement("span");
-    reference.className = "ref-pill";
-    reference.textContent = "REF: " + (request.payment_reference || "N/A");
-
-    details.append(title, meta, reference);
-
-    if (request.receipt_path) {
-      const receiptButton = document.createElement("button");
-      receiptButton.type = "button";
-      receiptButton.className = "btn-primary";
-      receiptButton.style.marginTop = "8px";
-      receiptButton.textContent = "Open Payment Receipt";
-      receiptButton.addEventListener("click", () =>
-        openPrivateReceipt(request.receipt_path, receiptButton)
-      );
+    if(request.receipt_path){
+      const receiptButton=document.createElement("button");
+      receiptButton.type="button";
+      receiptButton.className="btn";
+      receiptButton.style.marginTop="10px";
+      receiptButton.innerHTML='<i class="ph ph-file-image"></i> Open payment receipt';
+      receiptButton.addEventListener("click",()=>openPrivateReceipt(request.receipt_path,receiptButton));
       details.appendChild(document.createElement("br"));
       details.appendChild(receiptButton);
     }
 
-    const status = document.createElement("span");
-    status.className = "status-badge status-pending";
-    status.textContent = request.status;
+    const status=document.createElement("span");
+    status.className=badgeClass(request.status);
+    status.textContent=String(request.status||"PENDING").toUpperCase();
+    top.append(details,status);
 
-    top.append(details, status);
+    const actions=document.createElement("div");
+    actions.className="actions";
+    addText(actions,"span","small-note","Verify the payment in your bank before approval.");
 
-    const actions = document.createElement("div");
-    actions.className = "actions";
+    const buttons=document.createElement("div");
+    buttons.className="actions-buttons";
 
-    const note = document.createElement("span");
-    note.className = "small-note";
-    note.textContent = "Verify bank payment before approving.";
+    const approve=document.createElement("button");
+    approve.className="btn btn-success";
+    approve.textContent="Approve payment";
+    approve.addEventListener("click",()=>approvePaymentRequest(request.id,approve));
 
-    const approve = document.createElement("button");
-    approve.className = "btn-primary btn-success";
-    approve.textContent = "Approve Payment";
-    approve.addEventListener("click", () =>
-      approvePaymentRequest(request.id, approve)
-    );
+    const reject=document.createElement("button");
+    reject.className="btn btn-danger";
+    reject.textContent="Reject request";
+    reject.addEventListener("click",()=>rejectPaymentRequest(request.id,reject));
 
-    const reject = document.createElement("button");
-    reject.className = "btn-primary btn-danger";
-    reject.textContent = "Reject Request";
-    reject.addEventListener("click", () =>
-      rejectPaymentRequest(request.id, reject)
-    );
-
-    actions.append(note, approve, reject);
-    card.append(top, actions);
+    buttons.append(approve,reject);
+    actions.appendChild(buttons);
+    card.append(top,actions);
     container.appendChild(card);
   });
 }
 
-async function openPrivateReceipt(receiptPath, button) {
-  if (!(await requireFounder())) return;
-
-  button.disabled = true;
-  button.textContent = "Opening…";
-
-  try {
-    const { data, error } = await db.storage
-      .from(PROOF_BUCKET)
-      .createSignedUrl(receiptPath, 60);
-
-    if (error) throw error;
-    window.open(data.signedUrl, "_blank", "noopener");
-  } catch (error) {
-    alert("Could not open receipt: " + error.message);
-  } finally {
-    button.disabled = false;
-    button.textContent = "Open Payment Receipt";
+async function openPrivateReceipt(receiptPath,button){
+  if(!(await requireFounder()))return;
+  button.disabled=true;
+  const oldText=button.textContent;
+  button.textContent="Opening…";
+  try{
+    const {data,error}=await db.storage.from(PROOF_BUCKET).createSignedUrl(receiptPath,60);
+    if(error)throw error;
+    window.open(data.signedUrl,"_blank","noopener");
+  }catch(error){
+    alert("Could not open receipt: "+error.message);
+  }finally{
+    button.disabled=false;
+    button.textContent=oldText;
   }
 }
 
-async function approvePaymentRequest(requestId, button) {
-  if (!(await requireFounder())) return;
-  if (!confirm("Confirm you received payment in your bank account?")) return;
-
-  button.disabled = true;
-  button.textContent = "Approving…";
-
-  try {
-    const { data, error } = await db.rpc(
-      "approve_subscription_payment",
-      { p_request_id: requestId }
-    );
-
-    if (error) throw error;
-    if (data && data.success === false) {
-      throw new Error(data.message || "Approval was rejected.");
-    }
-
-    alert("Store activated for 30 days!");
+async function approvePaymentRequest(requestId,button){
+  if(!(await requireFounder()))return;
+  if(!confirm("Confirm that you received this payment in your bank account?"))return;
+  button.disabled=true;
+  button.textContent="Approving…";
+  try{
+    const {data,error}=await db.rpc("approve_subscription_payment",{p_request_id:requestId});
+    if(error)throw error;
+    if(data&&data.success===false)throw new Error(data.message||"Approval was rejected.");
+    alert("Payment request approved.");
     await loadAdminData();
-  } catch (error) {
-    alert("Approval failed: " + error.message);
-  } finally {
-    button.disabled = false;
-    button.textContent = "Approve Payment";
+  }catch(error){
+    alert("Approval failed: "+error.message);
+  }finally{
+    button.disabled=false;
+    button.textContent="Approve payment";
   }
 }
 
-async function rejectPaymentRequest(requestId, button) {
-  if (!(await requireFounder())) return;
-  if (!confirm("Reject this payment request? Store data will remain intact.")) return;
-
-  button.disabled = true;
-  button.textContent = "Rejecting…";
-
-  try {
-    const { data, error } = await db.rpc(
-      "reject_subscription_payment",
-      { p_request_id: requestId }
-    );
-
-    if (error) throw error;
-    if (data && data.success === false) {
-      throw new Error(data.message || "Rejection failed.");
-    }
-
-    alert("Request rejected.");
+async function rejectPaymentRequest(requestId,button){
+  if(!(await requireFounder()))return;
+  if(!confirm("Reject this payment request? Shop data will remain intact."))return;
+  button.disabled=true;
+  button.textContent="Rejecting…";
+  try{
+    const {data,error}=await db.rpc("reject_subscription_payment",{p_request_id:requestId});
+    if(error)throw error;
+    if(data&&data.success===false)throw new Error(data.message||"Rejection failed.");
+    alert("Payment request rejected.");
     await loadAdminData();
-  } catch (error) {
-    alert("Rejection failed: " + error.message);
-  } finally {
-    button.disabled = false;
-    button.textContent = "Reject Request";
+  }catch(error){
+    alert("Rejection failed: "+error.message);
+  }finally{
+    button.disabled=false;
+    button.textContent="Reject request";
   }
 }
 
-async function loadFounderBank() {
-  const { data, error } = await db
-    .from("platform_settings")
-    .select("*")
-    .eq("id", 1)
-    .maybeSingle();
+async function loadFounderBank(){
+  const {data,error}=await db.from("platform_settings").select("*").eq("id",1).maybeSingle();
+  if(error)throw error;
+  if(!data)return;
 
-  if (error) throw error;
-  if (!data) return;
+  $("founder-acc-name").value=data.account_name||"";
+  $("founder-acc-number").value=data.account_number||"";
+  $("founder-branch-code").value=data.branch_code||"";
 
-  $("founder-acc-name").value = data.account_name || "";
-  $("founder-acc-number").value = data.account_number || "";
-  $("founder-branch-code").value = data.branch_code || "";
-
-  if (data.bank_name) {
-    const match = [...$("founder-bank-select").options].find(option =>
-      option.value.startsWith(data.bank_name + "|")
-    );
-
-    if (match) $("founder-bank-select").value = match.value;
+  if(data.bank_name){
+    const match=[...$("founder-bank-select").options]
+      .find(option=>option.value.startsWith(data.bank_name+"|"));
+    if(match)$("founder-bank-select").value=match.value;
   }
 }
 
-async function saveFounderBank() {
-  if (!(await requireFounder())) return;
+async function saveFounderBank(){
+  if(!(await requireFounder()))return;
 
-  const button = $("save-founder-bank-btn");
-  const selection = $("founder-bank-select").value;
-
-  if (!selection) {
-    showInlineMessage($("bank-message"), "Please select a bank.", "error");
+  const button=$("save-founder-bank-btn");
+  const selection=$("founder-bank-select").value;
+  if(!selection){
+    showInlineMessage($("bank-message"),"Please select a bank.","error");
     return;
   }
 
-  const [bank_name, selectedBranch] = selection.split("|");
-  const account_name = $("founder-acc-name").value.trim();
-  const account_number = $("founder-acc-number").value.trim();
-  const branch_code = $("founder-branch-code").value.trim() || selectedBranch;
+  const [bank_name,selectedBranch]=selection.split("|");
+  const account_name=$("founder-acc-name").value.trim();
+  const account_number=$("founder-acc-number").value.trim();
+  const branch_code=$("founder-branch-code").value.trim()||selectedBranch;
 
-  if (!account_name || !account_number) {
-    showInlineMessage(
-      $("bank-message"),
-      "Enter the account holder and account number.",
-      "error"
-    );
+  if(!account_name||!account_number){
+    showInlineMessage($("bank-message"),"Enter the account holder name and account number.","error");
     return;
   }
 
-  button.disabled = true;
-  button.textContent = "Saving…";
+  button.disabled=true;
+  button.textContent="Saving…";
 
-  try {
-    const { data: existing, error: readError } = await db
-      .from("platform_settings")
-      .select("id")
-      .eq("id", 1)
-      .maybeSingle();
+  try{
+    const {data:existing,error:readError}=await db
+      .from("platform_settings").select("id").eq("id",1).maybeSingle();
+    if(readError)throw readError;
+    if(!existing)throw new Error("Platform settings row with id 1 does not exist.");
 
-    if (readError) throw readError;
+    const {error}=await db.from("platform_settings").update({
+      bank_name,account_name,account_number,branch_code,
+      updated_at:new Date().toISOString()
+    }).eq("id",1);
 
-    if (!existing) {
-      throw new Error(
-        "Platform settings row with id 1 does not exist. Create it before saving."
-      );
-    }
-
-    const { error } = await db
-      .from("platform_settings")
-      .update({
-        bank_name,
-        account_name,
-        account_number,
-        branch_code,
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", 1);
-
-    if (error) throw error;
-
-    showInlineMessage($("bank-message"), "Bank details saved successfully.");
-  } catch (error) {
-    showInlineMessage(
-      $("bank-message"),
-      "Saving failed: " + error.message,
-      "error"
-    );
-  } finally {
-    button.disabled = false;
-    button.textContent = "Save Founder Bank Details";
+    if(error)throw error;
+    showInlineMessage($("bank-message"),"Bank details saved successfully.");
+  }catch(error){
+    showInlineMessage($("bank-message"),"Saving failed: "+error.message,"error");
+  }finally{
+    button.disabled=false;
+    button.textContent="Save bank details";
   }
 }
 
-/* Platform bookings: read bookings, then look up their service records. */
-async function loadOrders() {
-  const container = $("orders-admin-list");
-  const stat = $("stat-orders");
+async function loadOrders(){
+  const container=$("orders-admin-list");
+  showMessage(container,"Loading customer bookings…");
+  $("stat-orders").textContent="…";
 
-  showMessage(container, "Loading customer bookings…");
-  stat.textContent = "…";
+  try{
+    const totalResult=await db.from("bookings").select("id",{count:"exact",head:true});
+    if(totalResult.error)throw totalResult.error;
 
-  try {
-    const totalResult = await db
-      .from("bookings")
-      .select("id", { count: "exact", head: true });
+    const {data:bookings,error}=await db.from("bookings")
+      .select("*").order("created_at",{ascending:false}).limit(500);
+    if(error)throw error;
 
-    if (totalResult.error) throw totalResult.error;
+    allBookings=bookings||[];
+    $("stat-orders").textContent=String(totalResult.count??allBookings.length);
 
-    const result = await db
-      .from("bookings")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(100);
+    serviceById={};
+    if(allBookings.length){
+      const serviceIds=[...new Set(allBookings.map(booking=>booking.service_id).filter(Boolean))];
+      if(serviceIds.length){
+        const {data:services,error:serviceError}=await db
+          .from("service_items")
+          .select("id,title,price,sale_price,sale_start_date,sale_end_date")
+          .in("id",serviceIds);
 
-    if (result.error) throw result.error;
-
-    const bookings = result.data || [];
-    stat.textContent = String(totalResult.count ?? 0);
-    container.replaceChildren();
-
-    if (!bookings.length) {
-      showMessage(container, "No customer bookings found.");
-      return;
-    }
-
-    const serviceIds = [
-      ...new Set(
-        bookings.map(booking => booking.service_id).filter(Boolean)
-      )
-    ];
-
-    const serviceMap = {};
-
-    if (serviceIds.length) {
-      const serviceResult = await db
-        .from("service_items")
-        .select("id, title, price, sale_price, sale_start_date, sale_end_date")
-        .in("id", serviceIds);
-
-      if (serviceResult.error) throw serviceResult.error;
-
-      for (const service of serviceResult.data || []) {
-        serviceMap[service.id] = service;
+        if(serviceError){
+          console.warn("Could not load service details:",serviceError.message);
+        }else{
+          (services||[]).forEach(service=>{serviceById[service.id]=service;});
+        }
       }
     }
 
-    const today = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Africa/Johannesburg",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit"
-    }).format(new Date());
-
-    bookings.forEach(booking => {
-      const card = document.createElement("div");
-      card.className = "order-card";
-
-      const top = document.createElement("div");
-      top.className = "order-top";
-
-      const details = document.createElement("div");
-      details.style.minWidth = "0";
-
-      const title = document.createElement("div");
-      title.className = "order-title";
-      title.textContent =
-        (booking.customer_name || "Customer") +
-        " (" + (booking.customer_phone || "N/A") + ")";
-
-      const created = document.createElement("div");
-      created.className = "order-time";
-
-      if (booking.created_at) {
-        const date = new Date(booking.created_at);
-
-        created.textContent = "Booking created: " +
-          (Number.isNaN(date.getTime())
-            ? "Date unavailable"
-            : date.toLocaleString("en-ZA", {
-                timeZone: "Africa/Johannesburg",
-                dateStyle: "medium",
-                timeStyle: "short"
-              }));
-      } else {
-        created.textContent = "Booking creation date unavailable";
-      }
-
-      const appointment = document.createElement("div");
-      appointment.className = "vendor-meta";
-      appointment.textContent =
-        "Appointment: " +
-        (booking.booking_date
-          ? booking.booking_date +
-            (booking.booking_time ? ", " + booking.booking_time : "")
-          : "Not provided");
-
-      const service = serviceMap[booking.service_id];
-
-      const serviceLine = document.createElement("div");
-      serviceLine.className = "vendor-meta";
-      serviceLine.textContent =
-        "Service: " + (service?.title || "Service unavailable");
-
-      let currentPrice = null;
-      let regularPrice = null;
-      let isSalePrice = false;
-
-      if (service) {
-        const price = Number(service.price);
-        const salePrice = Number(service.sale_price);
-
-        if (
-          service.price !== null &&
-          service.price !== undefined &&
-          Number.isFinite(price)
-        ) {
-          regularPrice = price;
-          currentPrice = price;
-        }
-
-        const hasSalePrice =
-          service.sale_price !== null &&
-          service.sale_price !== undefined &&
-          Number.isFinite(salePrice) &&
-          salePrice >= 0;
-
-        const saleStarted =
-          !service.sale_start_date ||
-          service.sale_start_date <= today;
-
-        const saleNotEnded =
-          !service.sale_end_date ||
-          service.sale_end_date >= today;
-
-        if (hasSalePrice && saleStarted && saleNotEnded) {
-          currentPrice = salePrice;
-          isSalePrice = true;
-        }
-      }
-
-      const status = document.createElement("span");
-      const statusValue = String(booking.status || "pending")
-        .toLowerCase()
-        .replace(/[^a-z0-9_-]/g, "");
-
-      status.className = "status-badge status-" + statusValue;
-      status.style.marginTop = "6px";
-      status.textContent =
-        "Status: " +
-        String(booking.status || "pending")
-          .replaceAll("_", " ")
-          .toUpperCase();
-
-      const reference = document.createElement("span");
-      reference.className = "ref-pill";
-      reference.textContent =
-        "REF: " + (booking.payment_ref || "N/A");
-
-      const payment = document.createElement("div");
-      payment.className = "vendor-meta";
-      payment.textContent =
-        "Payment: " +
-        (booking.payment_method || "N/A") +
-        " · " +
-        (booking.payment_status || "Unknown");
-
-      const queue = document.createElement("div");
-      queue.className = "vendor-meta";
-      queue.textContent =
-        "Queue number: " + (booking.queue_number ?? "N/A");
-
-      details.append(
-        title,
-        created,
-        appointment,
-        serviceLine,
-        status,
-        document.createElement("br"),
-        reference,
-        payment,
-        queue
-      );
-
-      const priceBox = document.createElement("div");
-      priceBox.className = "order-price";
-      priceBox.style.textAlign = "left";
-      priceBox.style.marginTop = "10px";
-
-      if (currentPrice !== null) {
-        priceBox.textContent = "Current service price: " + money(currentPrice);
-
-        if (isSalePrice && regularPrice !== null) {
-          const original = document.createElement("div");
-          original.className = "vendor-meta";
-          original.style.textDecoration = "line-through";
-          original.textContent = "Regular price: " + money(regularPrice);
-          priceBox.appendChild(original);
-        }
-      } else {
-        priceBox.textContent = "Price unavailable";
-      }
-
-      const priceNote = document.createElement("div");
-      priceNote.className = "small-note";
-      priceNote.style.marginTop = "4px";
-      priceNote.textContent =
-        "Current service price only. Historical booking price was not saved.";
-
-      priceBox.appendChild(priceNote);
-      top.append(details, priceBox);
-      card.appendChild(top);
-      container.appendChild(card);
-    });
-  } catch (error) {
-    console.error("Founder booking load failed:", error);
-    stat.textContent = "Error";
-
-    showMessage(
-      container,
-      "Could not load customer bookings: " +
-      (error.message || "Unknown error") +
-      ". Check the bookings and service_items SELECT permissions.",
-      true
-    );
+    updateBookingAnalytics();
+    renderBookings();
+  }catch(error){
+    console.error("Founder booking load failed:",error);
+    $("stat-orders").textContent="Error";
+    ["analytics-total","analytics-pending","analytics-completed","analytics-paid"]
+      .forEach(id=>$(id).textContent="—");
+    showMessage(container,
+      "Could not load customer bookings: "+(error.message||"Unknown error")+
+      ". Check the SELECT permissions for the authorised founder account.",true);
+    throw error;
   }
 }
 
-document.addEventListener("DOMContentLoaded", boot);
+function updateBookingAnalytics(){
+  $("analytics-total").textContent=String(allBookings.length);
+  $("analytics-pending").textContent=String(allBookings.filter(booking=>
+    String(booking.status||"").toLowerCase()==="pending"
+  ).length);
+  $("analytics-completed").textContent=String(allBookings.filter(booking=>
+    String(booking.status||"").toLowerCase()==="completed"
+  ).length);
+  $("analytics-paid").textContent=String(allBookings.filter(booking=>
+    String(booking.payment_status||"").toLowerCase()==="paid"
+  ).length);
+}
+
+function currentServicePrice(service){
+  if(!service)return null;
+  const today=new Date().toISOString().slice(0,10);
+  const salePrice=service.sale_price;
+  const hasSale=salePrice!==null&&salePrice!==undefined&&salePrice!==""&&Number.isFinite(Number(salePrice));
+  const inSaleWindow=(!service.sale_start_date||today>=service.sale_start_date)&&
+    (!service.sale_end_date||today<=service.sale_end_date);
+
+  if(hasSale&&inSaleWindow)return Number(salePrice);
+  if(service.price!==null&&service.price!==undefined&&service.price!==""){
+    return Number(service.price);
+  }
+  return null;
+}
+
+function renderBookings(){
+  const container=$("orders-admin-list");
+  const query=$("booking-search").value.trim().toLowerCase();
+  const statusFilter=$("booking-status-filter").value;
+
+  const filtered=allBookings.filter(booking=>{
+    const status=String(booking.status||"pending").toLowerCase();
+    if(statusFilter!=="all"&&status!==statusFilter)return false;
+
+    const service=serviceById[booking.service_id];
+    const searchable=[
+      booking.customer_name,booking.customer_phone,booking.payment_ref,
+      booking.status,booking.payment_status,booking.payment_method,
+      booking.id,booking.service_id,service?.title
+    ].join(" ").toLowerCase();
+
+    return !query||searchable.includes(query);
+  });
+
+  $("booking-results-note").textContent=
+    "Showing "+filtered.length+" of "+allBookings.length+
+    " loaded bookings. Analytics reflect the loaded booking records.";
+
+  container.replaceChildren();
+  if(!filtered.length){
+    showMessage(container,allBookings.length
+      ?"No bookings match your search or status filter."
+      :"No customer bookings found.");
+    return;
+  }
+
+  filtered.forEach(booking=>{
+    const service=serviceById[booking.service_id]||null;
+    const card=document.createElement("article");
+    card.className="order-card";
+
+    const top=document.createElement("div");
+    top.className="order-top";
+    const details=document.createElement("div");
+    details.style.minWidth="0";
+
+    addText(details,"div","order-title",
+      (booking.customer_name||"Customer")+" ("+(booking.customer_phone||"N/A")+")");
+    addText(details,"div","order-time","Booking created: "+safeDate(booking.created_at));
+    addText(details,"div","vendor-meta",
+      "Appointment: "+(booking.booking_date||"Not provided")+
+      (booking.booking_time?" at "+booking.booking_time:""));
+    addText(details,"div","vendor-meta","Service: "+(service?.title||"Service details unavailable"));
+
+    const status=document.createElement("span");
+    status.className=badgeClass(booking.status);
+    status.style.marginTop="8px";
+    status.textContent="Status: "+String(booking.status||"pending").replaceAll("_"," ").toUpperCase();
+    details.appendChild(document.createElement("br"));
+    details.appendChild(status);
+
+    const reference=document.createElement("span");
+    reference.className="ref-pill";
+    reference.textContent="REF: "+(booking.payment_ref||"N/A");
+    details.appendChild(document.createElement("br"));
+    details.appendChild(reference);
+
+    const paymentStatus=String(booking.payment_status||"Unknown").toUpperCase();
+    addText(details,"div","vendor-meta",
+      "Payment: "+(booking.payment_method||"Not specified")+" · "+paymentStatus);
+
+    if(booking.queue_number!==null&&booking.queue_number!==undefined){
+      addText(details,"div","vendor-meta","Queue number: "+booking.queue_number);
+    }
+
+    if(booking.comment){
+      addText(details,"div","vendor-meta","Customer note: "+booking.comment);
+    }
+
+    const priceWrap=document.createElement("div");
+    priceWrap.style.minWidth="0";
+    const currentPrice=currentServicePrice(service);
+
+    addText(priceWrap,"div","order-price",
+      currentPrice===null?"Current service price unavailable":"Current service price: "+money(currentPrice));
+
+    addText(priceWrap,"div","price-note",
+      "Current catalogue price only. This database does not store a historical booked price for this record.");
+
+    top.append(details,priceWrap);
+    card.appendChild(top);
+    container.appendChild(card);
+  });
+}
+
+document.addEventListener("DOMContentLoaded",boot);
 })();
 </script>
 </body>
