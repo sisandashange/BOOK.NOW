@@ -792,49 +792,52 @@ button:disabled{opacity:.6;cursor:not-allowed}
   }
 
   async function saveVendorBankDetails() {
-    if (!activeVendor) return;
+  if (!activeVendor) return;
 
-    const button = $("save-bank-btn");
-    const bankVal = $("bank-select").value;
-    const account_holder = $("account-holder").value.trim();
-    const account_number = $("account-number").value.trim();
-    const branch_code = $("branch-code").value.trim();
+  const button = $("save-bank-btn");
+  const bankVal = $("bank-select").value;
+  const account_holder = $("account-holder").value.trim();
+  const account_number = $("account-number").value.trim();
+  const branch_code = $("branch-code").value.trim();
 
-    if (!bankVal || !account_number) {
-      alert("Please select your bank and enter your account number.");
-      return;
-    }
-
-    const bank_name = bankVal.split("|")[0];
-
-    setButtonLoading(button, true, "Saving Bank Details...");
-
-    try {
-      const { error } = await db
-        .from("stores")
-        .update({
-          bank_name,
-          account_holder,
-          account_number,
-          branch_code,
-          updated_at: new Date()
-        })
-        .eq("id", activeVendor.id);
-
-      if (error) throw error;
-
-      activeVendor.bank_name = bank_name;
-      activeVendor.account_holder = account_holder;
-      activeVendor.account_number = account_number;
-      activeVendor.branch_code = branch_code;
-
-      alert("Bank details saved securely!");
-    } catch (error) {
-      alert("Error saving bank details: " + error.message);
-    } finally {
-      setButtonLoading(button, false, "Save Verified Bank Details");
-    }
+  if (!bankVal || !account_number) {
+    alert("Please select your bank and enter your account number.");
+    return;
   }
+
+  const bank_name = bankVal.split("|")[0];
+
+  setButtonLoading(button, true, "Saving Bank Details...");
+
+  try {
+    const { error } = await db
+      .from("stores")
+      .update({
+        bank_name,
+        account_holder,
+        account_name: account_holder,
+        account_number,
+        branch_code,
+        updated_at: new Date()
+      })
+      .eq("id", activeVendor.id);
+
+    if (error) throw error;
+
+    activeVendor.bank_name = bank_name;
+    activeVendor.account_holder = account_holder;
+    activeVendor.account_name = account_holder;
+    activeVendor.account_number = account_number;
+    activeVendor.branch_code = branch_code;
+
+    alert("Bank details saved securely!");
+  } catch (error) {
+    alert("Error saving bank details: " + error.message);
+  } finally {
+    setButtonLoading(button, false, "Save Verified Bank Details");
+  }
+}
+
 
   function openQrScanner() {
     if (!activeVendor) {
