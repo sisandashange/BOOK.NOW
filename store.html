@@ -21,6 +21,7 @@
       --muted: #64748b;
       --border: #e2e8f0;
       --success: #16a34a;
+      --warning: #d97706;
       --danger: #dc2626;
       --danger-bg: #fef2f2;
       --radius: 16px;
@@ -220,7 +221,6 @@
         cashBtn.style.border = "1px solid var(--border)";
         cashBtn.style.background = "white";
         cashBtn.style.color = "var(--text)";
-
         eftNotice.style.display = "block";
       } else {
         cashBtn.style.border = "2px solid var(--accent)";
@@ -230,7 +230,6 @@
         eftBtn.style.border = "1px solid var(--border)";
         eftBtn.style.background = "white";
         eftBtn.style.color = "var(--text)";
-
         eftNotice.style.display = "none";
       }
     };
@@ -251,12 +250,27 @@
       try {
         const { data: vendor, error: vendorErr } = await supabase
           .from("vendors")
-          .select("id, name, category, store_image_url, phone_number, bank_name, account_holder, account_number, branch_code, created_at")
+          .select("id, name, category, store_image_url, phone_number, bank_name, account_holder, account_number, branch_code, subscription_status, created_at")
           .eq("id", vendorId)
           .single();
 
         if (vendorErr || !vendor) throw new Error("Store details not found.");
         vendorData = vendor;
+
+        // CRITICAL CUSTOMER PROTECTION: Lock store if status is not ACTIVE (pending approval or expired)
+        if (vendor.subscription_status !== "ACTIVE") {
+          document.querySelector(".container").innerHTML = `
+            <div style="text-align: center; padding: 50px 20px; background: white; border-radius: 16px; border: 1px solid var(--border); margin-top: 40px;">
+              <div style="font-size: 48px; color: var(--warning); margin-bottom: 12px;"><i class="ph ph-lock-key"></i></div>
+              <h2 style="font-size: 18px; font-weight: 800; color: var(--primary); margin-bottom: 8px;">Store Temporarily Locked</h2>
+              <p style="font-size: 13px; color: var(--muted); max-width: 400px; margin: 0 auto 20px auto; line-height: 1.5;">
+                <strong>${vendor.name}</strong> is currently pending subscription verification or renewal. All store data is secure. Please check back shortly.
+              </p>
+              <a href="index.html" class="btn-book" style="display: inline-block; text-decoration: none; padding: 10px 20px;">Return to Marketplace</a>
+            </div>
+          `;
+          return;
+        }
 
         const heroCover = vendor.store_image_url || FALLBACK_IMAGES[vendor.category] || FALLBACK_IMAGES.DEFAULT;
         $("store-hero-box").innerHTML = `
@@ -473,7 +487,6 @@
         const rawVendorPhone = vendorData && vendorData.phone_number ? vendorData.phone_number : "27820000000"; 
         const cleanVendorPhone = rawVendorPhone.replace(/[^0-9]/g, "");
 
-        // Dynamically get vendor bank details for this specific store
         const bankName = vendorData && vendorData.bank_name ? vendorData.bank_name : "Request on WhatsApp";
         const accHolder = vendorData && vendorData.account_holder ? vendorData.account_holder : vendorShopName;
         const accNumber = vendorData && vendorData.account_number ? vendorData.account_number : "Contact Shop";
@@ -497,7 +510,6 @@
               QUEUE POSITION: #${queueNumber} FOR TODAY
             </div>
 
-            <!-- VENDOR SPECIFIC BANK DETAILS -->
             <div style="background: #f8fafc; border: 1px solid var(--border); padding: 12px; border-radius: 10px; margin-bottom: 12px; text-align: left; font-size: 12px;">
               <div style="font-weight: 800; color: var(--primary); margin-bottom: 6px;"><i class="ph ph-bank"></i> Official Bank Account for ${vendorShopName}:</div>
               <div style="margin-bottom: 3px;"><strong>Bank:</strong> ${bankName}</div>
