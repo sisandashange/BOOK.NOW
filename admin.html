@@ -1,295 +1,196 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BOOK.NOW — Founder Command Center</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Portal — BOOK.NOW Founder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <style>
-    :root {
-      --primary: #0f172a;
-      --accent: #2563eb;
-      --bg: #f8fafc;
-      --surface: #ffffff;
-      --text: #0f172a;
-      --muted: #64748b;
-      --border: #e2e8f0;
-      --success: #16a34a;
-      --danger: #dc2626;
-      --radius: 16px;
-      --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
-    }
+<style>
+:root {
+  --primary:#0f172a;--accent:#2563eb;--bg:#f8fafc;--surface:#fff;
+  --text:#0f172a;--muted:#64748b;--border:#e2e8f0;
+  --success:#16a34a;--success-bg:#f0fdf4;--warning-bg:#fffbeb;
+  --warning:#d97706;--danger:#dc2626;--danger-bg:#fef2f2;--radius:16px;
+}
+*{box-sizing:border-box;font-family:'Plus Jakarta Sans',sans-serif;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);padding-bottom:50px}
+button,input{font:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.6;cursor:not-allowed}
 
-    * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-    body { margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 60px; }
-
-    .top-nav {
-      background: var(--primary);
-      color: white;
-      padding: 16px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 30;
-    }
-    .brand { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
-    .admin-badge { background: #38bdf8; color: #0c4a6e; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; }
-
-    .container { padding: 20px 16px; max-width: 900px; margin: 0 auto; }
-
-    /* STATS GRID */
-    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
-    @media (max-width: 640px) { .stats-grid { grid-template-columns: 1fr; } }
-
-    .stat-card { background: var(--surface); padding: 18px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
-    .stat-label { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
-    .stat-value { font-size: 24px; font-weight: 800; color: var(--primary); }
-    .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
-
-    /* SECTION TABLES / CARDS */
-    .section-title { font-size: 16px; font-weight: 800; margin: 24px 0 12px 0; color: var(--primary); display: flex; align-items: center; gap: 8px; }
-
-    .card-list { display: flex; flex-direction: column; gap: 12px; }
-    .item-card { background: var(--surface); padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-    
-    .item-info h4 { margin: 0 0 4px 0; font-size: 14px; font-weight: 700; }
-    .item-info p { margin: 0; font-size: 12px; color: var(--muted); }
-
-    .btn-approve { background: var(--success); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: background 0.2s; }
-    .btn-approve:hover { background: #15803d; }
-
-    .status-tag { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
-    .tag-active { background: #dcfce7; color: #166534; }
-    .tag-pending { background: #fef3c7; color: #92400e; }
-
-    .empty-box { text-align: center; padding: 32px 16px; background: var(--surface); border-radius: 14px; border: 1px dashed var(--border); color: var(--muted); font-size: 13px; }
-  </style>
+#auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-card{background:white;padding:28px;border-radius:20px;border:1px solid var(--border);width:100%;max-width:400px}
+.auth-title{text-align:center;font-size:20px;font-weight:700;margin-bottom:6px}
+.auth-sub{text-align:center;font-size:13px;color:var(--muted);margin-bottom:24px}
+.top-nav{background:white;padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:20}
+.brand{font-size:16px;font-weight:800;display:flex;align-items:center;gap:7px;color:var(--primary)}
+.container{padding:16px;max-width:900px;margin:auto}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.section-head h3{font-size:16px;margin:0}
+.btn-primary{background:var(--accent);color:white;border:0;padding:12px 14px;border-radius:10px;font-size:13px;font-weight:600;width:100%}
+.card-list{display:flex;flex-direction:column;gap:12px}
+.vendor-card{background:white;padding:16px;border-radius:14px;border:1px solid var(--border);display:flex;flex-direction:column;gap:10px}
+.vendor-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.vendor-title{font-weight:800;font-size:15px}
+.vendor-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.status-badge{padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;display:inline-block}
+.status-active{background:var(--success-bg);color:var(--success)}
+.status-pending{background:var(--warning-bg);color:var(--warning)}
+.form-field{margin-bottom:14px}
+.form-field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.form-field input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);font-size:14px}
+.empty-box{text-align:center;padding:32px 16px;background:white;border-radius:14px;border:1px dashed var(--border);color:var(--muted);font-size:13px}
+</style>
 </head>
 <body>
 
-  <!-- TOP NAV -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="brand" style="justify-content:center;margin-bottom:16px"><i class="ph ph-shield-check" style="font-size:26px;color:var(--accent)"></i> Founder Admin</div>
+    <div class="auth-title">Admin Login</div>
+    <div class="auth-sub">Enter founder credentials to manage vendors</div>
+    <div class="form-field"><label for="admin-email">Email Address</label><input type="email" id="admin-email" placeholder="founder@booknow.co.za"></div>
+    <div class="form-field"><label for="admin-password">Password</label><input type="password" id="admin-password" placeholder="Password"></div>
+    <button class="btn-primary" id="admin-login-btn">Sign In to Admin</button>
+  </div>
+</div>
+
+<div id="admin-dashboard" style="display:none">
   <div class="top-nav">
-    <div class="brand">
-      <i class="ph ph-crown" style="font-size: 22px; color: #f59e0b;"></i>
-      BOOK.NOW Founder Portal
-    </div>
-    <span class="admin-badge">Central Ledger</span>
+    <div class="brand"><i class="ph ph-shield-check" style="font-size:20px;color:var(--accent)"></i> BOOK.NOW Founder Control Panel</div>
+    <button class="btn-primary" style="width:auto;padding:8px 12px;background:#fee2e2;color:#991b1b" id="admin-logout-btn">Sign Out</button>
   </div>
 
-  <div class="container">
-    <!-- OVERVIEW STATS -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">Platform Revenue (10%)</div>
-        <div class="stat-value" id="stat-founder-commission">R0.00</div>
-        <div class="stat-sub">From all completed bookings</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Subscriptions (R199/mo)</div>
-        <div class="stat-value" id="stat-subscription-revenue">R0.00</div>
-        <div class="stat-sub">Collected from active partners</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Vendor Money Stores</div>
-        <div class="stat-value" id="stat-vendor-total">R0.00</div>
-        <div class="stat-sub">Total accumulated vendor 90% share</div>
-      </div>
+  <main class="container">
+    <div class="section-head">
+      <h3>All Registered Vendors &amp; Subscriptions</h3>
+      <button class="btn-primary" style="width:auto;padding:8px 12px;" onclick="loadVendorsList()">Refresh List</button>
     </div>
-
-    <!-- PENDING WITHDRAWAL REQUESTS -->
-    <div class="section-title">
-      <i class="ph ph-hand-coins" style="color:var(--accent);"></i> Pending Payout Requests (Wed / Fri)
+    <div id="vendors-admin-list" class="card-list">
+      <div class="empty-box">Loading vendors...</div>
     </div>
-    <div id="payout-requests-list" class="card-list">
-      <div class="empty-box">Loading pending payout requests...</div>
-    </div>
+  </main>
+</div>
 
-    <!-- PARTNER SUBSCRIPTION STATUS -->
-    <div class="section-title">
-      <i class="ph ph-storefront" style="color:var(--accent);"></i> Partner Monthly Subscriptions (R199/month)
-    </div>
-    <div id="partner-subscriptions-list" class="card-list">
-      <div class="empty-box">Loading partner subscription status...</div>
-    </div>
-  </div>
+<script>
+(() => {
+  "use strict";
+  const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
+  let db = null;
 
-  <script>
-  (() => {
-    "use strict";
+  const $ = id => document.getElementById(id);
 
-    const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
+  async function boot() {
+    db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let supabase = null;
+    $("admin-login-btn").addEventListener("click", async () => {
+      const email = $("admin-email").value.trim();
+      const password = $("admin-password").value;
+      if (!email || !password) return alert("Enter credentials.");
+      
+      const { error } = await db.auth.signInWithPassword({ email, password });
+      if (error) return alert("Login failed: " + error.message);
+      checkSession();
+    });
 
-    const $ = id => document.getElementById(id);
-    const money = val => "R" + (Number(val) || 0).toFixed(2);
+    $("admin-logout-btn").addEventListener("click", async () => {
+      await db.auth.signOut();
+      $("admin-dashboard").style.display = "none";
+      $("auth-screen").style.display = "flex";
+    });
 
-    async function loadFounderDashboard() {
-      try {
-        // 1. Calculate Founder's 10% Platform Commissions
-        const { data: orders, error: orderErr } = await supabase
-          .from("orders")
-          .select("gross_amount, vendor_net_earnings, status")
-          .eq("status", "COMPLETED");
+    checkSession();
+  }
 
-        if (orderErr) throw orderErr;
+  async function checkSession() {
+    const { data: { session } } = await db.auth.getSession();
+    if (session) {
+      $("auth-screen").style.display = "none";
+      $("admin-dashboard").style.display = "block";
+      loadVendorsList();
+    }
+  }
 
-        let totalCommission = 0;
-        let totalVendorEarnings = 0;
+  window.loadVendorsList = async function() {
+    const container = $("vendors-admin-list");
+    container.replaceChildren();
 
-        (orders || []).forEach(o => {
-          const gross = Number(o.gross_amount || 0);
-          const net = Number(o.vendor_net_earnings || 0);
-          totalCommission += (gross - net);
-          totalVendorEarnings += net;
-        });
+    const { data: vendors, error } = await db
+      .from("vendors")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-        $("stat-founder-commission").textContent = money(totalCommission);
-        $("stat-vendor-total").textContent = money(totalVendorEarnings);
-
-        // 2. Fetch Subscription Revenue
-        const { data: subs, error: subErr } = await supabase
-          .from("vendor_subscriptions")
-          .select("amount");
-
-        let subTotal = 0;
-        if (!subErr && subs) {
-          subTotal = subs.reduce((sum, s) => sum + Number(s.amount || 0), 0);
-        }
-        $("stat-subscription-revenue").textContent = money(subTotal);
-
-        // 3. Load Pending Withdrawal Requests
-        await loadWithdrawalRequests();
-
-        // 4. Load Vendor Subscription Roster
-        await loadVendorSubscriptions();
-
-      } catch (err) {
-        console.error("Founder dashboard load error:", err);
-      }
+    if (error) {
+      container.innerHTML = `<div class="empty-box">Error loading vendors: ${error.message}</div>`;
+      return;
     }
 
-    async function loadWithdrawalRequests() {
-      const container = $("payout-requests-list");
-      container.replaceChildren();
-
-      try {
-        const { data: requests, error } = await supabase
-          .from("withdrawal_requests")
-          .select("id, amount, requested_at, status, vendors(name)")
-          .eq("status", "PENDING")
-          .order("requested_at", { ascending: true });
-
-        if (error) throw error;
-
-        if (!requests || requests.length === 0) {
-          container.innerHTML = '<div class="empty-box">No pending withdrawal requests.</div>';
-          return;
-        }
-
-        requests.forEach(req => {
-          const card = document.createElement("div");
-          card.className = "item-card";
-
-          const info = document.createElement("div");
-          info.className = "item-info";
-          const vendorName = req.vendors ? req.vendors.name : "Partner Shop";
-          info.innerHTML = `
-            <h4>${vendorName}</h4>
-            <p>Requested: ${money(req.amount)} • ${new Date(req.requested_at).toLocaleString()}</p>
-          `;
-
-          const btn = document.createElement("button");
-          btn.className = "btn-approve";
-          btn.innerHTML = `<i class="ph ph-check"></i> Approve &amp; Pay Out`;
-          btn.addEventListener("click", () => approveWithdrawal(req.id, req.amount));
-
-          card.append(info, btn);
-          container.appendChild(card);
-        });
-
-      } catch (err) {
-        container.innerHTML = `<div class="empty-box">Error loading requests: ${err.message}</div>`;
-      }
+    if (!vendors || vendors.length === 0) {
+      container.innerHTML = `<div class="empty-box">No vendors registered yet.</div>`;
+      return;
     }
 
-    async function approveWithdrawal(requestId, amount) {
-      if (!confirm(`Confirm payout of R${amount}? This will mark the withdrawal as APPROVED.`)) return;
+    vendors.forEach(v => {
+      const card = document.createElement("div");
+      card.className = "vendor-card";
 
-      try {
-        const { error } = await supabase
-          .from("withdrawal_requests")
-          .update({ status: "APPROVED", processed_at: new Date().toISOString() })
-          .eq("id", requestId);
+      const status = v.subscription_status || "PENDING_APPROVAL";
+      const expires = v.subscription_expires_at ? new Date(v.subscription_expires_at).toLocaleDateString() : "Not Activated";
+      const ref = v.pending_payment_ref || "N/A";
+      const popLink = v.pop_receipt_url ? `<a href="${v.pop_receipt_url}" target="_blank" style="color:var(--accent); font-weight:700; text-decoration:none;"><i class="ph ph-file-arrow-down"></i> View Proof of Payment</a>` : `<span style="color:var(--muted);">No POP uploaded yet</span>`;
 
-        if (error) throw error;
+      card.innerHTML = `
+        <div class="vendor-top">
+          <div>
+            <div class="vendor-title">${v.name} (${v.category || 'STORE'})</div>
+            <div class="vendor-meta">Owner ID: ${v.owner_id}</div>
+            <div class="vendor-meta">Payment Ref: <code style="background:#f1f5f9; padding:2px 6px; border-radius:4px; font-weight:700;">${ref}</code></div>
+            <div class="vendor-meta">Subscription Expires: <strong>${expires}</strong></div>
+          </div>
+          <div>
+            <span class="status-badge status-${status === 'ACTIVE' ? 'active' : 'pending'}">${status}</span>
+          </div>
+        </div>
 
-        alert("Payout approved successfully!");
-        loadFounderDashboard();
-      } catch (err) {
-        alert("Approval failed: " + err.message);
-      }
-    }
+        <div style="background:#f8fafc; padding:10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; font-size:12px;">
+          <div>${popLink}</div>
+          <button class="btn-primary" onclick="approveVendor('${v.id}')" style="width:auto; padding:8px 14px; background:var(--success);">
+            ✓ Approve Store (1 Month Active)
+          </button>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  };
 
-    async function loadVendorSubscriptions() {
-      const container = $("partner-subscriptions-list");
-      container.replaceChildren();
+  window.approveVendor = async function(vendorId) {
+    // Set status to ACTIVE and grant exactly 1 month from today
+    const expiryDate = new Date();
+    expiryDate.setMonth(expiryDate.getMonth() + 1);
 
-      try {
-        const { data: vendors, error } = await supabase
-          .from("vendors")
-          .select("id, name, category, created_at")
-          .order("created_at", { ascending: false });
+    const { error } = await db
+      .from("vendors")
+      .update({
+        subscription_status: "ACTIVE",
+        subscription_expires_at: expiryDate.toISOString()
+      })
+      .eq("id", vendorId);
 
-        if (error) throw error;
-
-        if (!vendors || vendors.length === 0) {
-          container.innerHTML = '<div class="empty-box">No registered partners yet.</div>';
-          return;
-        }
-
-        vendors.forEach(v => {
-          const card = document.createElement("div");
-          card.className = "item-card";
-
-          const info = document.createElement("div");
-          info.className = "item-info";
-          info.innerHTML = `
-            <h4>${v.name}</h4>
-            <p>Category: ${v.category || 'SPOT'} • Fee: R199.00 / month</p>
-          `;
-
-          const tag = document.createElement("span");
-          tag.className = "status-tag tag-active";
-          tag.textContent = "ACTIVE";
-
-          card.append(info, tag);
-          container.appendChild(card);
-        });
-
-      } catch (err) {
-        container.innerHTML = `<div class="empty-box">Error loading subscriptions: ${err.message}</div>`;
-      }
-    }
-
-    function init() {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      loadFounderDashboard();
-    }
-
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", init, { once: true });
+    if (error) {
+      alert("Error approving vendor: " + error.message);
     } else {
-      init();
+      alert("Vendor approved successfully! Store is now unlocked and live.");
+      loadVendorsList();
     }
-  })();
-  </script>
+  };
+
+  document.addEventListener("DOMContentLoaded", boot);
+})();
+</script>
 </body>
 </html>
