@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Find and book local barbershops, beauty salons and shisanyama spots near you.">
   <meta name="theme-color" content="#0f172a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
   <meta property="og:title" content="BOOK.NOW — Discover & Book Local Shops">
   <meta property="og:description" content="Find and book local barbershops, beauty salons and shisanyama spots.">
   <title>BOOK.NOW — Discover & Book Local Shops</title>
@@ -319,5 +321,6 @@
     }
   })();
   </script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
 </body>
 </html>
