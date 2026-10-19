@@ -151,7 +151,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   <main class="container">
     <div class="stats-container">
       <div class="stat-box"><div class="stat-header"><i class="ph ph-currency-circle-dollar"></i> Vendor Net Revenue</div><div class="stat-value" id="stat-revenue">R0.00</div></div>
-      <div class="stat-box"><div class="stat-header"><i class="ph ph-users"></i> Queue Active Today</div><div class="stat-value" id="stat-count">0</div></div>
+      <div class="stat-box"><div class="stat-header"><i class="ph ph-users"></i> Appointments Today</div><div class="stat-value" id="stat-count">0</div></div>
     </div>
 
     <div class="nav-tabs">
@@ -164,8 +164,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     </div>
 
     <section id="orders-tab">
-      <div class="section-head"><h3>Today's Active Appointments Queue</h3></div>
-      <div id="orders-list" class="card-list"><div class="empty-box">No bookings received yet.</div></div>
+      <div class="section-head"><h3>Today's Appointments</h3></div>
+      <div id="orders-list" class="card-list"><div class="empty-box">No appointments today.</div></div>
+      <div class="section-head" style="margin-top:24px"><h3>Upcoming Appointments</h3></div>
+      <div id="upcoming-list" class="card-list"><div class="empty-box">No upcoming appointments.</div></div>
     </section>
 
     <section id="services-tab" style="display:none">
@@ -343,6 +345,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   const money = v => "R" + (Number.isFinite(Number(v)) ? Number(v) : 0).toFixed(2);
   const saDate = d => new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Johannesburg" }).format(d instanceof Date ? d : new Date(d));
   const saToday = () => saDate(new Date());
+  const fmtAppt = b => new Date(b.booking_date + "T12:00:00Z").toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) + (b.booking_time ? " at " + b.booking_time : "");
 
   // Safe element builder: text is always inserted as text, never as HTML
   function h(tag, attrs = {}, ...kids) {
@@ -642,7 +645,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         h("div", { style: "font-size:14px;font-weight:800;color:#166534;margin-bottom:4px", text: "VALID BOOKING FOUND" }),
         h("div", { style: "font-size:12px", text: `Customer: ${booking.customer_name || "N/A"} (${booking.customer_phone || "N/A"})` }),
         h("div", { style: "font-size:12px;margin-top:4px", text: "Payment ref: " + (booking.payment_ref || "N/A") }),
-        h("div", { style: "font-size:12px;font-weight:800;color:#b45309;margin-top:6px", text: ahead === 0 ? "Next in line!" : `Queue: ${ahead} customer(s) ahead.` }),
+        h("div", { style: "font-size:12px;font-weight:800;color:#b45309;margin-top:6px", text: booking.booking_date ? "Appointment: " + fmtAppt(booking) : (ahead === 0 ? "Next in line!" : `Queue: ${ahead} customer(s) ahead.`) }),
         complete));
     } catch (err) {
       status.textContent = "Scanner error: " + err.message;
@@ -935,6 +938,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         h("div", { class: "order-top" },
           h("div", { class: "order-title", text: b.customer_name ? `${b.customer_name} — ${b.customer_phone || ""}` : "Service booking" }),
           h("div", { class: "order-price", text: money(amount) })),
+        row("Appointment", b.booking_date ? fmtAppt(b) : "Not set (older booking)"),
         row("Booking status", String(b.status || "pending").replaceAll("_", " ")),
         row("Payment ref", b.payment_ref),
         row("Payment method", String(b.payment_method || "EFT").replaceAll("_", " ")),
@@ -952,6 +956,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
       const all = bookings || [];
       const today = saToday();
+      const apptDay = b => b.booking_date || saDate(b.created_at);
+      const byTime = (a, b) => String(a.booking_time || "").localeCompare(String(b.booking_time || ""));
       let revenue = 0, eft = 0, activeToday = 0;
 
       all.forEach(b => {
@@ -959,40 +965,45 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         if (st === "COMPLETED") {
           revenue += bookingPrice(b);
           if (String(b.payment_method || "EFT").toUpperCase() === "EFT") eft += bookingPrice(b);
-        } else if ((st === "PENDING" || st === "CONFIRMED") && saDate(b.created_at) === today) {
+        } else if ((st === "PENDING" || st === "CONFIRMED") && apptDay(b) === today) {
           activeToday++;
         }
       });
 
-      const todays = all.filter(b => saDate(b.created_at) === today);
-      if (!todays.length) {
-        setEmpty("orders-list", "No bookings today yet.");
-      } else {
-        $("orders-list").replaceChildren(...todays.map(b => {
-          const st = String(b.status || "pending").toUpperCase();
-          const serviceTitle = b.service_items?.title || "Service Appointment";
-          const when = new Date(b.created_at).toLocaleString("en-ZA", { timeZone: "Africa/Johannesburg", dateStyle: "medium", timeStyle: "short" });
+      const todays = all.filter(b => apptDay(b) === today).sort(byTime);
+      const upcoming = all.filter(b => apptDay(b) > today && String(b.status || "").toLowerCase() !== "cancelled")
+        .sort((x, y) => apptDay(x).localeCompare(apptDay(y)) || byTime(x, y));
 
-          const left = h("div", {},
-            h("div", { class: "order-title", text: serviceTitle }),
-            h("div", { class: "order-time" },
-              h("div", { text: `Customer: ${b.customer_name || "Guest"} (${b.customer_phone || "N/A"})` }),
-              h("div", { text: "Booked: " + when })),
-            h("div", { class: "order-status status-" + st.toLowerCase(), text: st }),
-            h("span", { class: "ref-pill", text: "REF: " + (b.payment_ref || "N/A") }),
-            h("span", { class: "queue-pill", text: "QUEUE #" + (b.queue_number || "1") }));
+      const buildCard = b => {
+        const st = String(b.status || "pending").toUpperCase();
+        const serviceTitle = b.service_items?.title || "Service Appointment";
+        const when = new Date(b.created_at).toLocaleString("en-ZA", { timeZone: "Africa/Johannesburg", dateStyle: "medium", timeStyle: "short" });
 
-          const card = h("div", { class: "order-card" }, h("div", { class: "order-top" }, left, h("div", {}, h("div", { class: "order-price", text: money(bookingPrice(b)) }))));
+        const left = h("div", {},
+          h("div", { class: "order-title", text: serviceTitle }),
+          h("div", { class: "order-time" },
+            h("div", { style: "font-weight:700;color:var(--text)", text: b.booking_date ? "Appointment: " + fmtAppt(b) : "Appointment: not set (older booking)" }),
+            h("div", { text: `Customer: ${b.customer_name || "Guest"} (${b.customer_phone || "N/A"})` }),
+            h("div", { text: "Booked on: " + when })),
+          h("div", { class: "order-status status-" + st.toLowerCase(), text: st }),
+          h("span", { class: "ref-pill", text: "REF: " + (b.payment_ref || "N/A") }),
+          h("span", { class: "queue-pill", text: b.booking_time ? "TIME " + b.booking_time : "BOOKING #" + (b.queue_number || "1") }));
 
-          if (st !== "COMPLETED" && st !== "CANCELLED") {
-            const actions = h("div", { class: "order-actions" });
-            if (st === "PENDING") actions.appendChild(h("button", { class: "btn-action btn-confirm", text: "Confirm Booking", onclick: () => updateBookingStatus(b.id, "confirmed", false) }));
-            actions.appendChild(h("button", { class: "btn-action btn-complete", text: "Mark Completed & Paid", onclick: () => updateBookingStatus(b.id, "completed", true) }));
-            card.appendChild(actions);
-          }
-          return card;
-        }));
-      }
+        const card = h("div", { class: "order-card" }, h("div", { class: "order-top" }, left, h("div", {}, h("div", { class: "order-price", text: money(bookingPrice(b)) }))));
+
+        if (st !== "COMPLETED" && st !== "CANCELLED") {
+          const actions = h("div", { class: "order-actions" });
+          if (st === "PENDING") actions.appendChild(h("button", { class: "btn-action btn-confirm", text: "Confirm Booking", onclick: () => updateBookingStatus(b.id, "confirmed", false) }));
+          actions.appendChild(h("button", { class: "btn-action btn-complete", text: "Mark Completed & Paid", onclick: () => updateBookingStatus(b.id, "completed", true) }));
+          card.appendChild(actions);
+        }
+        return card;
+      };
+
+      if (!todays.length) setEmpty("orders-list", "No appointments today.");
+      else $("orders-list").replaceChildren(...todays.map(buildCard));
+      if (!upcoming.length) setEmpty("upcoming-list", "No upcoming appointments.");
+      else $("upcoming-list").replaceChildren(...upcoming.map(buildCard));
 
       $("stat-revenue").textContent = money(revenue);
       $("stat-count").textContent = String(activeToday);
