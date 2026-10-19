@@ -65,6 +65,7 @@
     .form-field { margin-bottom:12px; }
     .form-field label { display:block; font-size:11px; font-weight:700; color:var(--muted); margin-bottom:5px; text-transform:uppercase; }
     .form-field input { width:100%; padding:11px; border-radius:10px; border:1px solid var(--border); font-size:14px; }
+    .form-field select { width:100%; padding:11px; border-radius:10px; border:1px solid var(--border); font-size:14px; background:#fff; }
     .pay-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px; }
     .pay-btn { padding:10px; border-radius:8px; border:1px solid var(--border); background:#fff; color:var(--text); font-weight:700; font-size:12px; cursor:pointer; }
     .pay-btn.on { border:2px solid var(--accent); background:#eff6ff; color:var(--accent); }
@@ -99,7 +100,7 @@
     <div class="modal-sheet">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
         <div>
-          <span style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;">Instant Appointment</span>
+          <span style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;">Book your appointment</span>
           <h3 id="modal-service-title" style="margin:2px 0 0;font-size:16px;font-weight:800;">Service</h3>
         </div>
         <button id="close-modal-btn" aria-label="Close booking form" style="background:none;border:0;cursor:pointer;"><i class="ph ph-x-circle" style="font-size:24px;color:var(--muted);"></i></button>
@@ -112,6 +113,15 @@
       <div class="form-field">
         <label for="customer-phone">Phone Number (WhatsApp)</label>
         <input type="tel" id="customer-phone" placeholder="e.g. 082 123 4567" autocomplete="tel">
+      </div>
+      <div class="form-field">
+        <label for="booking-date">Appointment Date</label>
+        <input type="date" id="booking-date" required>
+      </div>
+      <div class="form-field">
+        <label for="booking-time">Appointment Time</label>
+        <select id="booking-time" required><option value="">Choose a date first</option></select>
+        <div id="slot-hint" style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4;"></div>
       </div>
 
       <div class="form-field">
@@ -197,23 +207,64 @@
         return { open: false, hard: false, message: "Temporarily closed. New bookings are paused." };
       }
 
-      const now = saNow();
-      const today = `${now.year}-${now.month}-${now.day}`;
-      const time = `${now.hour}:${now.minute}`;
+      return { open: true, hard: false, message: "Open for bookings." };
+    }
+
+    function toMin(hhmm) { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; }
+    function fmtMin(m) { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }
+    function saTodayStr() { const n = saNow(); return `${n.year}-${n.month}-${n.day}`; }
+    function addDays(dateStr, days) { const d = new Date(dateStr + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); }
+    function fmtAppt(dateStr, timeStr) {
+      const d = new Date(dateStr + "T12:00:00Z").toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+      return d + " at " + timeStr;
+    }
+
+    function dateClosedReason(store, d) {
       const hs = store.holiday_start_date ? String(store.holiday_start_date).slice(0, 10) : "";
       const he = store.holiday_end_date ? String(store.holiday_end_date).slice(0, 10) : "";
-      if ((hs && he && today >= hs && today <= he) || (hs && !he && today >= hs) || (!hs && he && today === he)) {
-        return { open: false, hard: false, message: "Closed for a scheduled holiday." };
+      if ((hs && he && d >= hs && d <= he) || (hs && !he && d >= hs) || (!hs && he && d === he)) {
+        return "The shop is closed on this date. Try another day.";
+      }
+      return "";
+    }
+
+    // Builds the 30-minute time slots for the chosen date and greys out booked ones
+    async function refreshSlots() {
+      const sel = $("booking-time"), hint = $("slot-hint"), date = $("booking-date").value;
+      const mk = (v, t, dis) => { const o = document.createElement("option"); o.value = v; o.textContent = t; o.disabled = !!dis; return o; };
+      hint.textContent = "";
+      if (!date || !storeData) { sel.replaceChildren(mk("", "Choose a date first")); return; }
+      sel.replaceChildren(mk("", "Loading times..."));
+
+      const closed = dateClosedReason(storeData, date);
+      if (closed) { sel.replaceChildren(mk("", "No times available")); hint.textContent = closed; return; }
+
+      const open = toMin(String(storeData.opening_time || "08:00").slice(0, 5));
+      let close = toMin(String(storeData.closing_time || "17:00").slice(0, 5));
+      if (open === close) { sel.replaceChildren(mk("", "No times available")); hint.textContent = "This shop's opening hours aren't set up yet."; return; }
+      if (close < open) close += 1440;
+
+      let taken = new Set();
+      try {
+        const { data } = await db.rpc("get_taken_slots", { p_store_id: storeData.id, p_date: date });
+        taken = new Set((data || []).map(r => r.booking_time));
+      } catch (e) { console.warn("Could not load taken times:", e); }
+
+      const now = saNow();
+      const nowMin = date === saTodayStr() ? Number(now.hour) * 60 + Number(now.minute) : -1;
+
+      const options = [];
+      let free = 0;
+      for (let m = open; m < close; m += 30) {
+        if (nowMin >= 0 && (m % 1440) <= nowMin) continue;
+        const label = fmtMin(m);
+        const isTaken = taken.has(label);
+        if (!isTaken) free++;
+        options.push(mk(label, isTaken ? label + " (booked)" : label, isTaken));
       }
 
-      const open = String(store.opening_time || "08:00").slice(0, 5);
-      const close = String(store.closing_time || "17:00").slice(0, 5);
-      if (open === close) return { open: false, hard: false, message: "Opening hours aren't set up yet." };
-
-      const inside = open < close ? (time >= open && time < close) : (time >= open || time < close);
-      if (!inside) return { open: false, hard: false, message: `Closed now. Bookings are open ${open} to ${close} (South African time).` };
-
-      return { open: true, hard: false, message: "Open for bookings." };
+      if (!free) { sel.replaceChildren(mk("", "No times available")); hint.textContent = "No free times on this date. Try another day."; return; }
+      sel.replaceChildren(mk("", "Choose a time"), ...options);
     }
 
     function setPaymentMethod(method) {
@@ -395,6 +446,11 @@
       selectedService = { storeId: storeData.id, serviceId, title, price };
       $("modal-service-title").textContent = `${title} (${money(price)})`;
       $("modal-error").textContent = "";
+      const today = saTodayStr();
+      $("booking-date").min = today;
+      $("booking-date").max = addDays(today, 60);
+      $("booking-date").value = "";
+      refreshSlots();
       $("booking-modal").style.display = "flex";
       $("customer-name").focus();
     }
@@ -407,12 +463,17 @@
     async function confirmBooking() {
       const name = $("customer-name").value.trim();
       const phone = $("customer-phone").value.trim();
+      const date = $("booking-date").value;
+      const time = $("booking-time").value;
       const button = $("confirm-booking-btn");
       const errorBox = $("modal-error");
       errorBox.textContent = "";
 
       if (name.length < 2) { errorBox.textContent = "Enter your full name."; return; }
       if (phone.replace(/\D/g, "").length < 9) { errorBox.textContent = "Enter a valid phone number."; return; }
+      if (!date) { errorBox.textContent = "Choose your appointment date."; return; }
+      if (date < saTodayStr()) { errorBox.textContent = "Choose today or a future date."; return; }
+      if (!time) { errorBox.textContent = "Choose your appointment time."; return; }
       if (!selectedService) return;
 
       button.disabled = true;
@@ -433,13 +494,15 @@
         const bookingId = crypto.randomUUID();
         const paymentRef = generatePaymentRef();
 
-        // Insert only. Status, payment status, price and queue number are set by the database.
+        // Insert only. Status, payment status, price and queue number are set by the database, which also checks the date and time.
         const { error } = await db.from("bookings").insert([{
           id: bookingId,
           store_id: selectedService.storeId,
           service_id: selectedService.serviceId,
           customer_name: name,
           customer_phone: phone,
+          booking_date: date,
+          booking_time: time,
           payment_method: payMethod,
           payment_ref: paymentRef
         }]);
@@ -458,6 +521,7 @@
           timeZone: "Africa/Johannesburg", dateStyle: "medium", timeStyle: "short"
         });
 
+        const apptText = fmtAppt((receipt && receipt.booking_date) || date, (receipt && receipt.booking_time) || time);
         const shopName = storeData.store_name || "the shop";
         const bankName = storeData.bank_name || "Ask the shop on WhatsApp";
         const accHolder = storeData.account_holder || storeData.account_name || shopName;
@@ -468,9 +532,9 @@
         const waPhone = waNumber(storeData.phone_number);
         const message = encodeURIComponent(
           `Hi ${shopName}! I just booked "${selectedService.title}" (${money(price)}) on BOOK.NOW.\n\n` +
-          `Name: ${name}\nPhone: ${phone}\nBooked: ${when} (South African time)\n` +
+          `Name: ${name}\nPhone: ${phone}\nAppointment: ${apptText} (South African time)\n` +
           `Payment ref: ${paymentRef}\nPayment: ${payNote}\n` +
-          (queueNumber ? `Queue position: #${queueNumber}\n` : "") +
+          (queueNumber ? `Booking number for that day: #${queueNumber}\n` : "") +
           `\nPlease confirm my appointment.`
         );
         const waUrl = waPhone ? `https://wa.me/${waPhone}?text=${message}` : "";
@@ -479,12 +543,12 @@
         $("booking-modal").querySelector(".modal-sheet").innerHTML = `
           <div style="text-align:center;padding:10px 0;">
             <div style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;padding:8px 12px;border-radius:8px;font-size:11px;font-weight:800;margin-bottom:10px;">
-              ${queueNumber ? `QUEUE POSITION: #${esc(queueNumber)} FOR TODAY` : "BOOKING RECEIVED. THE SHOP WILL CONFIRM YOUR QUEUE POSITION."}
+              APPOINTMENT: ${esc(apptText.toUpperCase())}
             </div>
 
             <div class="info-box">
               <div style="margin-bottom:3px;"><strong>Service:</strong> ${esc(selectedService.title)} (${esc(money(price))})</div>
-              <div style="margin-bottom:3px;"><strong>Booked:</strong> ${esc(when)} (SAST)</div>
+              <div style="margin-bottom:3px;"><strong>Appointment:</strong> ${esc(apptText)} (SAST)</div>
               <div style="margin-bottom:3px;"><strong>Name:</strong> ${esc(name)}</div>
               <div><strong>Phone:</strong> ${esc(phone)}</div>
             </div>
@@ -517,7 +581,10 @@
 
       } catch (err) {
         console.error("Booking error:", err);
-        errorBox.textContent = "We couldn't save your booking. Check your connection and try again.";
+        errorBox.textContent = err && err.code === "23505"
+          ? "That time was just taken. Please choose another time."
+          : (err && err.code === "P0001" && err.message ? err.message : "We couldn't save your booking. Check your connection and try again.");
+        refreshSlots();
         button.disabled = false;
         button.textContent = "Confirm Appointment";
       }
@@ -530,6 +597,7 @@
       $("confirm-booking-btn").addEventListener("click", confirmBooking);
       $("close-lightbox").addEventListener("click", closeModals);
       $("lightbox-modal").addEventListener("click", e => { if (e.target === $("lightbox-modal")) closeModals(); });
+      $("booking-date").addEventListener("change", refreshSlots);
       $("pay-method-eft").addEventListener("click", () => setPaymentMethod("EFT"));
       $("pay-method-cash").addEventListener("click", () => setPaymentMethod("CASH"));
       document.addEventListener("keydown", e => { if (e.key === "Escape") closeModals(); });
