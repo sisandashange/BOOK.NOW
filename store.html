@@ -3,179 +3,132 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
   <title>Store Front — BOOK.NOW</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 
   <style>
-    :root {
-      --primary: #0f172a;
-      --accent: #2563eb;
-      --accent-hover: #1d4ed8;
-      --bg: #f8fafc;
-      --surface: #ffffff;
-      --text: #0f172a;
-      --muted: #64748b;
-      --border: #e2e8f0;
-      --success: #16a34a;
-      --warning: #d97706;
-      --danger: #dc2626;
-      --danger-bg: #fef2f2;
-      --radius: 16px;
-      --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
-    }
+    :root { --primary:#0f172a; --accent:#2563eb; --accent-hover:#1d4ed8; --bg:#f8fafc; --surface:#fff; --text:#0f172a; --muted:#64748b; --border:#e2e8f0; --success:#16a34a; --warning:#d97706; --danger:#dc2626; --radius:16px; --shadow-sm:0 2px 8px rgba(15,23,42,.04); }
+    * { box-sizing:border-box; font-family:'Plus Jakarta Sans',sans-serif; -webkit-tap-highlight-color:transparent; }
+    body { margin:0; background:var(--bg); color:var(--text); padding-bottom:80px; }
+    a:focus-visible, button:focus-visible, input:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 
-    * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-    body { margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 80px; }
+    .top-nav { background:rgba(255,255,255,.95); backdrop-filter:blur(12px); padding:12px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:30; }
+    .back-btn { display:inline-flex; align-items:center; gap:5px; text-decoration:none; color:var(--primary); font-size:12px; font-weight:700; background:#f1f5f9; padding:6px 12px; border-radius:8px; }
+    .back-btn:hover { background:#e2e8f0; }
+    .brand { font-size:16px; font-weight:800; display:flex; align-items:center; gap:6px; color:var(--primary); letter-spacing:-.5px; }
+    .container { padding:14px 12px; max-width:850px; margin:0 auto; }
 
-    .top-nav { 
-      background: rgba(255, 255, 255, 0.95); 
-      backdrop-filter: blur(12px);
-      padding: 12px 16px; 
-      border-bottom: 1px solid var(--border); 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      position: sticky; 
-      top: 0; 
-      z-index: 30; 
-    }
-    .back-btn { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; color: var(--primary); font-size: 12px; font-weight: 700; background: #f1f5f9; padding: 6px 12px; border-radius: 8px; transition: background 0.2s; }
-    .back-btn:hover { background: #e2e8f0; }
-    .brand { font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 6px; color: var(--primary); letter-spacing: -0.5px; }
+    .store-hero { background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; box-shadow:var(--shadow-sm); margin-bottom:18px; }
+    .hero-banner { width:100%; height:180px; object-fit:cover; background:#e2e8f0; display:block; }
+    .hero-content { padding:16px; }
+    .store-title-row { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+    .store-title { font-size:20px; font-weight:800; margin:0; color:var(--primary); letter-spacing:-.4px; }
+    .store-badge { font-size:9px; font-weight:800; background:#f1f5f9; color:var(--muted); padding:3px 8px; border-radius:5px; text-transform:uppercase; }
+    .store-meta-list { display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; font-size:12px; color:var(--muted); }
+    .meta-item { display:inline-flex; align-items:center; gap:4px; font-weight:600; }
+    .closed-banner { background:#fffbeb; border-top:1px solid #fde68a; color:#92400e; font-size:12px; font-weight:700; padding:10px 16px; display:flex; align-items:center; gap:6px; }
+    .section-title { font-size:16px; font-weight:800; margin:0 0 12px; color:var(--primary); display:flex; align-items:center; gap:6px; }
 
-    .container { padding: 14px 12px; max-width: 850px; margin: 0 auto; }
+    .menu-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .menu-card { background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; min-width:0; position:relative; }
+    .menu-img-wrapper { position:relative; width:100%; aspect-ratio:4/3; background:#f1f5f9; cursor:pointer; overflow:hidden; }
+    .menu-cover-img { width:100%; height:100%; object-fit:cover; transition:transform .3s; }
+    .menu-card:hover .menu-cover-img { transform:scale(1.04); }
+    .zoom-overlay { position:absolute; top:6px; right:6px; background:rgba(15,23,42,.65); color:#fff; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-size:12px; }
+    .sale-tag { position:absolute; top:6px; left:6px; background:var(--danger); color:#fff; font-size:9px; font-weight:800; padding:3px 6px; border-radius:5px; text-transform:uppercase; z-index:2; }
+    .thumb-strip { display:flex; gap:4px; padding:6px 8px; background:#f8fafc; border-bottom:1px solid var(--border); overflow-x:auto; scrollbar-width:none; }
+    .thumb-btn { width:30px; height:30px; border-radius:6px; object-fit:cover; border:2px solid transparent; cursor:pointer; opacity:.7; flex-shrink:0; }
+    .thumb-btn.active, .thumb-btn:hover { border-color:var(--accent); opacity:1; }
+    .menu-body { padding:10px; display:flex; flex-direction:column; flex-grow:1; justify-content:space-between; gap:8px; min-width:0; }
+    .menu-title { font-size:13px; font-weight:800; color:var(--primary); margin:0; line-height:1.25; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+    .menu-footer { display:flex; justify-content:space-between; align-items:center; padding-top:6px; border-top:1px solid #f1f5f9; gap:4px; }
+    .price-container { display:flex; flex-direction:column; }
+    .menu-price { font-size:13px; font-weight:800; color:var(--danger); white-space:nowrap; line-height:1.2; }
+    .menu-price.normal { color:var(--primary); }
+    .original-price { font-size:10px; font-weight:700; color:var(--muted); text-decoration:line-through; line-height:1.1; }
+    .btn-book { background:var(--accent); color:#fff; border:none; padding:6px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; }
+    .btn-book:hover { background:var(--accent-hover); }
+    .btn-book:disabled { background:#cbd5e1; cursor:not-allowed; }
 
-    .store-hero { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm); margin-bottom: 18px; }
-    .hero-banner { width: 100%; height: 180px; object-fit: cover; background: #e2e8f0; display: block; }
-    .hero-content { padding: 16px; }
-    .store-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-    .store-title { font-size: 20px; font-weight: 800; margin: 0; color: var(--primary); letter-spacing: -0.4px; }
-    .store-badge { font-size: 9px; font-weight: 800; background: #f1f5f9; color: var(--muted); padding: 3px 8px; border-radius: 5px; text-transform: uppercase; }
+    .lightbox-modal { position:fixed; inset:0; background:rgba(15,23,42,.92); backdrop-filter:blur(10px); display:none; justify-content:center; align-items:center; z-index:200; padding:16px; }
+    .lightbox-img { max-width:92vw; max-height:82vh; border-radius:14px; object-fit:contain; }
+    .lightbox-close { position:absolute; top:16px; right:16px; color:#fff; font-size:28px; cursor:pointer; background:rgba(255,255,255,.2); border:0; border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; }
 
-    .store-meta-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; font-size: 12px; color: var(--muted); }
-    .meta-item { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
-    .rating-item { color: #d97706; font-weight: 700; }
-
-    .section-title { font-size: 16px; font-weight: 800; margin: 0 0 12px 0; color: var(--primary); display: flex; align-items: center; gap: 6px; }
-
-    .menu-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-    .menu-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; min-width: 0; position: relative; }
-
-    .menu-img-wrapper { position: relative; width: 100%; aspect-ratio: 4 / 3; background: #f1f5f9; cursor: pointer; overflow: hidden; }
-    .menu-cover-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
-    .menu-card:hover .menu-cover-img { transform: scale(1.04); }
-
-    .zoom-overlay { position: absolute; top: 6px; right: 6px; background: rgba(15, 23, 42, 0.65); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; backdrop-filter: blur(4px); }
-    .sale-tag { position: absolute; top: 6px; left: 6px; background: var(--danger); color: white; font-size: 9px; font-weight: 800; padding: 3px 6px; border-radius: 5px; text-transform: uppercase; z-index: 2; box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3); }
-
-    .thumb-strip { display: flex; gap: 4px; padding: 6px 8px; background: #f8fafc; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
-    .thumb-strip::-webkit-scrollbar { display: none; }
-    .thumb-btn { width: 30px; height: 30px; border-radius: 6px; object-fit: cover; border: 2px solid transparent; cursor: pointer; opacity: 0.7; transition: all 0.2s; flex-shrink: 0; }
-    .thumb-btn.active, .thumb-btn:hover { border-color: var(--accent); opacity: 1; }
-
-    .menu-body { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; gap: 8px; min-width: 0; }
-    .menu-title { font-size: 13px; font-weight: 800; color: var(--primary); margin: 0 0 2px 0; letter-spacing: -0.2px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-    .menu-duration { font-size: 10px; font-weight: 600; color: var(--muted); display: inline-flex; align-items: center; gap: 3px; }
-
-    .menu-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; padding-top: 6px; border-top: 1px solid #f1f5f9; gap: 4px; }
-    .price-container { display: flex; flex-direction: column; }
-
-    .menu-price { font-size: 13px; font-weight: 800; color: var(--danger); white-space: nowrap; line-height: 1.2; }
-    .menu-price.normal { color: var(--primary); }
-    .original-price { font-size: 10px; font-weight: 700; color: var(--muted); text-decoration: line-through; line-height: 1.1; }
-
-    .btn-book { background: var(--accent); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
-    .btn-book:hover { background: var(--accent-hover); }
-
-    .lightbox-modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(10px); display: none; justify-content: center; align-items: center; z-index: 200; padding: 16px; }
-    .lightbox-img { max-width: 92vw; max-height: 82vh; border-radius: 14px; object-fit: contain; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-    .lightbox-close { position: absolute; top: 16px; right: 16px; color: white; font-size: 28px; cursor: pointer; background: rgba(255,255,255,0.2); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
-
-    .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: flex-end; z-index: 100; }
-    .modal-sheet { background: #fff; width: 100%; max-width: 600px; padding: 20px; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.15); max-height: 90vh; overflow-y: auto; }
-    .form-field { margin-bottom: 12px; }
-    .form-field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; }
-    .form-field input { width: 100%; padding: 11px; border-radius: 10px; border: 1px solid var(--border); font-size: 14px; outline: none; }
-
-    .empty-box { text-align: center; padding: 36px 12px; background: var(--surface); border-radius: 14px; border: 1px dashed var(--border); color: var(--muted); font-size: 13px; grid-column: 1 / -1; }
+    .modal { position:fixed; inset:0; background:rgba(15,23,42,.6); backdrop-filter:blur(6px); display:none; justify-content:center; align-items:flex-end; z-index:100; }
+    .modal-sheet { background:#fff; width:100%; max-width:600px; padding:20px; border-radius:20px 20px 0 0; box-shadow:0 -10px 30px rgba(0,0,0,.15); max-height:90vh; overflow-y:auto; }
+    .form-field { margin-bottom:12px; }
+    .form-field label { display:block; font-size:11px; font-weight:700; color:var(--muted); margin-bottom:5px; text-transform:uppercase; }
+    .form-field input { width:100%; padding:11px; border-radius:10px; border:1px solid var(--border); font-size:14px; }
+    .pay-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px; }
+    .pay-btn { padding:10px; border-radius:8px; border:1px solid var(--border); background:#fff; color:var(--text); font-weight:700; font-size:12px; cursor:pointer; }
+    .pay-btn.on { border:2px solid var(--accent); background:#eff6ff; color:var(--accent); }
+    .info-box { background:#f8fafc; padding:12px; border-radius:10px; border:1px solid var(--border); margin-bottom:12px; font-size:12px; text-align:left; }
+    .info-box p { margin:0; color:var(--muted); line-height:1.4; font-size:11px; }
+    .modal-error { color:var(--danger); font-size:12px; font-weight:700; margin:0 0 8px; min-height:16px; }
+    .empty-box { text-align:center; padding:36px 12px; background:var(--surface); border-radius:14px; border:1px dashed var(--border); color:var(--muted); font-size:13px; grid-column:1/-1; }
   </style>
 </head>
 <body>
 
   <div class="top-nav">
     <a href="index.html" class="back-btn"><i class="ph ph-arrow-left"></i> All Spots</a>
-    <div class="brand">
-      <i class="ph ph-calendar-check" style="font-size:20px; color: var(--accent);"></i>
-      BOOK.NOW
-    </div>
+    <div class="brand"><i class="ph ph-calendar-check" style="font-size:20px;color:var(--accent);"></i> BOOK.NOW</div>
   </div>
 
-  <div class="container">
-    <div id="store-hero-box" class="store-hero">
-      <div class="empty-box">Loading store info...</div>
-    </div>
+  <main class="container">
+    <div id="store-hero-box" class="store-hero"><div class="empty-box">Loading store info...</div></div>
 
     <div id="services-section-container">
-      <div class="section-title">
-        <i class="ph ph-squares-four" style="color:var(--accent);"></i> Services & Menu
-      </div>
-      <div id="services-menu-box" class="menu-grid">
-        <div class="empty-box">Loading menu items...</div>
-      </div>
+      <div class="section-title"><i class="ph ph-squares-four" style="color:var(--accent);"></i> Services & Menu</div>
+      <div id="services-menu-box" class="menu-grid"><div class="empty-box">Loading menu items...</div></div>
     </div>
-  </div>
+  </main>
 
-  <div id="lightbox-modal" class="lightbox-modal">
-    <span class="lightbox-close" id="close-lightbox"><i class="ph ph-x"></i></span>
+  <div id="lightbox-modal" class="lightbox-modal" role="dialog" aria-modal="true" aria-label="Photo viewer">
+    <button class="lightbox-close" id="close-lightbox" aria-label="Close photo"><i class="ph ph-x"></i></button>
     <img id="lightbox-img" class="lightbox-img" src="" alt="Full view">
   </div>
 
-  <div id="booking-modal" class="modal">
+  <div id="booking-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-service-title">
     <div class="modal-sheet">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
         <div>
-          <span style="font-size:10px; font-weight:700; color:var(--accent); text-transform:uppercase;">Instant Appointment</span>
-          <h3 id="modal-service-title" style="margin:2px 0 0 0; font-size:16px; font-weight:800;">Service</h3>
+          <span style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;">Instant Appointment</span>
+          <h3 id="modal-service-title" style="margin:2px 0 0;font-size:16px;font-weight:800;">Service</h3>
         </div>
-        <i class="ph ph-x-circle" id="close-modal-btn" style="font-size:24px; color:var(--muted); cursor:pointer;"></i>
+        <button id="close-modal-btn" aria-label="Close booking form" style="background:none;border:0;cursor:pointer;"><i class="ph ph-x-circle" style="font-size:24px;color:var(--muted);"></i></button>
       </div>
 
       <div class="form-field">
         <label for="customer-name">Your Full Name</label>
-        <input type="text" id="customer-name" placeholder="e.g. Sipho Dlamini">
+        <input type="text" id="customer-name" placeholder="e.g. Sipho Dlamini" autocomplete="name">
       </div>
-
       <div class="form-field">
         <label for="customer-phone">Phone Number (WhatsApp)</label>
-        <input type="tel" id="customer-phone" placeholder="e.g. 082 123 4567">
+        <input type="tel" id="customer-phone" placeholder="e.g. 082 123 4567" autocomplete="tel">
       </div>
 
       <div class="form-field">
         <label>Payment Method</label>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
-          <button type="button" id="pay-method-eft" class="pay-method-btn" onclick="setPaymentMethod('EFT')" style="padding: 10px; border-radius: 8px; border: 2px solid var(--accent); background: #eff6ff; color: var(--accent); font-weight: 700; font-size: 12px; cursor: pointer;">
-            <i class="ph ph-bank"></i> Instant EFT (Direct)
-          </button>
-          <button type="button" id="pay-method-cash" class="pay-method-btn" onclick="setPaymentMethod('CASH')" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: white; color: var(--text); font-weight: 700; font-size: 12px; cursor: pointer;">
-            <i class="ph ph-money"></i> Pay Cash
-          </button>
+        <div class="pay-grid">
+          <button type="button" id="pay-method-eft" class="pay-btn on"><i class="ph ph-bank"></i> Instant EFT (Direct)</button>
+          <button type="button" id="pay-method-cash" class="pay-btn"><i class="ph ph-money"></i> Pay Cash</button>
         </div>
       </div>
 
-      <div id="eft-details-container" style="background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 12px; font-size: 12px;">
-        <div style="font-weight: 700; color: var(--primary); margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
-          <i class="ph ph-shield-check" style="color: var(--success); font-size: 16px;"></i> Verified Vendor Banking
-        </div>
-        <p style="margin: 0; color: var(--muted); line-height: 1.4; font-size: 11px;">
-          Your order generates a unique reference code. You will see this shop's official bank details and reference on the next screen!
-        </p>
+      <div id="eft-details-container" class="info-box">
+        <div style="font-weight:700;color:var(--primary);margin-bottom:4px;"><i class="ph ph-shield-check" style="color:var(--success);font-size:16px;"></i> Pay by EFT</div>
+        <p>After you confirm, you'll get a unique payment reference and this shop's bank details.</p>
       </div>
 
-      <button class="btn-book" id="confirm-booking-btn" style="width:100%; padding:12px; font-size:13px; margin-top:6px;">Confirm Appointment</button>
+      <p id="modal-error" class="modal-error" role="alert"></p>
+      <button class="btn-book" id="confirm-booking-btn" style="width:100%;padding:12px;font-size:13px;">Confirm Appointment</button>
     </div>
   </div>
 
@@ -186,537 +139,400 @@
     const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
     const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
 
-    let supabase = null;
+    const STORE_COLUMNS = "id, store_name, category, store_image_url, phone_number, address, status, subscription_expires_at, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, bank_name, account_holder, account_name, account_number, branch_code";
+
+    let db = null;
     let selectedService = null;
     let storeData = null;
-    let selectedPaymentMethod = "EFT";
+    let bookingOpen = false;
+    let payMethod = "EFT";
 
     const FALLBACK_IMAGES = {
-      BARBER: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80",
-      SALON: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80",
-      SHISANYAMA: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80",
-      DEFAULT: "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=800&q=80"
+      BARBER: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=70",
+      SALON: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=70",
+      SHISANYAMA: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=600&q=70",
+      DEFAULT: "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=600&q=70"
     };
 
     const $ = id => document.getElementById(id);
+    const money = v => "R" + Number(v || 0).toFixed(2);
+    const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c]));
 
-    function money(val) {
-      return "R" + Number(val || 0).toFixed(2);
-    }
-
-    function escapeHTML(str) {
-      if (!str) return "";
-      return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+    function normalizeCategory(raw) {
+      const c = (raw || "").toLowerCase();
+      if (c.includes("barber")) return "BARBER";
+      if (c.includes("salon") || c.includes("beauty")) return "SALON";
+      if (c.includes("shisanyama") || c.includes("braai")) return "SHISANYAMA";
+      return "DEFAULT";
     }
 
     function generatePaymentRef() {
       const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-      let ref = "BN-";
-      for (let i = 0; i < 6; i++) {
-        ref += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return ref;
+      const bytes = crypto.getRandomValues(new Uint8Array(6));
+      return "BN-" + Array.from(bytes, b => chars[b % chars.length]).join("");
     }
 
-    function getSouthAfricanDateTime() {
+    function saNow() {
       const parts = new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Africa/Johannesburg",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        hourCycle: "h23"
+        timeZone: "Africa/Johannesburg", year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", hourCycle: "h23"
       }).formatToParts(new Date());
-
-      return Object.fromEntries(
-        parts
-          .filter(part => part.type !== "literal")
-          .map(part => [part.type, part.value])
-      );
+      return Object.fromEntries(parts.filter(p => p.type !== "literal").map(p => [p.type, p.value]));
     }
 
-    function getStoreBookingAvailability(store) {
-      if (!store) {
-        return {
-          open: false,
-          message: "Store information is unavailable."
-        };
+    // South African numbers: 0821234567 -> 27821234567. Returns "" if it doesn't look valid.
+    function waNumber(raw) {
+      let d = String(raw || "").replace(/\D/g, "");
+      if (d.startsWith("0")) d = "27" + d.slice(1);
+      return d.length >= 11 && d.length <= 15 ? d : "";
+    }
+
+    // hard = store can't be shown at all; otherwise it's just closed right now
+    function getAvailability(store) {
+      const expiry = store.subscription_expires_at ? Date.parse(store.subscription_expires_at) : NaN;
+      if (String(store.status || "").toLowerCase() !== "active" || !Number.isFinite(expiry) || expiry <= Date.now()) {
+        return { open: false, hard: true, message: "This shop isn't taking bookings on BOOK.NOW right now." };
       }
-
-      if (String(store.status || "").toLowerCase() !== "active") {
-        return {
-          open: false,
-          message: "This store is not currently accepting bookings."
-        };
-      }
-
-      const expiry = store.subscription_expires_at
-        ? Date.parse(store.subscription_expires_at)
-        : NaN;
-
-      if (!Number.isFinite(expiry) || expiry <= Date.now()) {
-        return {
-          open: false,
-          message: "This store's subscription is inactive."
-        };
-      }
-
       if (String(store.manual_status || "OPEN").toUpperCase() === "CLOSED") {
-        return {
-          open: false,
-          message: "This store is temporarily closed and is not accepting new bookings."
-        };
+        return { open: false, hard: false, message: "Temporarily closed. New bookings are paused." };
       }
 
-      const now = getSouthAfricanDateTime();
+      const now = saNow();
       const today = `${now.year}-${now.month}-${now.day}`;
-      const currentTime = `${now.hour}:${now.minute}`;
-
-      const holidayStart = store.holiday_start_date
-        ? String(store.holiday_start_date).slice(0, 10)
-        : "";
-
-      const holidayEnd = store.holiday_end_date
-        ? String(store.holiday_end_date).slice(0, 10)
-        : "";
-
-      if (
-        (holidayStart && holidayEnd && today >= holidayStart && today <= holidayEnd) ||
-        (holidayStart && !holidayEnd && today >= holidayStart) ||
-        (!holidayStart && holidayEnd && today === holidayEnd)
-      ) {
-        return {
-          open: false,
-          message: "This store is closed for its scheduled holiday."
-        };
+      const time = `${now.hour}:${now.minute}`;
+      const hs = store.holiday_start_date ? String(store.holiday_start_date).slice(0, 10) : "";
+      const he = store.holiday_end_date ? String(store.holiday_end_date).slice(0, 10) : "";
+      if ((hs && he && today >= hs && today <= he) || (hs && !he && today >= hs) || (!hs && he && today === he)) {
+        return { open: false, hard: false, message: "Closed for a scheduled holiday." };
       }
 
-      const openingTime = String(store.opening_time || "08:00").slice(0, 5);
-      const closingTime = String(store.closing_time || "17:00").slice(0, 5);
+      const open = String(store.opening_time || "08:00").slice(0, 5);
+      const close = String(store.closing_time || "17:00").slice(0, 5);
+      if (open === close) return { open: false, hard: false, message: "Opening hours aren't set up yet." };
 
-      if (openingTime === closingTime) {
-        return {
-          open: false,
-          message: "The store's opening hours need to be configured."
-        };
-      }
+      const inside = open < close ? (time >= open && time < close) : (time >= open || time < close);
+      if (!inside) return { open: false, hard: false, message: `Closed now. Bookings are open ${open} to ${close} (South African time).` };
 
-      const insideHours = openingTime < closingTime
-        ? currentTime >= openingTime && currentTime < closingTime
-        : currentTime >= openingTime || currentTime < closingTime;
-
-      if (!insideHours) {
-        return {
-          open: false,
-          message: `This store accepts bookings between ${openingTime} and ${closingTime} South African time.`
-        };
-      }
-
-      return { open: true, message: "Open for bookings." };
+      return { open: true, hard: false, message: "Open for bookings." };
     }
 
-    window.setPaymentMethod = function(method) {
-      selectedPaymentMethod = method;
-      const eftBtn = $("pay-method-eft");
-      const cashBtn = $("pay-method-cash");
-      const eftNotice = $("eft-details-container");
+    function setPaymentMethod(method) {
+      payMethod = method;
+      $("pay-method-eft").classList.toggle("on", method === "EFT");
+      $("pay-method-cash").classList.toggle("on", method === "CASH");
+      $("eft-details-container").style.display = method === "EFT" ? "block" : "none";
+    }
 
-      if (method === "EFT") {
-        eftBtn.style.border = "2px solid var(--accent)";
-        eftBtn.style.background = "#eff6ff";
-        eftBtn.style.color = "var(--accent)";
-
-        cashBtn.style.border = "1px solid var(--border)";
-        cashBtn.style.background = "white";
-        cashBtn.style.color = "var(--text)";
-
-        eftNotice.style.display = "block";
-      } else {
-        cashBtn.style.border = "2px solid var(--accent)";
-        cashBtn.style.background = "#eff6ff";
-        cashBtn.style.color = "var(--accent)";
-
-        eftBtn.style.border = "1px solid var(--border)";
-        eftBtn.style.background = "white";
-        eftBtn.style.color = "var(--text)";
-
-        eftNotice.style.display = "none";
-      }
-    };
-
-    function getStoreId() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get("id");
+    function showStoreMessage(html) {
+      $("store-hero-box").innerHTML = html;
+      $("services-section-container").style.display = "none";
     }
 
     async function loadStorePage() {
-      const storeId = getStoreId();
+      const storeId = new URLSearchParams(location.search).get("id");
       if (!storeId) {
-        $("store-hero-box").innerHTML = '<div class="empty-box">No store selected. <a href="index.html">Return to Marketplace</a></div>';
-        const sectionContainer = $("services-section-container");
-        if (sectionContainer) sectionContainer.style.display = "none";
+        showStoreMessage('<div class="empty-box">No shop selected. <a href="index.html">Browse all shops</a></div>');
         return;
       }
 
       try {
-        const { data: store, error: storeErr } = await supabase
-          .from("stores")
-          .select("*")
-          .eq("id", storeId)
-          .single();
-
-        if (storeErr || !store) throw new Error("Store details not found.");
-        storeData = store;
-
-        const availability = getStoreBookingAvailability(store);
-        const sectionContainer = $("services-section-container");
-
-        if (!availability.open) {
-          $("store-hero-box").innerHTML = `
-            <div class="empty-box" style="padding:40px 16px">
-              <div style="font-size:42px;margin-bottom:12px;color:var(--warning);">
-                <i class="ph ph-clock"></i>
-              </div>
-              <h2 style="font-size:20px;color:var(--primary);margin-top:0;">Store Currently Closed</h2>
-              <p style="line-height:1.7;color:var(--muted);">
-                ${escapeHTML(availability.message)}
-              </p>
-              <a href="index.html" class="btn-book" style="display:inline-block;text-decoration:none;padding:11px 18px;margin-top:8px;">
-                Return to Marketplace
-              </a>
-            </div>`;
-
-          if (sectionContainer) sectionContainer.style.display = "none";
+        const { data: store, error: storeErr } = await db.from("stores").select(STORE_COLUMNS).eq("id", storeId).maybeSingle();
+        if (storeErr) throw storeErr;
+        if (!store) {
+          showStoreMessage('<div class="empty-box">We couldn\'t find this shop. <a href="index.html">Browse all shops</a></div>');
           return;
         }
+        storeData = store;
 
-        if (sectionContainer) sectionContainer.style.display = "block";
+        const availability = getAvailability(store);
+        if (availability.hard) {
+          showStoreMessage(`
+            <div class="empty-box" style="padding:40px 16px">
+              <div style="font-size:42px;margin-bottom:12px;color:var(--warning);"><i class="ph ph-clock"></i></div>
+              <h2 style="font-size:20px;color:var(--primary);margin-top:0;">Shop unavailable</h2>
+              <p style="line-height:1.7;color:var(--muted);">${esc(availability.message)}</p>
+              <a href="index.html" class="btn-book" style="display:inline-block;text-decoration:none;padding:11px 18px;margin-top:8px;">Browse all shops</a>
+            </div>`);
+          return;
+        }
+        bookingOpen = availability.open;
 
-        const heroCover = store.store_image_url || FALLBACK_IMAGES[store.category] || FALLBACK_IMAGES.DEFAULT;
+        const cat = normalizeCategory(store.category);
+        const cover = store.store_image_url || FALLBACK_IMAGES[cat];
+        const name = store.store_name || "Shop";
         $("store-hero-box").innerHTML = `
-          <img src="${heroCover}" class="hero-banner" alt="${escapeHTML(store.store_name || store.name)}">
+          <img src="${esc(cover)}" class="hero-banner" alt="${esc(name)}">
           <div class="hero-content">
             <div class="store-title-row">
-              <h1 class="store-title">${escapeHTML(store.store_name || store.name)}</h1>
-              <span class="store-badge">${escapeHTML(store.category || 'SPOT')}</span>
+              <h1 class="store-title">${esc(name)}</h1>
+              <span class="store-badge">${esc(store.category || "Local spot")}</span>
             </div>
             <div class="store-meta-list">
-              <span class="meta-item rating-item"><i class="ph-fill ph-star"></i> 5.0 (24 reviews)</span>
-              <span class="meta-item"><i class="ph ph-map-pin"></i> Verified Location</span>
-              <span class="meta-item"><i class="ph ph-check-circle" style="color:var(--success);"></i> Open for Booking</span>
+              ${store.address ? `<span class="meta-item"><i class="ph ph-map-pin"></i> ${esc(store.address)}</span>` : ""}
+              <span class="meta-item"><i class="ph ph-clock"></i> ${esc(String(store.opening_time || "08:00").slice(0, 5))} to ${esc(String(store.closing_time || "17:00").slice(0, 5))}</span>
             </div>
           </div>
-        `;
+          ${bookingOpen ? "" : `<div class="closed-banner"><i class="ph ph-clock"></i> ${esc(availability.message)}</div>`}`;
+        document.title = name + " — BOOK.NOW";
 
-        const { data: services, error: serviceErr } = await supabase
+        const { data: services, error: serviceErr } = await db
           .from("service_items")
-          .select("*")
+          .select("id, title, price, sale_price, sale_start_date, sale_end_date, image_urls")
           .eq("store_id", storeId)
           .order("created_at", { ascending: false });
-
         if (serviceErr) throw serviceErr;
 
         const menuBox = $("services-menu-box");
-        menuBox.replaceChildren();
-
         if (!services || services.length === 0) {
-          menuBox.innerHTML = '<div class="empty-box">No menu items published by this store yet.</div>';
+          menuBox.innerHTML = '<div class="empty-box">This shop hasn\'t added any services yet.</div>';
           return;
         }
 
-        const todayStr = new Date().toISOString().split("T")[0];
+        const t = saNow();
+        const todayStr = `${t.year}-${t.month}-${t.day}`;
 
-        services.forEach(s => {
-          let photos = [];
-          if (Array.isArray(s.image_urls) && s.image_urls.length > 0) {
-            photos = s.image_urls.filter(url => url && typeof url === 'string');
-          } else if (s.image_url && typeof s.image_url === 'string') {
-            photos = [s.image_url];
-          }
+        const cards = services.map(s => {
+          const photos = Array.isArray(s.image_urls) ? s.image_urls.filter(u => u && typeof u === "string") : [];
+          const defaultImg = photos[0] || FALLBACK_IMAGES[cat];
 
-          const defaultImg = photos.length > 0 ? photos[0] : (FALLBACK_IMAGES[store.category] || FALLBACK_IMAGES.DEFAULT);
-
-          const hasValidSalePrice = s.sale_price !== null && s.sale_price !== undefined && Number(s.sale_price) > 0 && Number(s.sale_price) < Number(s.price);
-          const isAfterStart = !s.sale_start_date || s.sale_start_date <= todayStr;
-          const isBeforeEnd = !s.sale_end_date || s.sale_end_date >= todayStr;
-          const isOnSale = hasValidSalePrice && isAfterStart && isBeforeEnd;
-
-          const activePrice = isOnSale ? Number(s.sale_price) : Number(s.price);
+          const validSale = s.sale_price != null && Number(s.sale_price) > 0 && Number(s.sale_price) < Number(s.price);
+          const onSale = validSale && (!s.sale_start_date || s.sale_start_date <= todayStr) && (!s.sale_end_date || s.sale_end_date >= todayStr);
+          const activePrice = onSale ? Number(s.sale_price) : Number(s.price);
 
           const card = document.createElement("div");
           card.className = "menu-card";
 
-          if (isOnSale) {
-            const saleTag = document.createElement("div");
-            saleTag.className = "sale-tag";
-            saleTag.textContent = "ON SALE";
-            card.appendChild(saleTag);
+          if (onSale) {
+            const tag = document.createElement("div");
+            tag.className = "sale-tag";
+            tag.textContent = "On sale";
+            card.appendChild(tag);
           }
 
-          const imgWrapper = document.createElement("div");
-          imgWrapper.className = "menu-img-wrapper";
-
-          const coverImg = document.createElement("img");
-          coverImg.className = "menu-cover-img";
-          coverImg.src = defaultImg;
-          coverImg.alt = s.title;
-
-          const zoomIcon = document.createElement("div");
-          zoomIcon.className = "zoom-overlay";
-          zoomIcon.innerHTML = `<i class="ph ph-arrows-out-simple"></i>`;
-
-          imgWrapper.append(coverImg, zoomIcon);
-          imgWrapper.addEventListener("click", () => openLightbox(coverImg.src));
-
-          card.appendChild(imgWrapper);
+          const wrap = document.createElement("div");
+          wrap.className = "menu-img-wrapper";
+          const cover = document.createElement("img");
+          cover.className = "menu-cover-img";
+          cover.loading = "lazy";
+          cover.src = defaultImg;
+          cover.alt = s.title;
+          const zoom = document.createElement("div");
+          zoom.className = "zoom-overlay";
+          zoom.innerHTML = '<i class="ph ph-arrows-out-simple"></i>';
+          wrap.append(cover, zoom);
+          wrap.addEventListener("click", () => openLightbox(cover.src));
+          card.appendChild(wrap);
 
           if (photos.length > 1) {
             const strip = document.createElement("div");
             strip.className = "thumb-strip";
-
-            photos.forEach((photoUrl, idx) => {
+            photos.forEach((url, i) => {
               const thumb = document.createElement("img");
-              thumb.className = `thumb-btn ${idx === 0 ? 'active' : ''}`;
-              thumb.src = photoUrl;
-              thumb.alt = "Thumbnail";
-
-              thumb.addEventListener("click", (e) => {
-                e.stopPropagation();
-                coverImg.src = photoUrl;
-                strip.querySelectorAll(".thumb-btn").forEach(btn => btn.classList.remove("active"));
+              thumb.className = "thumb-btn" + (i === 0 ? " active" : "");
+              thumb.src = url;
+              thumb.alt = "Photo " + (i + 1) + " of " + s.title;
+              thumb.addEventListener("click", () => {
+                cover.src = url;
+                strip.querySelectorAll(".thumb-btn").forEach(b => b.classList.remove("active"));
                 thumb.classList.add("active");
               });
-
               strip.appendChild(thumb);
             });
-
             card.appendChild(strip);
           }
 
-          const body = document.createElement("div");
-          body.className = "menu-body";
-
-          const topInfo = document.createElement("div");
           const title = document.createElement("h3");
           title.className = "menu-title";
           title.textContent = s.title;
 
-          const duration = document.createElement("div");
-          duration.className = "menu-duration";
-          duration.innerHTML = `<i class="ph ph-clock"></i> ~30 mins`;
+          const priceBox = document.createElement("div");
+          priceBox.className = "price-container";
+          if (onSale) {
+            const was = document.createElement("span");
+            was.className = "original-price";
+            was.textContent = money(s.price);
+            const now = document.createElement("span");
+            now.className = "menu-price";
+            now.textContent = money(activePrice);
+            priceBox.append(was, now);
+          } else {
+            const p = document.createElement("span");
+            p.className = "menu-price normal";
+            p.textContent = money(activePrice);
+            priceBox.appendChild(p);
+          }
 
-          topInfo.append(title, duration);
+          const btn = document.createElement("button");
+          btn.className = "btn-book";
+          btn.textContent = bookingOpen ? "Book" : "Closed";
+          btn.disabled = !bookingOpen;
+          btn.addEventListener("click", () => openBookingModal(s.id, s.title, activePrice));
 
           const footer = document.createElement("div");
           footer.className = "menu-footer";
+          footer.append(priceBox, btn);
 
-          const priceContainer = document.createElement("div");
-          priceContainer.className = "price-container";
-
-          if (isOnSale) {
-            const origPrice = document.createElement("span");
-            origPrice.className = "original-price";
-            origPrice.textContent = money(s.price);
-
-            const salePrice = document.createElement("span");
-            salePrice.className = "menu-price";
-            salePrice.textContent = money(activePrice);
-
-            priceContainer.append(origPrice, salePrice);
-          } else {
-            const normalPrice = document.createElement("span");
-            normalPrice.className = "menu-price normal";
-            normalPrice.textContent = money(activePrice);
-
-            priceContainer.appendChild(normalPrice);
-          }
-
-          const bookBtn = document.createElement("button");
-          bookBtn.className = "btn-book";
-          bookBtn.textContent = "Book";
-          bookBtn.addEventListener("click", () => openBookingModal(s.id, s.title, activePrice));
-
-          footer.append(priceContainer, bookBtn);
-          body.append(topInfo, footer);
+          const body = document.createElement("div");
+          body.className = "menu-body";
+          body.append(title, footer);
           card.appendChild(body);
-
-          menuBox.appendChild(card);
+          return card;
         });
 
+        menuBox.replaceChildren(...cards);
       } catch (err) {
         console.error("Store load error:", err);
-        $("store-hero-box").innerHTML = `<div class="empty-box">Error loading store: ${escapeHTML(err.message)}</div>`;
-        const sectionContainer = $("services-section-container");
-        if (sectionContainer) sectionContainer.style.display = "none";
+        showStoreMessage('<div class="empty-box">We couldn\'t load this shop. Refresh the page to try again.</div>');
       }
     }
 
-    function openLightbox(imageSrc) {
-      $("lightbox-img").src = imageSrc;
+    function openLightbox(src) {
+      $("lightbox-img").src = src;
       $("lightbox-modal").style.display = "flex";
     }
 
     function openBookingModal(serviceId, title, price) {
       selectedService = { storeId: storeData.id, serviceId, title, price };
       $("modal-service-title").textContent = `${title} (${money(price)})`;
+      $("modal-error").textContent = "";
       $("booking-modal").style.display = "flex";
+      $("customer-name").focus();
+    }
+
+    function closeModals() {
+      $("booking-modal").style.display = "none";
+      $("lightbox-modal").style.display = "none";
     }
 
     async function confirmBooking() {
       const name = $("customer-name").value.trim();
       const phone = $("customer-phone").value.trim();
       const button = $("confirm-booking-btn");
+      const errorBox = $("modal-error");
+      errorBox.textContent = "";
 
-      if (!name || !phone) return alert("Please enter your name and phone number.");
+      if (name.length < 2) { errorBox.textContent = "Enter your full name."; return; }
+      if (phone.replace(/\D/g, "").length < 9) { errorBox.textContent = "Enter a valid phone number."; return; }
       if (!selectedService) return;
 
       button.disabled = true;
-      button.textContent = "Submitting Booking...";
+      button.textContent = "Submitting booking...";
 
       try {
-        const { data: currentStore, error: currentStoreError } = await supabase
-          .from("stores")
-          .select("*")
-          .eq("id", selectedService.storeId)
-          .single();
-
-        if (currentStoreError) throw currentStoreError;
-
-        const availability = getStoreBookingAvailability(currentStore);
-
+        // Re-check the shop is still open before booking
+        const { data: current, error: currentErr } = await db.from("stores").select(STORE_COLUMNS).eq("id", selectedService.storeId).maybeSingle();
+        if (currentErr) throw currentErr;
+        const availability = current ? getAvailability(current) : { open: false, message: "This shop is no longer available." };
         if (!availability.open) {
-          $("booking-modal").style.display = "none";
-          alert(availability.message);
+          errorBox.textContent = availability.message;
           button.disabled = false;
           button.textContent = "Confirm Appointment";
           return;
         }
 
+        const bookingId = crypto.randomUUID();
         const paymentRef = generatePaymentRef();
 
-        const todayStart = new Date().toISOString().split("T")[0] + "T00:00:00.000Z";
-        const { data: todayBookings } = await supabase
-          .from("bookings")
-          .select("id")
-          .eq("store_id", selectedService.storeId)
-          .gte("created_at", todayStart)
-          .neq("status", "cancelled");
-
-        const queueNumber = (todayBookings ? todayBookings.length : 0) + 1;
-
-        const { data: bookingData, error } = await supabase.from("bookings").insert([{
+        // Insert only. Status, payment status, price and queue number are set by the database.
+        const { error } = await db.from("bookings").insert([{
+          id: bookingId,
           store_id: selectedService.storeId,
           service_id: selectedService.serviceId,
           customer_name: name,
           customer_phone: phone,
-          payment_method: selectedPaymentMethod,
-          payment_status: "UNPAID",
-          status: "pending",
-          payment_ref: paymentRef,
-          queue_number: queueNumber,
-          booked_price: selectedService.price
-        }]).select().single();
-
+          payment_method: payMethod,
+          payment_ref: paymentRef
+        }]);
         if (error) throw error;
 
-        const bookingTimestamp = bookingData.created_at
-          ? new Date(bookingData.created_at)
-          : new Date();
+        // Read back queue number and price (needs the get_booking_receipt function)
+        let receipt = null;
+        try {
+          const { data } = await db.rpc("get_booking_receipt", { p_id: bookingId });
+          receipt = Array.isArray(data) ? data[0] : data;
+        } catch (e) { console.warn("Receipt lookup unavailable:", e); }
 
-        const bookingDateTime = bookingTimestamp.toLocaleString("en-ZA", {
-          timeZone: "Africa/Johannesburg",
-          dateStyle: "medium",
-          timeStyle: "short"
+        const queueNumber = receipt && receipt.queue_number ? receipt.queue_number : null;
+        const price = receipt && receipt.booked_price != null ? receipt.booked_price : selectedService.price;
+        const when = new Date(receipt && receipt.created_at ? receipt.created_at : Date.now()).toLocaleString("en-ZA", {
+          timeZone: "Africa/Johannesburg", dateStyle: "medium", timeStyle: "short"
         });
 
-        const storeShopName = storeData ? (storeData.store_name || storeData.name) : "the shop";
-        const rawStorePhone = storeData && storeData.phone_number ? storeData.phone_number : "27820000000"; 
-        const cleanStorePhone = rawStorePhone.replace(/[^0-9]/g, "");
+        const shopName = storeData.store_name || "the shop";
+        const bankName = storeData.bank_name || "Ask the shop on WhatsApp";
+        const accHolder = storeData.account_holder || storeData.account_name || shopName;
+        const accNumber = storeData.account_number || "Ask the shop on WhatsApp";
+        const branchCode = storeData.branch_code || "N/A";
+        const payNote = payMethod === "EFT" ? `Instant EFT (Ref: ${paymentRef})` : `Cash at the shop (Ref: ${paymentRef})`;
 
-        const bankName = storeData && storeData.bank_name ? storeData.bank_name : "Request on WhatsApp";
-        const accHolder = storeData && (storeData.account_holder || storeData.account_name) ? (storeData.account_holder || storeData.account_name) : storeShopName;
-        const accNumber = storeData && storeData.account_number ? storeData.account_number : "Contact Shop";
-        const branchCode = storeData && storeData.branch_code ? storeData.branch_code : "N/A";
-
-        const paymentNote = selectedPaymentMethod === "EFT" 
-          ? `💳 Direct Instant EFT (Ref: ${paymentRef})` 
-          : `💵 Pay Cash at store (Ref: ${paymentRef})`;
-
+        const waPhone = waNumber(storeData.phone_number);
         const message = encodeURIComponent(
-          `Hi ${storeShopName}! 👋 I just booked "${selectedService.title}" (${money(selectedService.price)}) on BOOK.NOW.\n\n` +
-          `My Name: ${name}\n` +
-          `My Phone: ${phone}\n` +
-          `Booking Date & Time: ${bookingDateTime} (South African time)\n` +
-          `Payment Ref: ${paymentRef}\n` +
-          `Payment Method: ${paymentNote}\n` +
-          `Queue Position: #${queueNumber}\n\n` +
-          `Please confirm my appointment slot!`
+          `Hi ${shopName}! I just booked "${selectedService.title}" (${money(price)}) on BOOK.NOW.\n\n` +
+          `Name: ${name}\nPhone: ${phone}\nBooked: ${when} (South African time)\n` +
+          `Payment ref: ${paymentRef}\nPayment: ${payNote}\n` +
+          (queueNumber ? `Queue position: #${queueNumber}\n` : "") +
+          `\nPlease confirm my appointment.`
         );
+        const waUrl = waPhone ? `https://wa.me/${waPhone}?text=${message}` : "";
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(bookingId)}`;
 
-        const whatsappUrl = `https://wa.me/${cleanStorePhone}?text=${message}`;
-        const qrDataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(bookingData.id)}`;
-
-        const sheet = document.querySelector("#booking-modal .modal-sheet");
-        sheet.innerHTML = `
-          <div style="text-align: center; padding: 10px 0;">
-            <div style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; margin-bottom: 10px;">
-              QUEUE POSITION: #${queueNumber} FOR TODAY
+        $("booking-modal").querySelector(".modal-sheet").innerHTML = `
+          <div style="text-align:center;padding:10px 0;">
+            <div style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;padding:8px 12px;border-radius:8px;font-size:11px;font-weight:800;margin-bottom:10px;">
+              ${queueNumber ? `QUEUE POSITION: #${esc(queueNumber)} FOR TODAY` : "BOOKING RECEIVED. THE SHOP WILL CONFIRM YOUR QUEUE POSITION."}
             </div>
 
-            <div style="margin-bottom:12px; text-align:left; font-size:12px; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid var(--border);">
-              <div style="margin-bottom:3px;"><strong>Booking Time:</strong> ${escapeHTML(bookingDateTime)} (SAST)</div>
-              <div style="margin-bottom:3px;"><strong>Customer:</strong> ${escapeHTML(name)}</div>
-              <div><strong>Phone:</strong> ${escapeHTML(phone)}</div>
+            <div class="info-box">
+              <div style="margin-bottom:3px;"><strong>Service:</strong> ${esc(selectedService.title)} (${esc(money(price))})</div>
+              <div style="margin-bottom:3px;"><strong>Booked:</strong> ${esc(when)} (SAST)</div>
+              <div style="margin-bottom:3px;"><strong>Name:</strong> ${esc(name)}</div>
+              <div><strong>Phone:</strong> ${esc(phone)}</div>
             </div>
 
-            <div style="background: #f8fafc; border: 1px solid var(--border); padding: 12px; border-radius: 10px; margin-bottom: 12px; text-align: left; font-size: 12px;">
-              <div style="font-weight: 800; color: var(--primary); margin-bottom: 6px;"><i class="ph ph-bank"></i> Official Bank Account for ${escapeHTML(storeShopName)}:</div>
-              <div style="margin-bottom: 3px;"><strong>Bank:</strong> ${escapeHTML(bankName)}</div>
-              <div style="margin-bottom: 3px;"><strong>Account Name:</strong> ${escapeHTML(accHolder)}</div>
-              <div style="margin-bottom: 3px;"><strong>Account Number:</strong> ${escapeHTML(accNumber)}</div>
-              <div style="margin-bottom: 6px;"><strong>Branch Code:</strong> ${escapeHTML(branchCode)}</div>
-              <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; text-align: center;">
-                <span style="font-size: 10px; color: var(--muted); display: block; text-transform: uppercase; font-weight: 700;">Mandatory Payment Reference:</span>
-                <span style="font-size: 18px; font-weight: 800; color: var(--accent); font-family: monospace;">${escapeHTML(paymentRef)}</span>
+            ${payMethod === "EFT" ? `
+            <div class="info-box">
+              <div style="font-weight:800;color:var(--primary);margin-bottom:6px;"><i class="ph ph-bank"></i> Bank details for ${esc(shopName)}</div>
+              <div style="margin-bottom:3px;"><strong>Bank:</strong> ${esc(bankName)}</div>
+              <div style="margin-bottom:3px;"><strong>Account name:</strong> ${esc(accHolder)}</div>
+              <div style="margin-bottom:3px;"><strong>Account number:</strong> ${esc(accNumber)}</div>
+              <div style="margin-bottom:6px;"><strong>Branch code:</strong> ${esc(branchCode)}</div>
+              <div style="background:#fff;padding:8px;border-radius:6px;border:1px solid #cbd5e1;text-align:center;">
+                <span style="font-size:10px;color:var(--muted);display:block;text-transform:uppercase;font-weight:700;">Use this payment reference</span>
+                <span style="font-size:18px;font-weight:800;color:var(--accent);font-family:monospace;">${esc(paymentRef)}</span>
               </div>
+            </div>` : `
+            <div class="info-box"><p>Pay cash at the shop. Show this screen and your reference <strong>${esc(paymentRef)}</strong>.</p></div>`}
+
+            <div style="background:#fff;border:2px dashed var(--border);padding:10px;border-radius:14px;margin-bottom:12px;display:inline-block;">
+              <img src="${esc(qrUrl)}" alt="Booking QR code" width="130" height="130" style="border-radius:8px;">
+              <div style="font-size:10px;font-weight:800;color:var(--danger);margin-top:4px;text-transform:uppercase;">Unpaid. Ref: ${esc(paymentRef)}</div>
             </div>
 
-            <div style="background: #ffffff; border: 2px dashed var(--border); padding: 10px; border-radius: 14px; margin-bottom: 12px; display: inline-block;">
-              <img src="${qrDataUrl}" alt="Receipt QR" style="width: 130px; height: 130px; border-radius: 8px;">
-              <div style="font-size: 10px; font-weight: 800; color: var(--danger); margin-top: 4px; text-transform: uppercase;">STATUS: UNPAID (REF: ${escapeHTML(paymentRef)})</div>
-            </div>
+            ${waUrl ? `<a href="${esc(waUrl)}" target="_blank" rel="noopener" class="btn-book" style="display:block;width:100%;text-decoration:none;padding:12px;font-size:13px;background:#25d366;border-radius:10px;margin-bottom:8px;">
+              <i class="ph ph-whatsapp-logo" style="font-size:16px;vertical-align:middle;"></i> Send booking to the shop on WhatsApp
+            </a>` : `<p style="font-size:12px;color:var(--muted);">This shop hasn't added a WhatsApp number. Screenshot this screen and show it at the shop.</p>`}
+            <button id="done-btn" style="background:none;border:none;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;">Done</button>
+          </div>`;
+        $("done-btn").addEventListener("click", () => location.reload());
 
-            <a href="${whatsappUrl}" target="_blank" class="btn-book" style="display: block; width: 100%; text-decoration: none; padding: 12px; font-size: 13px; background: #25d366; color: white; border-radius: 10px; font-weight: 700; margin-bottom: 8px;">
-              <i class="ph ph-whatsapp-logo" style="font-size: 16px; vertical-align: middle;"></i> Send WhatsApp Proof of Payment
-            </a>
-            <button onclick="location.reload()" style="background: none; border: none; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer;">
-              Done / Close
-            </button>
-          </div>
-        `;
-
-      } catch (error) {
-        alert("Booking failed: " + error.message);
+      } catch (err) {
+        console.error("Booking error:", err);
+        errorBox.textContent = "We couldn't save your booking. Check your connection and try again.";
         button.disabled = false;
         button.textContent = "Confirm Appointment";
       }
     }
 
     function init() {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-      $("close-modal-btn").addEventListener("click", () => $("booking-modal").style.display = "none");
+      $("close-modal-btn").addEventListener("click", closeModals);
       $("confirm-booking-btn").addEventListener("click", confirmBooking);
-      $("close-lightbox").addEventListener("click", () => $("lightbox-modal").style.display = "none");
-      $("lightbox-modal").addEventListener("click", (e) => {
-        if (e.target === $("lightbox-modal")) $("lightbox-modal").style.display = "none";
-      });
+      $("close-lightbox").addEventListener("click", closeModals);
+      $("lightbox-modal").addEventListener("click", e => { if (e.target === $("lightbox-modal")) closeModals(); });
+      $("pay-method-eft").addEventListener("click", () => setPaymentMethod("EFT"));
+      $("pay-method-cash").addEventListener("click", () => setPaymentMethod("CASH"));
+      document.addEventListener("keydown", e => { if (e.key === "Escape") closeModals(); });
 
       loadStorePage();
     }
