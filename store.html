@@ -149,7 +149,7 @@
     const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
     const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
 
-    const STORE_COLUMNS = "id, store_name, category, store_image_url, phone_number, address, status, subscription_expires_at, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, bank_name, account_holder, account_name, account_number, branch_code";
+    const STORE_COLUMNS = "id, store_name, category, store_image_url, phone_number, address, status, subscription_expires_at, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, slot_capacity, bank_name, account_holder, account_name, account_number, branch_code";
 
     let db = null;
     let selectedService = null;
@@ -244,10 +244,10 @@
       if (open === close) { sel.replaceChildren(mk("", "No times available")); hint.textContent = "This shop's opening hours aren't set up yet."; return; }
       if (close < open) close += 1440;
 
-      let taken = new Set();
+      let used = {};
       try {
         const { data } = await db.rpc("get_taken_slots", { p_store_id: storeData.id, p_date: date });
-        taken = new Set((data || []).map(r => r.booking_time));
+        (data || []).forEach(r => { used[r.booking_time] = r.booked; });
       } catch (e) { console.warn("Could not load taken times:", e); }
 
       const now = saNow();
@@ -258,9 +258,12 @@
       for (let m = open; m < close; m += 30) {
         if (nowMin >= 0 && (m % 1440) <= nowMin) continue;
         const label = fmtMin(m);
-        const isTaken = taken.has(label);
+        const cap = Number(storeData.slot_capacity) || 1;
+        const left = cap - (used[label] || 0);
+        const isTaken = left <= 0;
         if (!isTaken) free++;
-        options.push(mk(label, isTaken ? label + " (booked)" : label, isTaken));
+        // Shops that serve many people at once show how many places are left
+        options.push(mk(label, isTaken ? label + " (full)" : (cap > 1 ? `${label} (${left} left)` : label), isTaken));
       }
 
       if (!free) { sel.replaceChildren(mk("", "No times available")); hint.textContent = "No free times on this date. Try another day."; return; }
@@ -582,7 +585,7 @@
       } catch (err) {
         console.error("Booking error:", err);
         errorBox.textContent = err && err.code === "23505"
-          ? "That time was just taken. Please choose another time."
+          ? "That time just filled up. Please choose another time."
           : (err && err.code === "P0001" && err.message ? err.message : "We couldn't save your booking. Check your connection and try again.");
         refreshSlots();
         button.disabled = false;
