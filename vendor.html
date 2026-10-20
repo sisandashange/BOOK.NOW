@@ -148,6 +148,14 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       <input type="file" id="store-photo-input" accept="image/jpeg,image/png,image/webp" style="display:none">
       <button class="btn-action btn-confirm" id="upload-store-photo-btn" style="padding:6px 12px;font-size:11px">Change Photo</button>
     </div>
+    <div class="store-photo-edit-box">
+      <i class="ph ph-share-network" style="font-size:18px;color:var(--accent)"></i>
+      <div style="flex-grow:1">
+        <div style="font-weight:700">Share My Shop Link</div>
+        <div style="color:var(--muted);font-size:11px">Send it to your customers on WhatsApp so they can book online</div>
+      </div>
+      <button class="btn-action btn-complete" id="share-shop-btn" style="padding:6px 12px;font-size:11px">Share</button>
+    </div>
   </div>
 
   <main class="container">
@@ -386,6 +394,17 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   function bindButtons() {
     $("upload-store-photo-btn").addEventListener("click", () => $("store-photo-input").click());
     $("store-photo-input").addEventListener("change", uploadStorePhoto);
+    $("share-shop-btn").addEventListener("click", async () => {
+      if (!activeVendor) return alert("Please select a business first.");
+      const url = new URL("store.html?id=" + encodeURIComponent(activeVendor.id), location.href).href;
+      const name = activeVendor.store_name || "our shop";
+      const text = `Book your appointment at ${name} online`;
+      if (navigator.share) {
+        try { await navigator.share({ title: name, text, url }); return; }
+        catch (e) { if (e && e.name === "AbortError") return; }
+      }
+      window.open("https://wa.me/?text=" + encodeURIComponent(text + ": " + url), "_blank", "noopener");
+    });
     $("open-scanner-btn").addEventListener("click", openQrScanner);
     $("close-qr-scanner-btn").addEventListener("click", closeQrScanner);
 
@@ -437,10 +456,13 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       setBtn(button, true, "Processing...");
       try {
         if (isSignUpMode) {
-          const { data, error } = await db.auth.signUp({ email, password });
+          const { data, error } = await db.auth.signUp({
+            email, password,
+            options: { emailRedirectTo: location.href.split(/[?#]/)[0] }
+          });
           if (error) throw error;
           if (data.session) await showDashboard();
-          else alert("Account created! Please check your email to confirm it, then sign in.");
+          else alert("Account created! We sent a confirmation link to your email. Open it to confirm, then sign in here. If you can't see it, check your spam folder.");
         } else {
           const { error } = await db.auth.signInWithPassword({ email, password });
           if (error) throw error;
@@ -1082,6 +1104,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     booted = true;
     try {
       if (!window.supabase) throw new Error("The Supabase library did not load. Refresh the page.");
+      // Read the email-link result before the library clears it from the address bar
+      const linkParams = new URLSearchParams(location.hash.replace(/^#/, ""));
+      const linkError = linkParams.get("error_description");
+      const cameFromEmail = linkParams.has("access_token") || linkParams.get("type") === "signup";
+
       db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       bindButtons();
 
@@ -1089,7 +1116,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
       const { data: { session }, error } = await db.auth.getSession();
       if (error) throw error;
+      if (linkError || cameFromEmail) history.replaceState(null, "", location.pathname + location.search);
+      if (linkError) alert("That email link has expired or was already used. Please sign in, or register again to get a new link.");
       if (session) await showDashboard();
+      if (session && cameFromEmail) setTimeout(() => alert("Your email is confirmed. Welcome to BOOK.NOW! Tap '+ Add Shop' to register your business."), 400);
     } catch (err) {
       console.error("Portal startup error:", err);
       alert("Could not start the Partner Portal: " + err.message);
