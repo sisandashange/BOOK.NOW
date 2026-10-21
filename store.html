@@ -75,6 +75,8 @@
     .modal-error { color:var(--danger); font-size:12px; font-weight:700; margin:0 0 8px; min-height:16px; }
     .btn-share { margin-top:12px; background:#f1f5f9; color:var(--primary); border:1px solid var(--border); border-radius:10px; padding:8px 14px; font-size:12px; font-weight:700; cursor:pointer; }
     .btn-share:hover { background:#e2e8f0; }
+    .legal-foot { text-align: center; padding: 18px 16px 8px; font-size: 12px; color: #64748b; }
+    .legal-foot a { color: #64748b; font-weight: 600; }
     .empty-box { text-align:center; padding:36px 12px; background:var(--surface); border-radius:14px; border:1px dashed var(--border); color:var(--muted); font-size:13px; grid-column:1/-1; }
   </style>
 </head>
@@ -93,6 +95,7 @@
       <div id="services-menu-box" class="menu-grid"><div class="empty-box">Loading menu items...</div></div>
     </div>
   </main>
+  <div class="legal-foot"><a href="manage.html">Manage my booking</a> &middot; <a href="privacy.html">Privacy Policy</a> &middot; <a href="terms.html">Terms of Use</a></div>
 
   <div id="lightbox-modal" class="lightbox-modal" role="dialog" aria-modal="true" aria-label="Photo viewer">
     <button class="lightbox-close" id="close-lightbox" aria-label="Close photo"><i class="ph ph-x"></i></button>
@@ -145,6 +148,7 @@
         <p>After you confirm, you'll get a unique payment reference and this shop's bank details.</p>
       </div>
 
+      <p style="font-size:11px;color:var(--muted);margin:0 0 10px;line-height:1.5;">By confirming, you agree to our <a href="terms.html" target="_blank" rel="noopener">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>. Your name and phone number are shared with the shop.</p>
       <p id="modal-error" class="modal-error" role="alert"></p>
       <button class="btn-book" id="confirm-booking-btn" style="width:100%;padding:12px;font-size:13px;">Confirm Appointment</button>
     </div>
@@ -588,7 +592,6 @@
           `\nPlease confirm my appointment.`
         );
         const waUrl = waPhone ? `https://wa.me/${waPhone}?text=${message}` : "";
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(bookingId)}`;
 
         $("booking-modal").querySelector(".modal-sheet").innerHTML = `
           <div style="text-align:center;padding:10px 0;">
@@ -621,13 +624,14 @@
             <div style="background:#fff;border:2px dashed var(--border);padding:10px;border-radius:14px;margin-bottom:12px;display:inline-block;">
               ${window.BNQR
                 ? `<div role="img" aria-label="Booking QR code" style="width:130px;height:130px;margin:0 auto;">${BNQR.svg(bookingId, { margin: 1 })}</div>`
-                : `<img src="${esc(qrUrl)}" alt="Booking QR code" width="130" height="130" style="border-radius:8px;">`}
+                : `<div style="font-size:12px;color:var(--muted);padding:8px;">Show reference <strong>${esc(paymentRef)}</strong> at the shop.</div>`}
               <div style="font-size:10px;font-weight:800;color:var(--danger);margin-top:4px;text-transform:uppercase;">Unpaid. Ref: ${esc(paymentRef)}</div>
             </div>
 
             ${waUrl ? `<a href="${esc(waUrl)}" target="_blank" rel="noopener" class="btn-book" style="display:block;width:100%;text-decoration:none;padding:12px;font-size:13px;background:#25d366;border-radius:10px;margin-bottom:8px;">
               <i class="ph ph-whatsapp-logo" style="font-size:16px;vertical-align:middle;"></i> Send booking to the shop on WhatsApp
             </a>` : `<p style="font-size:12px;color:var(--muted);">This shop hasn't added a WhatsApp number. Screenshot this screen and show it at the shop.</p>`}
+            <a href="manage.html?ref=${encodeURIComponent(paymentRef)}" style="display:block;margin:2px 0 10px;font-size:12px;font-weight:700;color:var(--accent);text-decoration:none;">Need to change or cancel? Manage your booking</a>
             <button id="done-btn" style="background:none;border:none;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;">Done</button>
           </div>`;
         $("done-btn").addEventListener("click", () => location.reload());
