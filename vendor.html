@@ -13,6 +13,7 @@
 <script src="https://unpkg.com/@phosphor-icons/web@2.1.1" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="qr.js"></script>
 
 <style>
 :root{--primary:#0f172a;--accent:#2563eb;--bg:#f8fafc;--surface:#fff;--text:#0f172a;--muted:#64748b;--border:#e2e8f0;--success:#16a34a;--success-bg:#f0fdf4;--warning-bg:#fffbeb;--warning:#d97706;--danger:#dc2626;--danger-bg:#fef2f2;--radius:16px}
@@ -93,6 +94,29 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 .operating-hours-box{background:#f8fafc;border:1px solid var(--border);padding:14px;border-radius:12px;margin-top:14px}
 .operating-title{font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.new-booking-banner{display:none;position:sticky;top:57px;z-index:15;background:#16a34a;color:#fff;padding:13px 16px;font-size:13px;font-weight:800;cursor:pointer;text-align:center}
+.alerts-hint{color:var(--accent)!important}
+.small-tip{font-size:12px;color:var(--muted);line-height:1.5;margin:12px 2px 0}
+.poster{background:#fff;border:3px solid #0f172a;border-radius:22px;max-width:360px;margin:0 auto;padding:26px 22px;text-align:center}
+.poster .p-brand{font-size:15px;font-weight:800;letter-spacing:-.3px;color:#0f172a}
+.poster .p-brand span{color:var(--accent)}
+.poster .p-shop{font-size:25px;font-weight:800;letter-spacing:-.7px;margin:10px 0 2px;overflow-wrap:anywhere}
+.poster .p-cat{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;min-height:14px}
+.poster .p-qr{width:240px;height:240px;margin:16px auto 10px}
+.poster .p-scan{font-size:19px;font-weight:800;letter-spacing:-.4px}
+.poster .p-link{font-size:10px;color:var(--muted);margin-top:6px;overflow-wrap:anywhere}
+.poster .p-foot{font-size:11px;color:var(--muted);margin-top:8px}
+@media print{
+  body *{visibility:hidden}
+  #poster,#poster *{visibility:visible}
+  #poster{position:absolute;left:50%;top:15mm;transform:translateX(-50%);width:150mm;max-width:none;border:3px solid #000;padding:14mm}
+  #poster .p-brand{font-size:26pt}
+  #poster .p-shop{font-size:34pt}
+  #poster .p-qr{width:100mm;height:100mm}
+  #poster .p-scan{font-size:24pt}
+  #poster .p-link{font-size:11pt}
+  #poster .p-foot{font-size:13pt}
+}
 @media(max-width:400px){.container{padding:12px}.top-nav{padding:12px}.brand{font-size:13px}.finance-card{padding:11px}.finance-value{font-size:17px}.tab-item{font-size:11px}}
 #subscription-gate{position:fixed;inset:0;z-index:200;overflow-y:auto;background:#f8fafc;padding:20px}
 .subscription-card{max-width:500px;margin:24px auto;padding:24px;background:#fff;border:1px solid #e2e8f0;border-radius:18px}
@@ -127,6 +151,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     </div>
   </div>
 
+  <div id="new-booking-banner" class="new-booking-banner" role="alert"></div>
+
   <div class="business-bar">
     <div class="business-top">
       <div class="business-info">
@@ -156,6 +182,14 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       </div>
       <button class="btn-action btn-complete" id="share-shop-btn" style="padding:6px 12px;font-size:11px">Share</button>
     </div>
+    <div class="store-photo-edit-box">
+      <i class="ph ph-bell-ringing" style="font-size:18px;color:var(--accent)"></i>
+      <div style="flex-grow:1">
+        <div style="font-weight:700">New-booking alerts</div>
+        <div style="color:var(--muted);font-size:11px" id="alerts-sub">Sound, vibration and a message when a customer books</div>
+      </div>
+      <button class="btn-action btn-confirm" id="alerts-toggle-btn" style="padding:6px 12px;font-size:11px">Enable alerts</button>
+    </div>
   </div>
 
   <main class="container">
@@ -171,6 +205,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       <button class="tab-item" id="tab-bank-btn">Bank &amp; EFT</button>
       <button class="tab-item" id="tab-settlement-btn">Settlement</button>
       <button class="tab-item" id="tab-moneystore-btn">Money Store</button>
+      <button class="tab-item" id="tab-share-btn">Share &amp; QR</button>
     </div>
 
     <section id="orders-tab">
@@ -255,6 +290,31 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         <div class="finance-card"><div class="finance-label">Instant EFT Balances</div><div class="finance-value" id="ledger-eft-balance">R0.00</div><div class="finance-note">Completed bookings paid via Instant EFT</div></div>
       </div>
       <div class="ledger-section"><h3>Booking Settlement Details</h3><div id="settlement-orders-list" class="card-list"><div class="empty-box">Settlement details will appear here.</div></div></div>
+    </section>
+
+    <section id="share-tab" style="display:none">
+      <div class="section-head"><h3><i class="ph ph-qr-code"></i> Share &amp; QR Poster</h3></div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="form-field" style="margin-bottom:10px"><label for="share-link-input">Your booking link</label><input type="text" id="share-link-input" readonly></div>
+        <div class="two-col">
+          <button class="btn-primary" id="share-copy-btn"><i class="ph ph-copy"></i> Copy link</button>
+          <button class="btn-primary" id="share-wa-btn" style="background:#25d366"><i class="ph ph-whatsapp-logo"></i> WhatsApp</button>
+        </div>
+      </div>
+      <div class="poster" id="poster">
+        <div class="p-brand">BOOK<span>.NOW</span></div>
+        <div class="p-shop" id="poster-shop">Your shop</div>
+        <div class="p-cat" id="poster-cat"></div>
+        <div class="p-qr" id="poster-qr"></div>
+        <div class="p-scan">Scan to book online</div>
+        <div class="p-link" id="poster-link"></div>
+        <div class="p-foot">Pick a service, a date and a time</div>
+      </div>
+      <div class="two-col" style="margin-top:14px">
+        <button class="btn-primary" id="poster-print-btn"><i class="ph ph-printer"></i> Print / Save PDF</button>
+        <button class="btn-primary" id="poster-png-btn" style="background:#475569"><i class="ph ph-image"></i> Save picture</button>
+      </div>
+      <p class="small-tip">Print the poster and stick it on your counter or door. Or tap "Save picture" and post it on your WhatsApp status. Customers scan it and book you straight away.</p>
     </section>
 
     <section id="moneystore-tab" style="display:none">
@@ -346,7 +406,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
   const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
   const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
-  const TABS = ["orders", "services", "profile", "bank", "settlement", "moneystore"];
+  const TABS = ["orders", "services", "profile", "bank", "settlement", "moneystore", "share"];
   const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
   const MAX_FILE = 5 * 1024 * 1024;
 
@@ -393,6 +453,242 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     });
   }
 
+  // ---------- Share link, QR poster ----------
+  const CATEGORY_LABELS = { BARBER: "Barbershop", SALON: "Hair & Beauty Salon", SHISANYAMA: "Shisanyama / Braai Spot" };
+  const shopLink = () => new URL("store.html?id=" + encodeURIComponent(activeVendor.id), location.href).href;
+  const catLabel = c => CATEGORY_LABELS[String(c || "").toUpperCase()] || (c || "");
+
+  function renderSharePanel() {
+    if (!activeVendor || !$("poster-qr")) return;
+    const link = shopLink();
+    $("share-link-input").value = link;
+    $("poster-shop").textContent = activeVendor.store_name || "Your shop";
+    $("poster-cat").textContent = catLabel(activeVendor.category);
+    $("poster-link").textContent = link.replace(/^https?:\/\//, "");
+    const box = $("poster-qr");
+    if (window.BNQR) {
+      box.innerHTML = BNQR.svg(link, { margin: 2 });   // generated here in the browser, safe to insert
+    } else {
+      box.replaceChildren(h("div", { class: "small-tip", text: "The QR code could not be created. Refresh the page and try again." }));
+    }
+  }
+
+  async function copyShopLink() {
+    if (!activeVendor) return;
+    try {
+      await navigator.clipboard.writeText(shopLink());
+      alert("Link copied. Paste it into WhatsApp or Facebook.");
+    } catch (_) {
+      const input = $("share-link-input");
+      input.focus(); input.select();
+      try { document.execCommand("copy"); alert("Link copied."); } catch (__) { alert("Press and hold the link to copy it."); }
+    }
+  }
+
+  function whatsappShopLink() {
+    if (!activeVendor) return;
+    const text = `Book your appointment at ${activeVendor.store_name || "our shop"} online: ${shopLink()}`;
+    window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank", "noopener");
+  }
+
+  function roundRectPath(x, c, px, py, w, hgt, r) {
+    c.beginPath();
+    c.moveTo(px + r, py);
+    c.arcTo(px + w, py, px + w, py + hgt, r);
+    c.arcTo(px + w, py + hgt, px, py + hgt, r);
+    c.arcTo(px, py + hgt, px, py, r);
+    c.arcTo(px, py, px + w, py, r);
+    c.closePath();
+  }
+
+  async function posterBlob() {
+    if (!window.BNQR) throw new Error("QR code library missing");
+    const link = shopLink();
+    const name = activeVendor.store_name || "My Shop";
+    const W = 1080, H = 1350, FONT = "'Plus Jakarta Sans', Arial, sans-serif";
+    const cv = document.createElement("canvas");
+    cv.width = W; cv.height = H;
+    const c = cv.getContext("2d");
+
+    const bg = c.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, "#0f172a"); bg.addColorStop(1, "#1e3a8a");
+    c.fillStyle = bg; c.fillRect(0, 0, W, H);
+    c.textAlign = "left"; c.textBaseline = "alphabetic";
+
+    // Brand
+    c.font = `800 60px ${FONT}`;
+    const w1 = c.measureText("BOOK").width, w2 = c.measureText(".NOW").width, bx = (W - w1 - w2) / 2;
+    c.fillStyle = "#ffffff"; c.fillText("BOOK", bx, 110);
+    c.fillStyle = "#60a5fa"; c.fillText(".NOW", bx + w1, 110);
+
+    // Shop name (up to 2 lines, shrinks to fit)
+    c.textAlign = "center"; c.fillStyle = "#ffffff";
+    let size = 96, lines = [];
+    while (size >= 44) {
+      c.font = `800 ${size}px ${FONT}`;
+      lines = []; let cur = "";
+      for (const word of name.split(/\s+/)) {
+        const test = cur ? cur + " " + word : word;
+        if (c.measureText(test).width <= 920 || !cur) cur = test; else { lines.push(cur); cur = word; }
+      }
+      lines.push(cur);
+      if (lines.length <= 2 && lines.every(l => c.measureText(l).width <= 920)) break;
+      size -= 6;
+    }
+    lines = lines.slice(0, 2);
+    let y = 250;
+    lines.forEach(l => { c.fillText(l, W / 2, y); y += size * 1.08; });
+    c.font = `700 36px ${FONT}`; c.fillStyle = "#93c5fd";
+    c.fillText(catLabel(activeVendor.category).toUpperCase(), W / 2, y + 14);
+
+    // QR card
+    const cardSize = 640, cx = (W - cardSize) / 2, cy = Math.max(480, y + 60);   // sits below the shop name, even when it wraps to 2 lines
+    c.fillStyle = "#ffffff"; roundRectPath(null, c, cx, cy, cardSize, cardSize, 44); c.fill();
+    const svg = BNQR.svg(link, { margin: 2 }).replace('width="100%" height="100%"', 'width="560" height="560"');
+    const img = new Image();
+    await new Promise((ok, bad) => { img.onload = ok; img.onerror = bad; img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg); });
+    c.imageSmoothingEnabled = false;
+    c.drawImage(img, cx + 40, cy + 40, 560, 560);
+
+    // Footer text
+    c.fillStyle = "#ffffff"; c.font = `800 58px ${FONT}`;
+    c.fillText("Scan to book online", W / 2, 1255);
+    const shown = link.replace(/^https?:\/\//, "");
+    let fs = 28; c.font = `600 ${fs}px ${FONT}`;
+    while (c.measureText(shown).width > 960 && fs > 14) { fs -= 1; c.font = `600 ${fs}px ${FONT}`; }
+    c.fillStyle = "#cbd5e1"; c.fillText(shown, W / 2, 1305);
+
+    return await new Promise((ok, bad) => cv.toBlob(b => b ? ok(b) : bad(new Error("toBlob failed")), "image/png"));
+  }
+
+  async function savePosterPicture() {
+    if (!activeVendor) return;
+    try {
+      const blob = await posterBlob();
+      const safe = (activeVendor.store_name || "shop").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "shop";
+      const file = new File([blob], safe + "-booknow-poster.png", { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: activeVendor.store_name || "BOOK.NOW" }); return; }
+        catch (e) { if (e && e.name === "AbortError") return; }
+      }
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = file.name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    } catch (err) {
+      console.error("Poster error:", err);
+      alert("Could not create the picture. Use Print / Save as PDF instead.");
+    }
+  }
+
+  // ---------- New-booking alerts ----------
+  const PAGE_TITLE = "BOOK.NOW Partner Portal";
+  let knownBookingIds = null, knownFor = null, audioCtx = null, newCount = 0, pollTimer = null;
+
+  const alertChoice = () => { try { return localStorage.getItem("bn_alerts"); } catch (_) { return null; } };
+  const alertsOn = () => alertChoice() !== "off";
+  function setAlertChoice(v) { try { localStorage.setItem("bn_alerts", v); } catch (_) {} updateAlertsButton(); }
+  function updateAlertsButton() {
+    const b = $("alerts-toggle-btn");
+    if (!b) return;
+    const choice = alertChoice();
+    b.textContent = choice === null ? "Enable alerts" : (choice === "off" ? "Alerts: Off" : "Alerts: On");
+    $("alerts-sub").textContent = choice === null
+      ? "Tap to turn on a sound, vibration and message when a customer books"
+      : "Sound, vibration and a message when a customer books";
+  }
+
+  function unlockAudio() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!audioCtx) audioCtx = new AC();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+    } catch (_) {}
+  }
+
+  function beep() {
+    try {
+      unlockAudio();
+      if (!audioCtx || audioCtx.state !== "running") return;
+      const t0 = audioCtx.currentTime;
+      [0, 0.28].forEach(off => {
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = "sine"; o.frequency.value = 880;
+        g.gain.setValueAtTime(0.0001, t0 + off);
+        g.gain.exponentialRampToValueAtTime(0.4, t0 + off + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + off + 0.22);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t0 + off); o.stop(t0 + off + 0.24);
+      });
+    } catch (_) {}
+  }
+
+  async function systemNotify(title, body) {
+    try {
+      if (!("Notification" in window) || Notification.permission !== "granted" || !navigator.serviceWorker) return;
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg && reg.showNotification) {
+        reg.showNotification(title, { body, icon: "icon-192.png", badge: "icon-192.png", tag: "bn-new-booking", renotify: true, vibrate: [200, 100, 200] });
+      }
+    } catch (_) {}
+  }
+
+  function notifyNewBookings(fresh) {
+    newCount += fresh.length;
+    const first = fresh[0];
+    const text = fresh.length === 1
+      ? `New booking: ${first.customer_name || "Customer"}${first.booking_date ? " · " + fmtAppt(first) : ""}`
+      : `${fresh.length} new bookings`;
+    const banner = $("new-booking-banner");
+    banner.textContent = text + " (tap to view)";
+    banner.style.display = "block";
+    document.title = `(${newCount}) New booking · BOOK.NOW`;
+    if (alertsOn()) {
+      beep();
+      try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (_) {}
+      systemNotify("New booking", text);
+    }
+  }
+
+  function clearNewBookingBanner() {
+    newCount = 0;
+    $("new-booking-banner").style.display = "none";
+    document.title = PAGE_TITLE;
+  }
+
+  function startAlertPolling() {
+    if (pollTimer) return;
+    document.addEventListener("pointerdown", unlockAudio, { once: true });
+    updateAlertsButton();
+    const busy = () => ["service-modal", "register-modal", "qr-scanner-modal"].some(id => $(id).style.display === "flex");
+    const check = () => {
+      if (!db || !activeVendor || busy()) return;
+      if ($("dashboard-screen").style.display === "none" || $("subscription-gate").style.display === "block") return;
+      loadOrders();
+    };
+    pollTimer = setInterval(check, 30000);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) check(); });
+  }
+
+  // ---------- WhatsApp reminder to a customer ----------
+  function waNumber(raw) {
+    let d = String(raw || "").replace(/\D/g, "");
+    if (d.startsWith("0")) d = "27" + d.slice(1);
+    return d.length >= 11 && d.length <= 15 ? d : "";
+  }
+
+  function whatsappCustomer(b) {
+    const num = waNumber(b.customer_phone);
+    if (!num) return alert("This customer's phone number doesn't look right for WhatsApp.");
+    const shop = (activeVendor && activeVendor.store_name) || "our shop";
+    const service = (b.service_items && b.service_items.title) || "booking";
+    const when = b.booking_date ? fmtAppt(b) : "your appointment time";
+    const guests = b.party_size > 1 ? ` Guests: ${b.party_size}.` : "";
+    const text = `Hi ${b.customer_name || ""}, this is ${shop}. A reminder about your ${service} booking on ${when}.${guests} Please reply to confirm. Thank you!`;
+    window.open("https://wa.me/" + num + "?text=" + encodeURIComponent(text), "_blank", "noopener");
+  }
+
   function bindButtons() {
     $("upload-store-photo-btn").addEventListener("click", () => $("store-photo-input").click());
     $("store-photo-input").addEventListener("change", uploadStorePhoto);
@@ -416,6 +712,19 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     $("tab-bank-btn").addEventListener("click", () => { showTab("bank"); populateBankForm(); });
     $("tab-settlement-btn").addEventListener("click", async () => { showTab("settlement"); await loadOrders(); });
     $("tab-moneystore-btn").addEventListener("click", () => { showTab("moneystore"); loadWallet(); });
+    $("tab-share-btn").addEventListener("click", () => { showTab("share"); renderSharePanel(); });
+    $("share-copy-btn").addEventListener("click", copyShopLink);
+    $("share-wa-btn").addEventListener("click", whatsappShopLink);
+    $("poster-print-btn").addEventListener("click", () => { renderSharePanel(); window.print(); });
+    $("poster-png-btn").addEventListener("click", savePosterPicture);
+    $("new-booking-banner").addEventListener("click", () => { clearNewBookingBanner(); showTab("orders"); window.scrollTo({ top: 0, behavior: "smooth" }); });
+    $("alerts-toggle-btn").addEventListener("click", async () => {
+      unlockAudio();
+      if (alertChoice() === "on") { setAlertChoice("off"); return; }
+      setAlertChoice("on");
+      beep();
+      try { if ("Notification" in window && Notification.permission === "default") await Notification.requestPermission(); } catch (_) {}
+    });
     $("refresh-settlement-btn").addEventListener("click", loadOrders);
 
     $("store-capacity-mode").addEventListener("change", updateCapacityLabel);
@@ -529,6 +838,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
   function showSignedOut() {
     activeVendor = null;
+    knownBookingIds = null; knownFor = null;
+    clearNewBookingBanner();
     $("dashboard-screen").style.display = "none";
     $("subscription-gate").style.display = "none";
     $("auth-screen").style.display = "flex";
@@ -914,6 +1225,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
   function updateHeader() {
     if (!activeVendor) return;
+    renderSharePanel();
     const name = activeVendor.store_name || "Unnamed Business";
     $("biz-display-name").textContent = name;
     $("biz-display-type").textContent = `${activeVendor.category || "Business"} • ${activeVendor.address || "Location not set"}`;
@@ -997,6 +1309,15 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       if (error) throw error;
 
       const all = bookings || [];
+
+      // Alert the shop when a booking arrives that it has not seen before
+      if (knownBookingIds && knownFor === activeVendor.id) {
+        const fresh = all.filter(b => !knownBookingIds.has(b.id) && String(b.status || "pending").toLowerCase() === "pending");
+        if (fresh.length) notifyNewBookings(fresh);
+      }
+      knownBookingIds = new Set(all.map(b => b.id));
+      knownFor = activeVendor.id;
+
       const today = saToday();
       const apptDay = b => b.booking_date || saDate(b.created_at);
       const byTime = (a, b) => String(a.booking_time || "").localeCompare(String(b.booking_time || ""));
@@ -1038,6 +1359,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
           const actions = h("div", { class: "order-actions" });
           if (st === "PENDING") actions.appendChild(h("button", { class: "btn-action btn-confirm", text: "Confirm Booking", onclick: () => updateBookingStatus(b.id, "confirmed", false) }));
           actions.appendChild(h("button", { class: "btn-action btn-complete", text: "Mark Completed & Paid", onclick: () => updateBookingStatus(b.id, "completed", true) }));
+          if (b.customer_phone) actions.appendChild(h("button", { class: "btn-action btn-edit", text: "Remind on WhatsApp", onclick: () => whatsappCustomer(b) }));
           card.appendChild(actions);
         }
         return card;
@@ -1132,6 +1454,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       bindButtons();
 
       db.auth.onAuthStateChange(event => { if (event === "SIGNED_OUT") showSignedOut(); });
+      startAlertPolling();
 
       const { data: { session }, error } = await db.auth.getSession();
       if (error) throw error;

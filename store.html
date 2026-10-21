@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web@2.1.1" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="qr.js"></script>
 
   <style>
     :root { --primary:#0f172a; --accent:#2563eb; --accent-hover:#1d4ed8; --bg:#f8fafc; --surface:#fff; --text:#0f172a; --muted:#64748b; --border:#e2e8f0; --success:#16a34a; --warning:#d97706; --danger:#dc2626; --radius:16px; --shadow-sm:0 2px 8px rgba(15,23,42,.04); }
@@ -72,6 +73,8 @@
     .info-box { background:#f8fafc; padding:12px; border-radius:10px; border:1px solid var(--border); margin-bottom:12px; font-size:12px; text-align:left; }
     .info-box p { margin:0; color:var(--muted); line-height:1.4; font-size:11px; }
     .modal-error { color:var(--danger); font-size:12px; font-weight:700; margin:0 0 8px; min-height:16px; }
+    .btn-share { margin-top:12px; background:#f1f5f9; color:var(--primary); border:1px solid var(--border); border-radius:10px; padding:8px 14px; font-size:12px; font-weight:700; cursor:pointer; }
+    .btn-share:hover { background:#e2e8f0; }
     .empty-box { text-align:center; padding:36px 12px; background:var(--surface); border-radius:14px; border:1px dashed var(--border); color:var(--muted); font-size:13px; grid-column:1/-1; }
   </style>
 </head>
@@ -346,6 +349,17 @@
           </div>
           ${bookingOpen ? "" : `<div class="closed-banner"><i class="ph ph-clock"></i> ${esc(availability.message)}</div>`}`;
         document.title = name + " — BOOK.NOW";
+        const hero = $("store-hero-box").querySelector(".hero-content");
+        if (hero) {
+          const shareBtn = document.createElement("button");
+          shareBtn.type = "button"; shareBtn.className = "btn-share"; shareBtn.textContent = "Share this shop";
+          shareBtn.addEventListener("click", async () => {
+            const url = location.href.split("#")[0], text = `Book an appointment at ${name} on BOOK.NOW`;
+            if (navigator.share) { try { await navigator.share({ title: name, text, url }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+            window.open("https://wa.me/?text=" + encodeURIComponent(text + ": " + url), "_blank", "noopener");
+          });
+          hero.appendChild(shareBtn);
+        }
 
         const { data: services, error: serviceErr } = await db
           .from("service_items")
@@ -605,7 +619,9 @@
             <div class="info-box"><p>Pay cash at the shop. Show this screen and your reference <strong>${esc(paymentRef)}</strong>.</p></div>`}
 
             <div style="background:#fff;border:2px dashed var(--border);padding:10px;border-radius:14px;margin-bottom:12px;display:inline-block;">
-              <img src="${esc(qrUrl)}" alt="Booking QR code" width="130" height="130" style="border-radius:8px;">
+              ${window.BNQR
+                ? `<div role="img" aria-label="Booking QR code" style="width:130px;height:130px;margin:0 auto;">${BNQR.svg(bookingId, { margin: 1 })}</div>`
+                : `<img src="${esc(qrUrl)}" alt="Booking QR code" width="130" height="130" style="border-radius:8px;">`}
               <div style="font-size:10px;font-weight:800;color:var(--danger);margin-top:4px;text-transform:uppercase;">Unpaid. Ref: ${esc(paymentRef)}</div>
             </div>
 
