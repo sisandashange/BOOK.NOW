@@ -321,7 +321,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       <div class="section-head"><h3><i class="ph ph-wallet"></i> My Money Store</h3><span class="brand-badge" style="background:#dcfce7;color:#166534">100% Direct Earnings</span></div>
       <div class="finance-grid">
         <div class="finance-card"><div class="finance-label">Total Shop Earnings</div><div class="finance-value" id="wallet-balance">R0.00</div><div class="finance-note">Directly settled to your account</div></div>
-        <div class="finance-card"><div class="finance-label">Platform Subscription</div><div class="finance-value" style="color:var(--accent)" id="wallet-subscription-rate">R299.00/mo</div><div class="finance-note">Flat monthly platform access fee</div></div>
+        <div class="finance-card"><div class="finance-label">Platform Subscription</div><div class="finance-value" style="color:var(--accent)" id="wallet-subscription-rate">R299.00/mo</div><div class="finance-note" id="wallet-subscription-note">Flat monthly platform access fee</div></div>
       </div>
     </section>
   </main>
@@ -396,6 +396,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       <input type="file" id="subscription-proof-file" accept="image/jpeg,image/png,image/webp,application/pdf">
       <button class="btn-primary" id="subscription-submit-btn">Confirm Payment</button>
     </div>
+    <button class="btn-primary" id="subscription-refresh-btn" style="margin-top:12px;background:#0f172a">I've been approved. Refresh</button>
     <button class="btn-primary subscription-logout" id="subscription-logout-btn">Sign Out</button>
   </div>
 </div>
@@ -828,6 +829,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     $("save-biz-btn").addEventListener("click", saveBusiness);
     $("save-service-btn").addEventListener("click", saveService);
     $("subscription-submit-btn").addEventListener("click", submitSubscriptionProof);
+    $("subscription-refresh-btn").addEventListener("click", async () => {
+      const b = $("subscription-refresh-btn");
+      setBtn(b, true, "Checking...");
+      try { await initDashboard(activeVendor ? activeVendor.id : null); } finally { setBtn(b, false, "I've been approved. Refresh"); }
+    });
   }
 
   async function logout() {
@@ -1197,6 +1203,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     if (activeVendor.status === "active" && expires && expires > new Date()) {
       gate.style.display = "none";
       main.style.display = "block";
+      const subNote = $("wallet-subscription-note");
+      if (subNote) subNote.textContent = "Active until " + expires.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric", timeZone: "Africa/Johannesburg" });
       await Promise.all([loadServices(), loadOrders(), loadWallet()]);
       return;
     }
