@@ -138,6 +138,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     <div class="form-field"><label for="auth-password">Password</label><input type="password" id="auth-password" autocomplete="current-password" placeholder="Password (8+ characters to register)"></div>
     <button class="btn-primary" id="auth-submit-btn">Sign In</button>
     <span class="link-btn" id="toggle-auth-btn" role="button" tabindex="0">Need an account? Register as Partner</span>
+    <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:14px;line-height:1.5">By registering you agree to our <a href="terms.html" target="_blank" rel="noopener" style="color:var(--muted)">Terms of Use</a> and <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--muted)">Privacy Policy</a>.</div>
   </div>
 </div>
 
@@ -585,6 +586,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   // ---------- New-booking alerts ----------
   const PAGE_TITLE = "BOOK.NOW Partner Portal";
   let knownBookingIds = null, knownFor = null, audioCtx = null, newCount = 0, pollTimer = null;
+  let knownBookingStates = new Map();    // id -> "status|date|time", to spot customer cancellations and changes
+  const ownChanges = new Set();          // bookings this shop just changed itself, so it is not alerted about its own actions
+  const stateOf = b => [String(b.status || "pending").toLowerCase(), b.booking_date || "", b.booking_time || ""].join("|");
 
   const alertChoice = () => { try { return localStorage.getItem("bn_alerts"); } catch (_) { return null; } };
   const alertsOn = () => alertChoice() !== "off";
@@ -649,6 +653,20 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       beep();
       try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (_) {}
       systemNotify("New booking", text);
+    }
+  }
+
+  function notifyBookingChanges(msgs) {
+    newCount += msgs.length;
+    const text = msgs.length === 1 ? msgs[0] : `${msgs.length} bookings were changed`;
+    const banner = $("new-booking-banner");
+    banner.textContent = text + " (tap to view)";
+    banner.style.display = "block";
+    document.title = `(${newCount}) Booking update · BOOK.NOW`;
+    if (alertsOn()) {
+      beep();
+      try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (_) {}
+      systemNotify("Booking update", text);
     }
   }
 
@@ -844,7 +862,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
   function showSignedOut() {
     activeVendor = null;
-    knownBookingIds = null; knownFor = null;
+    knownBookingIds = null; knownFor = null; knownBookingStates = new Map(); ownChanges.clear();
     clearNewBookingBanner();
     $("dashboard-screen").style.display = "none";
     $("subscription-gate").style.display = "none";
@@ -1322,8 +1340,25 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       if (knownBookingIds && knownFor === activeVendor.id) {
         const fresh = all.filter(b => !knownBookingIds.has(b.id) && String(b.status || "pending").toLowerCase() === "pending");
         if (fresh.length) notifyNewBookings(fresh);
+
+        // Customers can now cancel or move their own bookings, so tell the shop
+        const changes = [];
+        all.forEach(b => {
+          const before = knownBookingStates.get(b.id);
+          if (before === undefined || ownChanges.has(b.id) || before === stateOf(b)) return;
+          const [oldStatus, oldDate, oldTime] = before.split("|");
+          const who = b.customer_name || "Customer";
+          if (String(b.status || "").toLowerCase() === "cancelled" && oldStatus !== "cancelled") {
+            changes.push(`Booking cancelled: ${who}${oldDate ? " · " + fmtAppt({ booking_date: oldDate, booking_time: oldTime }) : ""}`);
+          } else if (b.booking_date && (oldDate !== (b.booking_date || "") || oldTime !== (b.booking_time || ""))) {
+            changes.push(`Booking moved: ${who} · now ${fmtAppt(b)}`);
+          }
+        });
+        if (changes.length) notifyBookingChanges(changes);
       }
       knownBookingIds = new Set(all.map(b => b.id));
+      knownBookingStates = new Map(all.map(b => [b.id, stateOf(b)]));
+      ownChanges.clear();
       knownFor = activeVendor.id;
 
       const today = saToday();
@@ -1396,6 +1431,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     try {
       const update = { status: newStatus };
       if (markPaid) update.payment_status = "PAID";
+      ownChanges.add(bookingId);
       const { error } = await db.from("bookings").update(update).eq("id", bookingId).eq("store_id", activeVendor.id);
       if (error) throw error;
       if ($("qr-scanner-modal").style.display === "flex") closeQrScanner();
