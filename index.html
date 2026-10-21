@@ -200,8 +200,16 @@
 
         if (error) throw error;
 
+        // Real ratings from customer reviews (shops with no reviews yet simply show none)
+        const ratings = {};
+        try {
+          const { data: rs } = await db.from("store_ratings").select("store_id, avg_rating, review_count");
+          (rs || []).forEach(r => { ratings[r.store_id] = r; });
+        } catch (_) {}
+
         allStores = (data || []).map(s => ({
           ...s,
+          rating: ratings[s.id] || null,
           cat: normalizeCategory(s.category),
           service_items: s.service_items || []
         }));
@@ -252,6 +260,14 @@
         const count = s.service_items.length;
         const services = document.createElement("span");
         services.textContent = count + (count === 1 ? " service" : " services");
+        if (s.rating && Number(s.rating.review_count) > 0) {
+          const stars = document.createElement("span");
+          stars.style.cssText = "color:#d97706;font-weight:700";
+          stars.textContent = "\u2605 " + Number(s.rating.avg_rating).toFixed(1) + " (" + s.rating.review_count + ")";
+          const sep = document.createElement("span");
+          sep.textContent = "\u2022";
+          meta.append(stars, sep);
+        }
         meta.appendChild(services);
 
         const open = isOpenNow(s);
