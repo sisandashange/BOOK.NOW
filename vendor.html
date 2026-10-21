@@ -697,6 +697,15 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     return d.length >= 11 && d.length <= 15 ? d : "";
   }
 
+  function whatsappReview(b) {
+    const num = waNumber(b.customer_phone);
+    if (!num) return alert("This customer's phone number doesn't look right for WhatsApp.");
+    const shop = (activeVendor && activeVendor.store_name) || "our shop";
+    const link = new URL("manage.html?ref=" + encodeURIComponent(b.payment_ref || ""), location.href).href;
+    const text = `Hi ${b.customer_name || ""}, thank you for visiting ${shop}! We would love your feedback. Please rate your visit here: ${link} (use your reference ${b.payment_ref} and the phone number you booked with). Thank you!`;
+    window.open("https://wa.me/" + num + "?text=" + encodeURIComponent(text), "_blank", "noopener");
+  }
+
   function whatsappCustomer(b) {
     const num = waNumber(b.customer_phone);
     if (!num) return alert("This customer's phone number doesn't look right for WhatsApp.");
@@ -1404,6 +1413,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
           actions.appendChild(h("button", { class: "btn-action btn-complete", text: "Mark Completed & Paid", onclick: () => updateBookingStatus(b.id, "completed", true) }));
           if (b.customer_phone) actions.appendChild(h("button", { class: "btn-action btn-edit", text: "Remind on WhatsApp", onclick: () => whatsappCustomer(b) }));
           card.appendChild(actions);
+        } else if (st === "COMPLETED" && b.customer_phone && b.payment_ref) {
+          card.appendChild(h("div", { class: "order-actions" },
+            h("button", { class: "btn-action btn-edit", text: "Ask for a review on WhatsApp", onclick: () => whatsappReview(b) })));
         }
         return card;
       };
