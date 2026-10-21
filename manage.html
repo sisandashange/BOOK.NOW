@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<meta name="robots" content="noindex, nofollow">
+<title>Manage your booking | BOOK.NOW</title>
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{--primary:#0f172a;--accent:#2563eb;--accent-hover:#1d4ed8;--bg:#f8fafc;--surface:#fff;--text:#0f172a;--muted:#64748b;--border:#e2e8f0;--success:#16a34a;--warning:#d97706;--danger:#dc2626;--radius:18px}
+*{box-sizing:border-box;font-family:'Plus Jakarta Sans',sans-serif;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);padding-bottom:40px}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.top-nav{background:rgba(255,255,255,.95);backdrop-filter:blur(12px);padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
+.back-btn{text-decoration:none;color:var(--primary);font-size:12px;font-weight:700;background:#f1f5f9;padding:6px 12px;border-radius:8px}
+.brand{font-size:16px;font-weight:800;letter-spacing:-.5px;color:var(--primary)}
+.brand span{color:var(--accent)}
+.container{max-width:520px;margin:0 auto;padding:18px 14px}
+h1{font-size:24px;letter-spacing:-.8px;margin:6px 0 6px}
+.lead{font-size:13px;color:var(--muted);margin:0 0 18px;line-height:1.5}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.form-field{margin-bottom:12px}
+.form-field label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase}
+.form-field input,.form-field select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);font-size:14px;background:#fff}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;border:0;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;background:var(--accent);color:#fff;text-decoration:none}
+.btn:hover{background:var(--accent-hover)}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.btn.light{background:#f1f5f9;color:var(--primary);border:1px solid var(--border)}
+.btn.danger{background:#fff;color:var(--danger);border:1px solid #fecaca}
+.btn.wa{background:#25d366}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.shop{font-size:18px;font-weight:800;letter-spacing:-.4px;margin:0 0 2px}
+.muted{color:var(--muted);font-size:12px;line-height:1.5}
+.detail{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
+.detail:last-of-type{border-bottom:0}
+.detail span:first-child{color:var(--muted)}
+.detail span:last-child{font-weight:700;text-align:right}
+.badge{display:inline-block;padding:4px 10px;border-radius:7px;font-size:11px;font-weight:800;margin:8px 0 4px}
+.s-pending{background:#fffbeb;color:var(--warning)}
+.s-confirmed{background:#e0f2fe;color:#0369a1}
+.s-completed{background:#f0fdf4;color:var(--success)}
+.s-cancelled{background:#fee2e2;color:#991b1b}
+.msg{padding:12px 14px;border-radius:12px;font-size:13px;line-height:1.5;margin-bottom:14px}
+.msg.ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+.msg.err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+.msg.info{background:#eff6ff;color:#1e3a8a;border:1px solid #bfdbfe}
+.hint{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4}
+footer{text-align:center;padding:10px 16px 0;font-size:12px;color:var(--muted)}
+footer a{color:var(--muted);font-weight:600}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<header class="top-nav">
+  <a href="index.html" class="back-btn">&larr; All Spots</a>
+  <div class="brand">BOOK<span>.NOW</span></div>
+</header>
+
+<main class="container">
+  <h1>Manage your booking</h1>
+  <p class="lead">Enter the payment reference from your booking receipt and the phone number you booked with. You can then change the date or time, or cancel.</p>
+
+  <div id="message" role="status" aria-live="polite"></div>
+
+  <form id="lookup-card" class="card" autocomplete="off">
+    <div class="form-field">
+      <label for="ref">Payment reference</label>
+      <input type="text" id="ref" placeholder="e.g. BN-ABC123" autocapitalize="characters" maxlength="20" required>
+    </div>
+    <div class="form-field">
+      <label for="phone">Phone number</label>
+      <input type="tel" id="phone" placeholder="e.g. 082 123 4567" autocomplete="tel" required>
+    </div>
+    <button type="submit" class="btn" id="find-btn">Find my booking</button>
+  </form>
+
+  <section id="result" class="hidden">
+    <div class="card">
+      <p class="shop" id="r-shop"></p>
+      <span class="badge" id="r-status"></span>
+      <div class="detail"><span>Service</span><span id="r-service"></span></div>
+      <div class="detail"><span>Appointment</span><span id="r-when"></span></div>
+      <div class="detail" id="r-guests-row"><span>Guests</span><span id="r-guests"></span></div>
+      <div class="detail"><span>Price</span><span id="r-price"></span></div>
+      <div class="detail"><span>Payment</span><span id="r-pay"></span></div>
+      <div class="detail"><span>Reference</span><span id="r-ref"></span></div>
+    </div>
+
+    <div id="actions">
+      <div class="row">
+        <button type="button" class="btn light" id="change-btn">Change date or time</button>
+        <button type="button" class="btn danger" id="cancel-btn">Cancel booking</button>
+      </div>
+      <p class="hint" style="margin-top:8px">You can change or cancel until 2 hours before your appointment.</p>
+    </div>
+
+    <div id="locked-note" class="msg info hidden"></div>
+
+    <div id="reschedule-card" class="card hidden" style="margin-top:14px">
+      <div class="form-field">
+        <label for="new-date">New date</label>
+        <input type="date" id="new-date">
+      </div>
+      <div class="form-field">
+        <label for="new-time">New time</label>
+        <select id="new-time"><option value="">Choose a date first</option></select>
+        <div class="hint" id="slot-hint"></div>
+      </div>
+      <button type="button" class="btn" id="confirm-change-btn">Confirm new time</button>
+    </div>
+
+    <a class="btn wa hidden" id="wa-shop" target="_blank" rel="noopener" style="margin-top:12px">Message the shop on WhatsApp</a>
+  </section>
+</main>
+
+<footer><a href="privacy.html">Privacy Policy</a> &middot; <a href="terms.html">Terms of Use</a></footer>
+
+<script>
+(() => {
+  "use strict";
+
+  const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
+
+  let db = null;
+  let bk = null;            // the booking that was found
+  let lookup = { ref: "", phone: "" };
+  let chosenTime = "";
+
+  const $ = id => document.getElementById(id);
+  const money = v => v == null ? "Not available" : "R" + Number(v).toFixed(2);
+
+  function say(text, kind) {
+    const box = $("message");
+    box.replaceChildren();
+    if (!text) return;
+    const d = document.createElement("div");
+    d.className = "msg " + (kind || "info");
+    d.textContent = text;
+    box.appendChild(d);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function saNow() {
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Africa/Johannesburg", year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+    }).formatToParts(new Date());
+    return Object.fromEntries(parts.filter(p => p.type !== "literal").map(p => [p.type, p.value]));
+  }
+  const saTodayStr = () => { const n = saNow(); return `${n.year}-${n.month}-${n.day}`; };
+  function addDays(dateStr, days) { const d = new Date(dateStr + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); }
+  const toMin = hhmm => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
+  const fmtMin = m => { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); };
+  function fmtAppt(dateStr, timeStr) {
+    if (!dateStr) return "Not set";
+    const d = new Date(dateStr + "T12:00:00Z").toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+    return d + (timeStr ? " at " + timeStr : "");
+  }
+  function waNumber(raw) {
+    let d = String(raw || "").replace(/\D/g, "");
+    if (d.startsWith("0")) d = "27" + d.slice(1);
+    return d.length >= 11 && d.length <= 15 ? d : "";
+  }
+
+  const STATUS_TEXT = {
+    pending: "Waiting for the shop to confirm",
+    confirmed: "Confirmed by the shop",
+    completed: "Completed",
+    cancelled: "Cancelled"
+  };
+
+  function render() {
+    const status = String(bk.status || "pending").toLowerCase();
+    $("r-shop").textContent = bk.store_name || "Your shop";
+    const badge = $("r-status");
+    badge.textContent = STATUS_TEXT[status] || status.toUpperCase();
+    badge.className = "badge s-" + (STATUS_TEXT[status] ? status : "pending");
+    $("r-service").textContent = bk.service_title || "Service";
+    $("r-when").textContent = fmtAppt(bk.booking_date, bk.booking_time);
+    const guests = Number(bk.party_size) || 1;
+    $("r-guests-row").classList.toggle("hidden", !(bk.capacity_mode === "GUESTS" || guests > 1));
+    $("r-guests").textContent = String(guests);
+    $("r-price").textContent = money(bk.booked_price);
+    const paid = String(bk.payment_status || "").toUpperCase() === "PAID";
+    $("r-pay").textContent = (bk.payment_method === "CASH" ? "Cash" : "EFT") + " · " + (paid ? "Paid" : "Not paid yet");
+    $("r-ref").textContent = bk.payment_ref || "";
+
+    const canChange = !!bk.can_change;
+    $("actions").classList.toggle("hidden", !canChange);
+    $("reschedule-card").classList.add("hidden");
+
+    const note = $("locked-note");
+    if (!canChange) {
+      let text = "This booking can't be changed here.";
+      if (status === "cancelled") text = "This booking has been cancelled.";
+      else if (status === "completed") text = "This booking is completed.";
+      else if (status === "pending" || status === "confirmed") text = "Changes and cancellations close 2 hours before the appointment. Please contact the shop.";
+      note.textContent = text;
+    }
+    note.classList.toggle("hidden", canChange);
+
+    const wa = $("wa-shop");
+    const num = waNumber(bk.store_phone);
+    if (num) {
+      const text = `Hi ${bk.store_name || ""}, this is ${bk.customer_name || "a customer"} about my booking (ref ${bk.payment_ref}) on ${fmtAppt(bk.booking_date, bk.booking_time)}.`;
+      wa.href = `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
+    }
+    wa.classList.toggle("hidden", !num);
+    $("result").classList.remove("hidden");
+  }
+
+  async function findBooking(quiet) {
+    const { data, error } = await db.rpc("find_my_booking", { p_ref: lookup.ref, p_phone: lookup.phone });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return false;
+    bk = row;
+    render();
+    $("lookup-card").classList.add("hidden");
+    if (!quiet) say("");
+    return true;
+  }
+
+  async function onLookup(e) {
+    e.preventDefault();
+    const ref = $("ref").value.trim().toUpperCase();
+    const phone = $("phone").value.trim();
+    const btn = $("find-btn");
+    say("");
+    if (ref.length < 4) return say("Enter the payment reference from your receipt (it starts with BN-).", "err");
+    if (phone.replace(/\D/g, "").length < 9) return say("Enter the phone number you booked with.", "err");
+
+    lookup = { ref, phone };
+    btn.disabled = true; btn.textContent = "Searching...";
+    try {
+      const found = await findBooking(false);
+      if (!found) say("We couldn't find a booking with that reference and phone number. Check them and try again.", "err");
+    } catch (err) {
+      console.error(err);
+      say("Something went wrong. Check your connection and try again.", "err");
+    } finally {
+      btn.disabled = false; btn.textContent = "Find my booking";
+    }
+  }
+
+  // ----- change date or time -----
+  async function refreshSlots() {
+    const sel = $("new-time"), hint = $("slot-hint"), date = $("new-date").value;
+    const mk = (v, t, dis) => { const o = document.createElement("option"); o.value = v; o.textContent = t; o.disabled = !!dis; return o; };
+    hint.textContent = "";
+    if (!date) { sel.replaceChildren(mk("", "Choose a date first")); return; }
+    sel.replaceChildren(mk("", "Loading times..."));
+
+    const hs = bk.holiday_start_date ? String(bk.holiday_start_date).slice(0, 10) : "";
+    const he = bk.holiday_end_date ? String(bk.holiday_end_date).slice(0, 10) : "";
+    if ((hs && he && date >= hs && date <= he) || (hs && !he && date >= hs) || (!hs && he && date === he)) {
+      sel.replaceChildren(mk("", "No times available")); hint.textContent = "The shop is closed on this date. Try another day."; return;
+    }
+
+    const open = toMin(String(bk.opening_time || "08:00").slice(0, 5));
+    let close = toMin(String(bk.closing_time || "17:00").slice(0, 5));
+    if (open === close) { sel.replaceChildren(mk("", "No times available")); hint.textContent = "This shop's opening hours aren't set up yet."; return; }
+    if (close < open) close += 1440;
+
+    const used = {};
+    try {
+      const { data } = await db.rpc("get_taken_slots", { p_store_id: bk.store_id, p_date: date });
+      (data || []).forEach(r => { used[r.booking_time] = r.booked; });
+    } catch (e) { console.warn("Could not load taken times:", e); }
+
+    const now = saNow();
+    const nowMin = date === saTodayStr() ? Number(now.hour) * 60 + Number(now.minute) : -1;
+    const cap = Number(bk.slot_capacity) || 1;
+    const need = bk.capacity_mode === "GUESTS" ? (Number(bk.party_size) || 1) : 1;
+
+    const options = [];
+    let free = 0;
+    for (let m = open; m < close; m += 30) {
+      if (nowMin >= 0 && (m % 1440) <= nowMin) continue;
+      const label = fmtMin(m);
+      const isCurrent = date === bk.booking_date && label === bk.booking_time;
+      const left = cap - (used[label] || 0);
+      const blocked = isCurrent || left < need;
+      if (!blocked) free++;
+      let text = label;
+      if (isCurrent) text = label + " (your current time)";
+      else if (left <= 0) text = label + " (full)";
+      else if (blocked) text = `${label} (only ${left} left)`;
+      else if (cap > 1) text = `${label} (${left} left)`;
+      options.push(mk(label, text, blocked));
+    }
+    if (!free) { sel.replaceChildren(mk("", "No times available")); hint.textContent = "No free times on this date. Try another day."; return; }
+    sel.replaceChildren(mk("", "Choose a time"), ...options);
+    if (chosenTime && options.some(o => o.value === chosenTime && !o.disabled)) sel.value = chosenTime; else chosenTime = "";
+  }
+
+  function openReschedule() {
+    const today = saTodayStr();
+    $("new-date").min = today;
+    $("new-date").max = addDays(today, 60);
+    $("new-date").value = "";
+    chosenTime = "";
+    refreshSlots();
+    $("reschedule-card").classList.remove("hidden");
+    $("reschedule-card").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  async function confirmChange() {
+    const date = $("new-date").value, time = $("new-time").value;
+    if (!date) return say("Choose your new date.", "err");
+    if (!time) return say("Choose your new time.", "err");
+    const btn = $("confirm-change-btn");
+    btn.disabled = true; btn.textContent = "Saving...";
+    try {
+      const { data, error } = await db.rpc("reschedule_my_booking", { p_ref: lookup.ref, p_phone: lookup.phone, p_date: date, p_time: time });
+      if (error) throw error;
+      if (!data || data.success === false) {
+        say((data && data.message) || "We couldn't change your booking.", "err");
+        refreshSlots();
+        return;
+      }
+      await findBooking(true);
+      say("Your booking has been moved. The shop will confirm your new time.", "ok");
+    } catch (err) {
+      console.error(err);
+      say("Something went wrong. Check your connection and try again.", "err");
+    } finally {
+      btn.disabled = false; btn.textContent = "Confirm new time";
+    }
+  }
+
+  async function cancelBooking() {
+    if (!confirm("Cancel this booking? This can't be undone.")) return;
+    const btn = $("cancel-btn");
+    btn.disabled = true; btn.textContent = "Cancelling...";
+    try {
+      const { data, error } = await db.rpc("cancel_my_booking", { p_ref: lookup.ref, p_phone: lookup.phone });
+      if (error) throw error;
+      if (!data || data.success === false) { say((data && data.message) || "We couldn't cancel your booking.", "err"); return; }
+      await findBooking(true);
+      say(data.was_paid
+        ? "Your booking is cancelled. You already paid, so please contact the shop about your refund."
+        : "Your booking is cancelled.", "ok");
+    } catch (err) {
+      console.error(err);
+      say("Something went wrong. Check your connection and try again.", "err");
+    } finally {
+      btn.disabled = false; btn.textContent = "Cancel booking";
+    }
+  }
+
+  function init() {
+    if (!window.supabase) { say("The page didn't load properly. Refresh and try again.", "err"); return; }
+    db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const ref = new URLSearchParams(location.search).get("ref");
+    if (ref) $("ref").value = ref.toUpperCase().slice(0, 20);
+
+    $("lookup-card").addEventListener("submit", onLookup);
+    $("change-btn").addEventListener("click", openReschedule);
+    $("cancel-btn").addEventListener("click", cancelBooking);
+    $("confirm-change-btn").addEventListener("click", confirmChange);
+    $("new-date").addEventListener("change", refreshSlots);
+    $("new-time").addEventListener("change", () => { chosenTime = $("new-time").value; });
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
+  else init();
+})();
+</script>
+</body>
+</html>
