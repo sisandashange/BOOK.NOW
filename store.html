@@ -77,6 +77,12 @@
     .btn-share:hover { background:#e2e8f0; }
     .legal-foot { text-align: center; padding: 18px 16px 8px; font-size: 12px; color: #64748b; }
     .legal-foot a { color: #64748b; font-weight: 600; }
+    .review-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px; }
+    .review-top { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px; }
+    .review-name { font-size:13px; font-weight:800; }
+    .review-stars { color:#f59e0b; font-size:14px; letter-spacing:1px; white-space:nowrap; }
+    .review-text { font-size:13px; color:#334155; line-height:1.5; margin:0; overflow-wrap:anywhere; }
+    .review-date { font-size:11px; color:var(--muted); margin-top:6px; }
     .empty-box { text-align:center; padding:36px 12px; background:var(--surface); border-radius:14px; border:1px dashed var(--border); color:var(--muted); font-size:13px; grid-column:1/-1; }
   </style>
 </head>
@@ -89,6 +95,11 @@
 
   <main class="container">
     <div id="store-hero-box" class="store-hero"><div class="empty-box">Loading store info...</div></div>
+
+    <div id="reviews-section-container" style="display:none;margin-bottom:22px;">
+      <div class="section-title"><i class="ph ph-star" style="color:#f59e0b;"></i> Reviews</div>
+      <div id="reviews-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+    </div>
 
     <div id="services-section-container">
       <div class="section-title"><i class="ph ph-squares-four" style="color:var(--accent);"></i> Services & Menu</div>
@@ -307,6 +318,52 @@
       $("services-section-container").style.display = "none";
     }
 
+    // Rating summary under the shop name, plus the latest reviews
+    async function loadReviews(storeId) {
+      try {
+        const [summary, list] = await Promise.all([
+          db.from("store_ratings").select("avg_rating, review_count").eq("store_id", storeId).maybeSingle(),
+          db.from("reviews").select("display_name, rating, comment, created_at").eq("store_id", storeId).order("created_at", { ascending: false }).limit(10)
+        ]);
+        const rows = (list && list.data) || [];
+        if (!rows.length) return;
+
+        const sum = summary && summary.data;
+        const metaList = document.querySelector(".store-meta-list");
+        if (sum && metaList) {
+          const m = document.createElement("span");
+          m.className = "meta-item";
+          m.style.color = "#d97706";
+          m.style.fontWeight = "800";
+          m.textContent = "\u2605 " + Number(sum.avg_rating).toFixed(1) + " (" + sum.review_count + (Number(sum.review_count) === 1 ? " review)" : " reviews)");
+          metaList.prepend(m);
+        }
+
+        $("reviews-list").replaceChildren(...rows.map(r => {
+          const card = document.createElement("div");
+          card.className = "review-card";
+          const top = document.createElement("div");
+          top.className = "review-top";
+          const name = document.createElement("span");
+          name.className = "review-name";
+          name.textContent = r.display_name || "Customer";
+          const stars = document.createElement("span");
+          stars.className = "review-stars";
+          stars.setAttribute("aria-label", r.rating + " out of 5 stars");
+          stars.textContent = "\u2605".repeat(r.rating) + "\u2606".repeat(5 - r.rating);
+          top.append(name, stars);
+          card.appendChild(top);
+          if (r.comment) { const t = document.createElement("p"); t.className = "review-text"; t.textContent = r.comment; card.appendChild(t); }
+          const d = document.createElement("div");
+          d.className = "review-date";
+          d.textContent = new Date(r.created_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric", timeZone: "Africa/Johannesburg" });
+          card.appendChild(d);
+          return card;
+        }));
+        $("reviews-section-container").style.display = "block";
+      } catch (e) { console.warn("Could not load reviews:", e); }
+    }
+
     async function loadStorePage() {
       const storeId = new URLSearchParams(location.search).get("id");
       if (!storeId) {
@@ -353,6 +410,7 @@
           </div>
           ${bookingOpen ? "" : `<div class="closed-banner"><i class="ph ph-clock"></i> ${esc(availability.message)}</div>`}`;
         document.title = name + " — BOOK.NOW";
+        loadReviews(store.id);
         const hero = $("store-hero-box").querySelector(".hero-content");
         if (hero) {
           const shareBtn = document.createElement("button");
