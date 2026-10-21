@@ -198,7 +198,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         </div>
         <div class="form-field"><label for="store-phone-input">WhatsApp / Contact Number</label><input type="tel" id="store-phone-input" placeholder="e.g. 0821234567"></div>
         <div class="form-field"><label for="store-address-input">Store Physical Location / Address</label><input type="text" id="store-address-input" placeholder="e.g. 12 Fox Street, Maboneng, Johannesburg"></div>
-        <div class="form-field"><label for="store-capacity-input">Bookings you can take at the same time</label><input type="number" id="store-capacity-input" min="1" max="100" step="1" value="1" inputmode="numeric"><div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">Use 1 for a barber chair. A shisanyama or busy salon can allow more, e.g. 10. When this many customers book the same time, that time shows as full.</div></div>
+        <div class="form-field"><label for="store-capacity-mode">How do you count how busy you are?</label><select id="store-capacity-mode"><option value="BOOKINGS">By number of bookings (e.g. barber chairs)</option><option value="GUESTS">By number of guests (e.g. a shisanyama)</option></select></div>
+        <div class="form-field"><label for="store-capacity-input" id="store-capacity-label">Bookings you can take at the same time</label><input type="number" id="store-capacity-input" min="1" max="100" step="1" value="1" inputmode="numeric"><div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">Most barbers and salons count bookings, e.g. 1 for one chair. A shisanyama can count guests, e.g. 30 guests at the same time. Customers then enter how many people are coming. When the limit is reached, that time shows as full.</div></div>
         <div class="operating-hours-box">
           <div class="operating-title"><i class="ph ph-clock" style="color:var(--accent)"></i> Store Schedule &amp; Closure Controls</div>
           <div class="two-col">
@@ -302,7 +303,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 <div id="register-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="register-title">
   <div class="modal-sheet">
     <div class="section-head"><h3 id="register-title">Register New Business</h3><button class="btn-action btn-muted" id="close-register-modal" aria-label="Close">✕</button></div>
-    <div class="form-field"><label for="new-biz-name">Business Name</label><input type="text" id="new-biz-name" placeholder="e.g. ZYRE Barbershop" maxlength="150"></div>
+    <div class="form-field"><label for="new-biz-name">Business Name</label><input type="text" id="new-biz-name" placeholder="e.g. Nzuzo Barbershop" maxlength="150"></div>
     <div class="form-field"><label for="new-biz-category">Category</label><select id="new-biz-category"><option value="BARBER">Barbershop</option><option value="SALON">Hair &amp; Beauty Salon</option><option value="SHISANYAMA">Shisanyama / Braai Spot</option></select></div>
     <button class="btn-primary" id="save-biz-btn">Save Business</button>
   </div>
@@ -417,6 +418,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     $("tab-moneystore-btn").addEventListener("click", () => { showTab("moneystore"); loadWallet(); });
     $("refresh-settlement-btn").addEventListener("click", loadOrders);
 
+    $("store-capacity-mode").addEventListener("change", updateCapacityLabel);
     $("save-profile-btn").addEventListener("click", saveStoreProfile);
     $("save-bank-btn").addEventListener("click", saveBankDetails);
     $("bank-select").addEventListener("change", () => {
@@ -533,6 +535,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     showTab("orders");
   }
 
+  function updateCapacityLabel() {
+    $("store-capacity-label").textContent = $("store-capacity-mode").value === "GUESTS"
+      ? "Guests you can host at the same time"
+      : "Bookings you can take at the same time";
+  }
+
   function populateProfileForm() {
     if (!activeVendor) return;
     $("store-name-input").value = activeVendor.store_name || "";
@@ -540,6 +548,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     $("store-phone-input").value = activeVendor.phone_number || "";
     $("store-address-input").value = activeVendor.address || "";
     $("store-capacity-input").value = activeVendor.slot_capacity || 1;
+    $("store-capacity-mode").value = activeVendor.capacity_mode || "BOOKINGS";
+    updateCapacityLabel();
     $("opening-time").value = String(activeVendor.opening_time || "08:00").slice(0, 5);
     $("closing-time").value = String(activeVendor.closing_time || "17:00").slice(0, 5);
     $("manual-store-status").value = activeVendor.manual_status || "OPEN";
@@ -566,6 +576,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         phone_number: $("store-phone-input").value.trim(),
         address: $("store-address-input").value.trim(),
         slot_capacity: capacity,
+        capacity_mode: $("store-capacity-mode").value,
         opening_time: $("opening-time").value,
         closing_time: $("closing-time").value,
         manual_status: $("manual-store-status").value,
@@ -673,6 +684,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       status.replaceChildren(h("div", { style: "background:#f0fdf4;border:1px solid #86efac;padding:12px;border-radius:10px;text-align:left" },
         h("div", { style: "font-size:14px;font-weight:800;color:#166534;margin-bottom:4px", text: "VALID BOOKING FOUND" }),
         h("div", { style: "font-size:12px", text: `Customer: ${booking.customer_name || "N/A"} (${booking.customer_phone || "N/A"})` }),
+        booking.party_size > 1 ? h("div", { style: "font-size:12px;margin-top:4px", text: "Guests: " + booking.party_size }) : null,
         h("div", { style: "font-size:12px;margin-top:4px", text: "Payment ref: " + (booking.payment_ref || "N/A") }),
         h("div", { style: "font-size:12px;font-weight:800;color:#b45309;margin-top:6px", text: booking.booking_date ? "Appointment: " + fmtAppt(booking) : (ahead === 0 ? "Next in line!" : `Queue: ${ahead} customer(s) ahead.`) }),
         complete));
@@ -742,7 +754,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
       const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") + "-" + Math.floor(1000 + Math.random() * 9000);
       const { data, error } = await db.from("stores").insert([{
-        store_name: name, store_slug: slug, category: $("new-biz-category").value, slot_capacity: $("new-biz-category").value === "SHISANYAMA" ? 10 : 1, profile_id: user.id,
+        store_name: name, store_slug: slug, category: $("new-biz-category").value, slot_capacity: $("new-biz-category").value === "SHISANYAMA" ? 30 : 1, capacity_mode: $("new-biz-category").value === "SHISANYAMA" ? "GUESTS" : "BOOKINGS", profile_id: user.id,
         status: "pending_payment", is_first_time: true, manual_status: "OPEN", opening_time: "08:00", closing_time: "17:00"
       }]).select().single();
       if (error) throw error;
@@ -968,6 +980,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
           h("div", { class: "order-title", text: b.customer_name ? `${b.customer_name} — ${b.customer_phone || ""}` : "Service booking" }),
           h("div", { class: "order-price", text: money(amount) })),
         row("Appointment", b.booking_date ? fmtAppt(b) : "Not set (older booking)"),
+        row("Guests", String(b.party_size || 1)),
         row("Booking status", String(b.status || "pending").replaceAll("_", " ")),
         row("Payment ref", b.payment_ref),
         row("Payment method", String(b.payment_method || "EFT").replaceAll("_", " ")),
@@ -1013,6 +1026,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
           h("div", { class: "order-time" },
             h("div", { style: "font-weight:700;color:var(--text)", text: b.booking_date ? "Appointment: " + fmtAppt(b) : "Appointment: not set (older booking)" }),
             h("div", { text: `Customer: ${b.customer_name || "Guest"} (${b.customer_phone || "N/A"})` }),
+            b.party_size > 1 ? h("div", { style: "font-weight:700;color:var(--text)", text: "Guests: " + b.party_size }) : null,
             h("div", { text: "Booked on: " + when })),
           h("div", { class: "order-status status-" + st.toLowerCase(), text: st }),
           h("span", { class: "ref-pill", text: "REF: " + (b.payment_ref || "N/A") }),
