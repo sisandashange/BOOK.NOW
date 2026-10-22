@@ -942,16 +942,24 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     }
   }
 
-  function populateBankForm() {
+  async function populateBankForm() {
     if (!activeVendor) return;
-    $("account-holder").value = activeVendor.account_holder || "";
-    $("account-number").value = activeVendor.account_number || "";
-    $("branch-code").value = activeVendor.branch_code || "";
+    // Bank details live in their own private table. Older shops may still have them on the store row.
+    let bank = null;
+    try {
+      const { data } = await db.from("store_bank_details").select("bank_name, account_holder, account_number, branch_code").eq("store_id", activeVendor.id).maybeSingle();
+      bank = data;
+    } catch (_) {}
+    bank = bank || { bank_name: activeVendor.bank_name, account_holder: activeVendor.account_holder, account_number: activeVendor.account_number, branch_code: activeVendor.branch_code };
+
+    $("account-holder").value = bank.account_holder || "";
+    $("account-number").value = bank.account_number || "";
+    $("branch-code").value = bank.branch_code || "";
     const select = $("bank-select");
     select.selectedIndex = 0;
-    if (activeVendor.bank_name) {
+    if (bank.bank_name) {
       for (let i = 0; i < select.options.length; i++) {
-        if (select.options[i].value.startsWith(activeVendor.bank_name + "|")) { select.selectedIndex = i; break; }
+        if (select.options[i].value.startsWith(bank.bank_name + "|")) { select.selectedIndex = i; break; }
       }
     }
   }
@@ -971,12 +979,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     const bank_name = bankVal.split("|")[0];
     setBtn(button, true, "Saving Bank Details...");
     try {
-      const { error } = await db.from("stores").update({
-        bank_name, account_holder: holder, account_name: holder,
-        account_number: number, branch_code: branch, updated_at: new Date()
-      }).eq("id", activeVendor.id);
+      let { error } = await db.from("store_bank_details").upsert({
+        store_id: activeVendor.id, bank_name, account_holder: holder,
+        account_number: number, branch_code: branch, updated_at: new Date().toISOString()
+      }, { onConflict: "store_id" });
+      // If the private table has not been set up yet, fall back to the old place so nothing is lost
+      if (error && /store_bank_details|schema cache|does not exist/i.test(error.message || "")) {
+        ({ error } = await db.from("stores").update({
+          bank_name, account_holder: holder, account_name: holder,
+          account_number: number, branch_code: branch, updated_at: new Date()
+        }).eq("id", activeVendor.id));
+      }
       if (error) throw error;
-      Object.assign(activeVendor, { bank_name, account_holder: holder, account_name: holder, account_number: number, branch_code: branch });
       alert("Bank details saved.");
     } catch (err) {
       alert("Error saving bank details: " + err.message);
