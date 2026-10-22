@@ -172,7 +172,7 @@
     const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
     const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
 
-    const STORE_COLUMNS = "id, store_name, category, store_image_url, phone_number, address, status, subscription_expires_at, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, slot_capacity, capacity_mode, bank_name, account_holder, account_name, account_number, branch_code";
+    const STORE_COLUMNS = "id, store_name, category, store_image_url, phone_number, address, status, subscription_expires_at, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, slot_capacity, capacity_mode";
 
     let db = null;
     let selectedService = null;
@@ -634,10 +634,18 @@
 
         const apptText = fmtAppt((receipt && receipt.booking_date) || date, (receipt && receipt.booking_time) || time);
         const shopName = storeData.store_name || "the shop";
-        const bankName = storeData.bank_name || "Ask the shop on WhatsApp";
-        const accHolder = storeData.account_holder || storeData.account_name || shopName;
-        const accNumber = storeData.account_number || "Ask the shop on WhatsApp";
-        const branchCode = storeData.branch_code || "N/A";
+        // The shop's bank details are private. They are only released for a booking that exists.
+        let pay = null;
+        if (payMethod === "EFT") {
+          try {
+            const { data } = await db.rpc("get_payment_details", { p_booking_id: bookingId });
+            pay = Array.isArray(data) ? data[0] : data;
+          } catch (e) { console.warn("Payment details unavailable:", e); }
+        }
+        const bankName = (pay && pay.bank_name) || "Ask the shop on WhatsApp";
+        const accHolder = (pay && pay.account_holder) || shopName;
+        const accNumber = (pay && pay.account_number) || "Ask the shop on WhatsApp";
+        const branchCode = (pay && pay.branch_code) || "N/A";
         const payNote = payMethod === "EFT" ? `Instant EFT (Ref: ${paymentRef})` : `Cash at the shop (Ref: ${paymentRef})`;
 
         const waPhone = waNumber(storeData.phone_number);
