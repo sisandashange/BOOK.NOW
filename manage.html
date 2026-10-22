@@ -96,6 +96,18 @@ footer a{color:var(--muted);font-weight:600}
       <div class="detail"><span>Reference</span><span id="r-ref"></span></div>
     </div>
 
+    <div id="pay-box" class="hidden">
+      <button type="button" class="btn light" id="show-bank-btn" style="margin-bottom:14px">Show bank details to pay by EFT</button>
+      <div id="bank-card" class="card hidden">
+        <p class="shop" style="font-size:16px">Pay by EFT</p>
+        <div class="detail"><span>Bank</span><span id="b-bank"></span></div>
+        <div class="detail"><span>Account name</span><span id="b-holder"></span></div>
+        <div class="detail"><span>Account number</span><span id="b-number"></span></div>
+        <div class="detail"><span>Branch code</span><span id="b-branch"></span></div>
+        <div class="detail"><span>Use this reference</span><span id="b-ref"></span></div>
+      </div>
+    </div>
+
     <div id="review-card" class="card hidden">
       <p class="shop" style="font-size:17px;text-align:center">How was your visit?</p>
       <div class="stars" id="stars" role="radiogroup" aria-label="Rating out of 5"></div>
@@ -208,6 +220,9 @@ footer a{color:var(--muted);font-weight:600}
     $("r-pay").textContent = (bk.payment_method === "CASH" ? "Cash" : "EFT") + " · " + (paid ? "Paid" : "Not paid yet");
     $("r-ref").textContent = bk.payment_ref || "";
 
+    const needsEft = String(bk.payment_method || "").toUpperCase() === "EFT" && !paid && (status === "pending" || status === "confirmed");
+    $("pay-box").classList.toggle("hidden", !needsEft);
+    $("bank-card").classList.add("hidden");
     $("review-card").classList.toggle("hidden", !bk.can_review);
     const done = $("review-done");
     if (bk.review_rating) { done.textContent = "Thank you for your review. You gave " + "\u2605".repeat(bk.review_rating) + "\u2606".repeat(5 - bk.review_rating) + "."; }
@@ -377,6 +392,28 @@ footer a{color:var(--muted);font-weight:600}
     }
   }
 
+  async function showBankDetails() {
+    const btn = $("show-bank-btn");
+    btn.disabled = true; btn.textContent = "Loading...";
+    try {
+      const { data, error } = await db.rpc("get_my_payment_details", { p_ref: lookup.ref, p_phone: lookup.phone });
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row) return say("The shop's bank details aren't available. Please message the shop on WhatsApp.", "err");
+      $("b-bank").textContent = row.bank_name || "";
+      $("b-holder").textContent = row.account_holder || "";
+      $("b-number").textContent = row.account_number || "";
+      $("b-branch").textContent = row.branch_code || "N/A";
+      $("b-ref").textContent = bk.payment_ref || "";
+      $("bank-card").classList.remove("hidden");
+    } catch (err) {
+      console.error(err);
+      say("Something went wrong. Check your connection and try again.", "err");
+    } finally {
+      btn.disabled = false; btn.textContent = "Show bank details to pay by EFT";
+    }
+  }
+
   // ----- reviews -----
   let rating = 0;
   function paintStars() {
@@ -419,6 +456,7 @@ footer a{color:var(--muted);font-weight:600}
       $("stars").appendChild(b);
     }
     $("review-submit").addEventListener("click", submitReview);
+    $("show-bank-btn").addEventListener("click", showBankDetails);
     $("lookup-card").addEventListener("submit", onLookup);
     $("change-btn").addEventListener("click", openReschedule);
     $("cancel-btn").addEventListener("click", cancelBooking);
