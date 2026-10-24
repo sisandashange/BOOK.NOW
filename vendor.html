@@ -599,8 +599,54 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     const choice = alertChoice();
     b.textContent = choice === null ? "Enable alerts" : (choice === "off" ? "Alerts: Off" : "Alerts: On");
     $("alerts-sub").textContent = choice === null
-      ? "Tap to turn on a sound, vibration and message when a customer books"
+      ? "Tap to turn on alerts, even when the app is closed"
       : "Sound, vibration and a message when a customer books";
+  }
+
+  // ---- Phone alerts (push): they reach this phone even when the app is closed ----
+  const urlB64ToBytes = b64 => {
+    const raw = atob((b64 + "=".repeat((4 - b64.length % 4) % 4)).replace(/-/g, "+").replace(/_/g, "/"));
+    return Uint8Array.from(raw, c => c.charCodeAt(0));
+  };
+  const pushSupported = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+
+  // Subscribes this phone (if the shop allowed notifications) and saves it on the shop owner's account
+  async function syncPushSubscription() {
+    try {
+      if (!pushSupported() || Notification.permission !== "granted" || alertChoice() !== "on") return "off";
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        const { data: key, error } = await db.rpc("get_push_public_key");
+        if (error || !key) return "error";
+        sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToBytes(key) });
+      }
+      const j = sub.toJSON();
+      const { error } = await db.rpc("save_push_subscription", { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_user_agent: navigator.userAgent });
+      return error ? "error" : "on";
+    } catch (e) {
+      console.warn("Phone alerts could not be set up:", e);
+      return "error";
+    }
+  }
+
+  async function removePushSubscription() {
+    try {
+      if (!pushSupported()) return;
+      const reg = await navigator.serviceWorker.getRegistration();
+      const sub = reg && await reg.pushManager.getSubscription();
+      if (!sub) return;
+      try { await db.rpc("remove_push_subscription", { p_endpoint: sub.endpoint }); } catch (_) {}
+      await sub.unsubscribe();
+    } catch (_) {}
+  }
+
+  function showPushStatus(state) {
+    const sub = $("alerts-sub");
+    if (state === "on") sub.textContent = "Phone alerts are on. You'll be told about bookings even when the app is closed.";
+    else if (state === "blocked") sub.textContent = "Notifications are blocked. Allow them for BOOK.NOW in your phone settings to get alerts when the app is closed.";
+    else if (state === "unsupported") sub.textContent = "This phone can't send alerts when the app is closed. Alerts still work while the app is open.";
+    else if (state === "error") sub.textContent = "Alerts work while the app is open. Phone alerts couldn't be set up. Try again later.";
   }
 
   function unlockAudio() {
@@ -748,11 +794,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     $("new-booking-banner").addEventListener("click", () => { clearNewBookingBanner(); showTab("orders"); window.scrollTo({ top: 0, behavior: "smooth" }); });
     $("alerts-toggle-btn").addEventListener("click", async () => {
       unlockAudio();
-      if (alertChoice() === "on") { setAlertChoice("off"); return; }
+      if (alertChoice() === "on") { setAlertChoice("off"); await removePushSubscription(); return; }
       setAlertChoice("on");
       beep();
       try { if ("Notification" in window && Notification.permission === "default") await Notification.requestPermission(); } catch (_) {}
+      if (!pushSupported()) return showPushStatus("unsupported");
+      if (Notification.permission === "denied") return showPushStatus("blocked");
+      showPushStatus(await syncPushSubscription());
     });
+    // When a phone alert arrives while the app is open, refresh straight away
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.addEventListener("message", e => { if (e.data && e.data.type === "push" && activeVendor) loadOrders(); });
+    }
     $("refresh-settlement-btn").addEventListener("click", loadOrders);
 
     $("store-capacity-mode").addEventListener("change", updateCapacityLabel);
@@ -864,6 +917,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   }
 
   async function logout() {
+    await removePushSubscription();   // so the next person to use this phone is not sent this shop's alerts
     const { error } = await db.auth.signOut();
     if (error) return alert("Could not sign out: " + error.message);
     showSignedOut();
@@ -1185,6 +1239,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     $("auth-screen").style.display = "none";
     $("dashboard-screen").style.display = "block";
     await initDashboard();
+    syncPushSubscription().then(state => { if (state === "on") showPushStatus("on"); });
   }
 
   async function initDashboard(preferredId = null) {
