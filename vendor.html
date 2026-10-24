@@ -343,6 +343,15 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     <input type="hidden" id="editing-service-id" value="">
     <div class="form-field"><label for="service-title">Service Title</label><input type="text" id="service-title" placeholder="e.g. Fade Cut &amp; Beard Trim" maxlength="150"></div>
     <div class="form-field"><label for="service-price">Standard Price (ZAR)</label><input type="number" id="service-price" placeholder="e.g. 150" min="1" max="10000" step="0.01"></div>
+    <div class="form-field"><label for="service-duration">How long does it take?</label>
+      <select id="service-duration">
+        <option value="30">30 minutes</option><option value="60">1 hour</option><option value="90">1 hour 30 min</option>
+        <option value="120">2 hours</option><option value="150">2 hours 30 min</option><option value="180">3 hours</option>
+        <option value="240">4 hours</option><option value="300">5 hours</option><option value="360">6 hours</option>
+        <option value="420">7 hours</option><option value="480">8 hours</option>
+      </select>
+      <div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">Customers can only book times when the whole service fits before you close, and it blocks that time for other customers.</div>
+    </div>
     <div style="background:#f8fafc;border:1px solid var(--border);padding:14px;border-radius:12px;margin-bottom:14px">
       <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px"><i class="ph ph-tag"></i> Promotional Sale Pricing (Optional)</div>
       <div class="form-field"><label for="service-sale-price">Special Sale Price (ZAR)</label><input type="number" id="service-sale-price" placeholder="e.g. 100" min="1" max="10000" step="0.01"></div>
@@ -419,7 +428,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   const money = v => "R" + (Number.isFinite(Number(v)) ? Number(v) : 0).toFixed(2);
   const saDate = d => new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Johannesburg" }).format(d instanceof Date ? d : new Date(d));
   const saToday = () => saDate(new Date());
-  const fmtAppt = b => new Date(b.booking_date + "T12:00:00Z").toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) + (b.booking_time ? " at " + b.booking_time : "");
+  const addMin = (hhmm, m) => { const [h, mi] = hhmm.split(":").map(Number); const t = (((h * 60 + mi + m) % 1440) + 1440) % 1440; return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"); };
+  const fmtDur = m => { m = Number(m) || 30; const hh = Math.floor(m / 60), r = m % 60; return hh === 0 ? `${r} min` : (r === 0 ? `${hh} h` : `${hh} h ${r} min`); };
+  const fmtAppt = b => new Date(b.booking_date + "T12:00:00Z").toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) + (b.booking_time ? " at " + b.booking_time + (Number(b.duration_minutes) > 30 ? " to " + addMin(b.booking_time, Number(b.duration_minutes)) : "") : "");
 
   // Safe element builder: text is always inserted as text, never as HTML
   function h(tag, attrs = {}, ...kids) {
@@ -1134,6 +1145,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
   function resetServiceForm() {
     ["editing-service-id", "service-title", "service-price", "service-sale-price", "sale-start-date", "sale-end-date", "service-photos"].forEach(id => { $(id).value = ""; });
+    $("service-duration").value = "30";
     $("modal-service-title-text").textContent = "Add Service Offering";
     $("image-preview-container").replaceChildren();
     selectedFiles = [];
@@ -1145,6 +1157,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     $("modal-service-title-text").textContent = "Edit Service Offering";
     $("service-title").value = s.title || "";
     $("service-price").value = s.price || "";
+    $("service-duration").value = String(s.duration_minutes || 30);
     $("service-sale-price").value = s.sale_price || "";
     $("sale-start-date").value = s.sale_start_date || "";
     $("sale-end-date").value = s.sale_end_date || "";
@@ -1212,7 +1225,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         if (u?.publicUrl) urls.push(u.publicUrl);
       }
 
-      const payload = { store_id: activeVendor.id, title, price, sale_price: salePrice, sale_start_date: start, sale_end_date: end };
+      const payload = { store_id: activeVendor.id, title, price, duration_minutes: Number($("service-duration").value) || 30, sale_price: salePrice, sale_start_date: start, sale_end_date: end };
       if (urls.length) payload.image_urls = urls;
 
       if (serviceId) {
@@ -1357,7 +1370,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     setEmpty("services-list", "Loading services...");
     try {
       const { data, error } = await db.from("service_items")
-        .select("id, store_id, title, price, sale_price, sale_start_date, sale_end_date, image_urls, created_at")
+        .select("id, store_id, title, price, duration_minutes, sale_price, sale_start_date, sale_end_date, image_urls, created_at")
         .eq("store_id", activeVendor.id).order("created_at", { ascending: false });
       if (error) throw error;
       if (!data || data.length === 0) return setEmpty("services-list", "No services added yet. Tap '+ Add Service' above.");
@@ -1368,7 +1381,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
           && (!s.sale_start_date || s.sale_start_date <= today) && (!s.sale_end_date || s.sale_end_date >= today);
 
         const title = h("div", { class: "order-title", text: s.title || "Untitled Service" }, onSale ? h("span", { class: "sale-badge", text: "On sale" }) : null);
-        const info = h("div", {}, title, h("div", { class: "order-time", text: onSale ? `Promo active until ${s.sale_end_date || "further notice"}` : "Active & available" }));
+        const info = h("div", {}, title, h("div", { class: "order-time", text: onSale ? `Promo active until ${s.sale_end_date || "further notice"}` : "Active & available" }), h("div", { class: "order-time", text: "Takes " + fmtDur(s.duration_minutes) }));
         const priceBox = h("div", { style: "text-align:right" },
           onSale ? h("span", { class: "old-price", text: money(s.price) }) : null,
           h("div", { class: "order-price", text: money(onSale ? s.sale_price : s.price) }));
