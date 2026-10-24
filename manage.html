@@ -186,10 +186,10 @@ footer a{color:var(--muted);font-weight:600}
   function addDays(dateStr, days) { const d = new Date(dateStr + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); }
   const toMin = hhmm => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
   const fmtMin = m => { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); };
-  function fmtAppt(dateStr, timeStr) {
+  function fmtAppt(dateStr, timeStr, dur) {
     if (!dateStr) return "Not set";
     const d = new Date(dateStr + "T12:00:00Z").toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-    return d + (timeStr ? " at " + timeStr : "");
+    return d + (timeStr ? " at " + timeStr + (Number(dur) > 30 ? " to " + fmtMin(toMin(timeStr) + Number(dur)) : "") : "");
   }
   function waNumber(raw) {
     let d = String(raw || "").replace(/\D/g, "");
@@ -211,7 +211,7 @@ footer a{color:var(--muted);font-weight:600}
     badge.textContent = STATUS_TEXT[status] || status.toUpperCase();
     badge.className = "badge s-" + (STATUS_TEXT[status] ? status : "pending");
     $("r-service").textContent = bk.service_title || "Service";
-    $("r-when").textContent = fmtAppt(bk.booking_date, bk.booking_time);
+    $("r-when").textContent = fmtAppt(bk.booking_date, bk.booking_time, bk.duration_minutes);
     const guests = Number(bk.party_size) || 1;
     $("r-guests-row").classList.toggle("hidden", !(bk.capacity_mode === "GUESTS" || guests > 1));
     $("r-guests").textContent = String(guests);
@@ -245,7 +245,7 @@ footer a{color:var(--muted);font-weight:600}
     const wa = $("wa-shop");
     const num = waNumber(bk.store_phone);
     if (num) {
-      const text = `Hi ${bk.store_name || ""}, this is ${bk.customer_name || "a customer"} about my booking (ref ${bk.payment_ref}) on ${fmtAppt(bk.booking_date, bk.booking_time)}.`;
+      const text = `Hi ${bk.store_name || ""}, this is ${bk.customer_name || "a customer"} about my booking (ref ${bk.payment_ref}) on ${fmtAppt(bk.booking_date, bk.booking_time, bk.duration_minutes)}.`;
       wa.href = `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
     }
     wa.classList.toggle("hidden", !num);
@@ -318,18 +318,26 @@ footer a{color:var(--muted);font-weight:600}
 
     const options = [];
     let free = 0;
-    for (let m = open; m < close; m += 30) {
+    const dur = Number(bk.duration_minutes) || 30;
+    const steps = Math.max(1, Math.round(dur / 30));
+    // This booking's own slots must not count against it when it is moved on the same day
+    if (date === bk.booking_date && bk.booking_time) {
+      const ownStart = toMin(bk.booking_time);
+      for (let k = 0; k < steps; k++) { const key = fmtMin(ownStart + k * 30); used[key] = Math.max(0, (used[key] || 0) - need); }
+    }
+    for (let m = open; m + dur <= close; m += 30) {
       if (nowMin >= 0 && (m % 1440) <= nowMin) continue;
       const label = fmtMin(m);
       const isCurrent = date === bk.booking_date && label === bk.booking_time;
-      const left = cap - (used[label] || 0);
+      let left = cap;
+      for (let k = 0; k < steps; k++) left = Math.min(left, cap - (used[fmtMin(m + k * 30)] || 0));
       const blocked = isCurrent || left < need;
       if (!blocked) free++;
-      let text = label;
-      if (isCurrent) text = label + " (your current time)";
-      else if (left <= 0) text = label + " (full)";
-      else if (blocked) text = `${label} (only ${left} left)`;
-      else if (cap > 1) text = `${label} (${left} left)`;
+      let text = dur > 30 ? `${label} to ${fmtMin(m + dur)}` : label;
+      if (isCurrent) text += " (your current time)";
+      else if (left <= 0) text += " (full)";
+      else if (blocked) text += ` (only ${left} left)`;
+      else if (cap > 1) text += ` (${left} left)`;
       options.push(mk(label, text, blocked));
     }
     if (!free) { sel.replaceChildren(mk("", "No times available")); hint.textContent = "No free times on this date. Try another day."; return; }
