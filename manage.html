@@ -96,6 +96,11 @@ footer a{color:var(--muted);font-weight:600}
       <div class="detail"><span>Reference</span><span id="r-ref"></span></div>
     </div>
 
+    <div id="alerts-box" class="hidden" style="margin-bottom:14px">
+      <button type="button" class="btn light" id="alerts-btn">Get alerts for this booking</button>
+      <p class="hint" id="alerts-note" style="text-align:center">A message when the shop confirms, and a reminder 2 hours before.</p>
+    </div>
+
     <div id="pay-box" class="hidden">
       <button type="button" class="btn light" id="show-bank-btn" style="margin-bottom:14px">Show bank details to pay by EFT</button>
       <div id="bank-card" class="card hidden">
@@ -222,6 +227,7 @@ footer a{color:var(--muted);font-weight:600}
 
     const needsEft = String(bk.payment_method || "").toUpperCase() === "EFT" && !paid && (status === "pending" || status === "confirmed");
     $("pay-box").classList.toggle("hidden", !needsEft);
+    $("alerts-box").classList.toggle("hidden", !(status === "pending" || status === "confirmed"));
     $("bank-card").classList.add("hidden");
     $("review-card").classList.toggle("hidden", !bk.can_review);
     const done = $("review-done");
@@ -400,6 +406,45 @@ footer a{color:var(--muted);font-weight:600}
     }
   }
 
+  const urlB64ToBytes = b64 => {
+    const raw = atob((b64 + "=".repeat((4 - b64.length % 4) % 4)).replace(/-/g, "+").replace(/_/g, "/"));
+    return Uint8Array.from(raw, c => c.charCodeAt(0));
+  };
+
+  // Phone alerts for this booking: a message when the shop confirms, and a reminder 2 hours before
+  async function enableAlerts() {
+    const btn = $("alerts-btn"), note = $("alerts-note");
+    if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+      note.textContent = "This phone can't receive alerts when the page is closed. On an iPhone, add BOOK.NOW to your Home Screen first.";
+      return;
+    }
+    btn.disabled = true;
+    try {
+      if (Notification.permission === "default") await Notification.requestPermission();
+      if (Notification.permission !== "granted") {
+        note.textContent = "Notifications are blocked. Allow them for this site in your phone settings, then try again.";
+        btn.disabled = false;
+        return;
+      }
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        const { data: key, error: keyErr } = await db.rpc("get_push_public_key");
+        if (keyErr || !key) throw new Error("no key");
+        sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToBytes(key) });
+      }
+      const j = sub.toJSON();
+      const { data, error } = await db.rpc("save_my_booking_push", { p_ref: lookup.ref, p_phone: lookup.phone, p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_user_agent: navigator.userAgent });
+      if (error || !data || data.success === false) throw new Error((data && data.message) || "save failed");
+      btn.textContent = "Alerts are on";
+      note.textContent = "You'll get a message when the shop confirms, and a reminder 2 hours before.";
+    } catch (e) {
+      console.warn("Alerts could not be set up:", e);
+      btn.disabled = false;
+      note.textContent = "We couldn't turn alerts on. Try again later.";
+    }
+  }
+
   async function showBankDetails() {
     const btn = $("show-bank-btn");
     btn.disabled = true; btn.textContent = "Loading...";
@@ -465,6 +510,14 @@ footer a{color:var(--muted);font-weight:600}
     }
     $("review-submit").addEventListener("click", submitReview);
     $("show-bank-btn").addEventListener("click", showBankDetails);
+    $("alerts-btn").addEventListener("click", enableAlerts);
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+      // When an alert arrives while this page is open, refresh the booking (it may have just been confirmed)
+      navigator.serviceWorker.addEventListener("message", e => {
+        if (e.data && e.data.type === "push" && bk) findBooking(true).catch(() => {});
+      });
+    }
     $("lookup-card").addEventListener("submit", onLookup);
     $("change-btn").addEventListener("click", openReschedule);
     $("cancel-btn").addEventListener("click", cancelBooking);
