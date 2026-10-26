@@ -315,6 +315,45 @@
       else chosenTime = "";
     }
 
+
+    const urlB64ToBytes = b64 => {
+      const raw = atob((b64 + "=".repeat((4 - b64.length % 4) % 4)).replace(/-/g, "+").replace(/_/g, "/"));
+      return Uint8Array.from(raw, c => c.charCodeAt(0));
+    };
+
+    // Phone alerts for this one booking (customers have no login, so it is tied to the booking number)
+    async function enableCustomerAlerts(bookingId, btn, note) {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+        note.textContent = "This phone can't receive alerts when the page is closed. On an iPhone, add BOOK.NOW to your Home Screen first.";
+        return;
+      }
+      btn.disabled = true;
+      try {
+        if (Notification.permission === "default") await Notification.requestPermission();
+        if (Notification.permission !== "granted") {
+          note.textContent = "Notifications are blocked. Allow them for this site in your phone settings, then try again.";
+          btn.disabled = false;
+          return;
+        }
+        const reg = await navigator.serviceWorker.ready;
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+          const { data: key, error: keyErr } = await db.rpc("get_push_public_key");
+          if (keyErr || !key) throw new Error("no key");
+          sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToBytes(key) });
+        }
+        const j = sub.toJSON();
+        const { data, error } = await db.rpc("save_customer_push", { p_booking_id: bookingId, p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_user_agent: navigator.userAgent });
+        if (error || !data || data.success === false) throw new Error((data && data.message) || "save failed");
+        btn.textContent = "Alerts are on";
+        note.textContent = "You'll get a message when the shop confirms, and a reminder 2 hours before.";
+      } catch (e) {
+        console.warn("Customer alerts could not be set up:", e);
+        btn.disabled = false;
+        note.textContent = "We couldn't turn alerts on. You can try again from Manage my booking.";
+      }
+    }
+
     function setPaymentMethod(method) {
       payMethod = method;
       $("pay-method-eft").classList.toggle("on", method === "EFT");
@@ -709,10 +748,13 @@
             ${waUrl ? `<a href="${esc(waUrl)}" target="_blank" rel="noopener" class="btn-book" style="display:block;width:100%;text-decoration:none;padding:12px;font-size:13px;background:#25d366;border-radius:10px;margin-bottom:8px;">
               <i class="ph ph-whatsapp-logo" style="font-size:16px;vertical-align:middle;"></i> Send booking to the shop on WhatsApp
             </a>` : `<p style="font-size:12px;color:var(--muted);">This shop hasn't added a WhatsApp number. Screenshot this screen and show it at the shop.</p>`}
+            <button id="alerts-btn" type="button" style="display:block;width:100%;margin:0 0 6px;padding:11px;border-radius:10px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:700;cursor:pointer;">Get alerts for this booking</button>
+            <div id="alerts-note" style="font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:10px;">A message when the shop confirms, and a reminder 2 hours before.</div>
             <a href="manage.html?ref=${encodeURIComponent(paymentRef)}" style="display:block;margin:2px 0 10px;font-size:12px;font-weight:700;color:var(--accent);text-decoration:none;">Need to change or cancel? Manage your booking</a>
             <button id="done-btn" style="background:none;border:none;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;">Done</button>
           </div>`;
         $("done-btn").addEventListener("click", () => location.reload());
+        $("alerts-btn").addEventListener("click", () => enableCustomerAlerts(bookingId, $("alerts-btn"), $("alerts-note")));
 
       } catch (err) {
         console.error("Booking error:", err);
@@ -727,6 +769,7 @@
 
     function init() {
       db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 
       $("close-modal-btn").addEventListener("click", closeModals);
       $("confirm-booking-btn").addEventListener("click", confirmBooking);
