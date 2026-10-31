@@ -57,6 +57,10 @@
 
     .filter-bar { display: flex; gap: 8px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
     .filter-bar::-webkit-scrollbar { display: none; }
+    .filter-row { display: flex; gap: 8px; margin: -10px 0 22px; flex-wrap: wrap; align-items: center; }
+    .filter-select { padding: 8px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); font-size: 12px; font-weight: 700; color: var(--muted); max-width: 100%; }
+    .open-chip { background: var(--surface); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; color: var(--muted); }
+    .open-chip.active { background: var(--success); color: #fff; border-color: var(--success); }
     .filter-chip { background: var(--surface); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; color: var(--muted); transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
     .filter-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 4px 12px rgba(15,23,42,0.15); }
 
@@ -88,6 +92,7 @@
     .legal-foot a { color: #64748b; font-weight: 600; }
     .empty-box { text-align: center; padding: 40px 16px; background: var(--surface); border-radius: 16px; border: 1px dashed var(--border); color: var(--muted); font-size: 14px; grid-column: 1 / -1; }
   </style>
+<script src="i18n.js"></script>
 </head>
 <body>
 
@@ -118,6 +123,16 @@
       <button class="filter-chip" data-cat="SHISANYAMA" aria-pressed="false"><i class="ph ph-fire"></i> Shisanyama</button>
     </div>
 
+    <div class="filter-row">
+      <select id="area-select" class="filter-select" aria-label="Filter by area" style="display:none"><option value="">All areas</option></select>
+      <select id="sort-select" class="filter-select" aria-label="Sort shops">
+        <option value="new">Newest first</option>
+        <option value="rating">Top rated</option>
+        <option value="name">Name A to Z</option>
+      </select>
+      <button class="open-chip" id="open-now-chip" type="button" aria-pressed="false">Open now</button>
+    </div>
+
     <div id="store-grid" class="store-grid" aria-live="polite">
       <div class="empty-box">Loading available stores...</div>
     </div>
@@ -142,6 +157,7 @@
     let db = null;
     let allStores = [];
     let activeCat = "ALL";
+    let activeArea = "", sortBy = "new", onlyOpen = false;
     let booted = false;
 
     const FALLBACK_IMAGES = {
@@ -194,7 +210,7 @@
         // One request: stores plus their services
         const { data, error } = await db
           .from("stores")
-          .select("id, store_name, category, store_image_url, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, service_items(id, title)")
+          .select("id, store_name, category, area, address, store_image_url, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, service_items(id, title)")
           .eq("status", "active")
           .order("created_at", { ascending: false });
 
@@ -213,6 +229,12 @@
           cat: normalizeCategory(s.category),
           service_items: s.service_items || []
         }));
+
+        // Area filter: only shows if at least one shop has set its area
+        const areas = [...new Set(allStores.map(s => (s.area || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+        const areaSelect = $("area-select");
+        areaSelect.replaceChildren(new Option("All areas", ""), ...areas.map(a => new Option(a, a)));
+        areaSelect.style.display = areas.length ? "" : "none";
 
         applyFilters();
       } catch (err) {
@@ -257,6 +279,13 @@
 
         const meta = document.createElement("div");
         meta.className = "store-meta";
+        if (s.area) {
+          const where = document.createElement("span");
+          where.textContent = s.area;
+          const sepA = document.createElement("span");
+          sepA.textContent = "\u2022";
+          meta.append(where, sepA);
+        }
         const count = s.service_items.length;
         const services = document.createElement("span");
         services.textContent = count + (count === 1 ? " service" : " services");
@@ -307,10 +336,19 @@
 
       const filtered = allStores.filter(s => {
         if (activeCat !== "ALL" && s.cat !== activeCat) return false;
+        if (activeArea && (s.area || "").trim() !== activeArea) return false;
+        if (onlyOpen && isOpenNow(s) !== true) return false;
         if (!term) return true;
-        const haystack = [s.store_name, s.category, CATEGORY_LABELS[s.cat], ...s.service_items.map(i => i.title)];
+        const haystack = [s.store_name, s.category, CATEGORY_LABELS[s.cat], s.area, s.address, ...s.service_items.map(i => i.title)];
         return haystack.some(t => (t || "").toLowerCase().includes(term));
       });
+
+      if (sortBy === "rating") {
+        filtered.sort((a, b) => (Number(b.rating && b.rating.avg_rating) || 0) - (Number(a.rating && a.rating.avg_rating) || 0)
+          || (Number(b.rating && b.rating.review_count) || 0) - (Number(a.rating && a.rating.review_count) || 0));
+      } else if (sortBy === "name") {
+        filtered.sort((a, b) => (a.store_name || "").localeCompare(b.store_name || ""));
+      }
 
       renderStores(filtered);
     }
@@ -326,6 +364,15 @@
           });
           applyFilters();
         });
+      });
+
+      $("area-select").addEventListener("change", e => { activeArea = e.target.value; applyFilters(); });
+      $("sort-select").addEventListener("change", e => { sortBy = e.target.value; applyFilters(); });
+      $("open-now-chip").addEventListener("click", e => {
+        onlyOpen = !onlyOpen;
+        e.currentTarget.classList.toggle("active", onlyOpen);
+        e.currentTarget.setAttribute("aria-pressed", String(onlyOpen));
+        applyFilters();
       });
 
       let timer;
