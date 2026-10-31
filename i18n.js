@@ -87,6 +87,7 @@
     "We couldn't save your booking. Check your connection and try again.": ["Asikwazanga ukulondoloza ukubhuka kwakho. Hlola uxhumano lwakho uphinde uzame.", "Ons kon nie jou bespreking stoor nie. Kyk jou verbinding en probeer weer.", "Re ne re sa khone ho boloka buka ea hau. Hlahloba khokahano 'me u leke hape."],
     "That time just filled up. Please choose another time.": ["Lesi sikhathi sivele sagcwala. Sicela ukhethe esinye.", "Daardie tyd het pas vol geraak. Kies asseblief 'n ander tyd.", "Nako eo e tletse hona joale. Ka kopo khetha e 'ngoe."],
     "The shop is closed on this date. Try another day.": ["Isitolo sivaliwe kulolu suku. Zama olunye usuku.", "Die winkel is op hierdie datum gesluit. Probeer 'n ander dag.", "Lebenkele le koetsoe ka letsatsi lena. Leka le leng."],
+    "Report this shop ": ["", "", ""],
     "What is the problem?": ["Kuyini inkinga?", "Wat is die probleem?", "Bothata ke bofe?"],
     "Choose a reason": ["Khetha isizathu", "Kies 'n rede", "Khetha lebaka"],
     "Wrong information (prices, hours, address)": ["Ulwazi olungalungile (amanani, amahora, ikheli)", "Verkeerde inligting (pryse, ure, adres)", "Tlhahisoleseling e fosahetseng (litheko, nako, aterese)"],
