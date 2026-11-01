@@ -58,6 +58,7 @@ footer{text-align:center;padding:10px 16px 0;font-size:12px;color:var(--muted)}
 footer a{color:var(--muted);font-weight:600}
 .hidden{display:none!important}
 </style>
+<script src="i18n.js"></script>
 </head>
 <body>
 
@@ -387,7 +388,7 @@ footer a{color:var(--muted);font-weight:600}
   }
 
   async function cancelBooking() {
-    if (!confirm("Cancel this booking? This can't be undone.")) return;
+    if (!confirm(typeof T === "function" ? T("Cancel this booking? This can't be undone.") : "Cancel this booking? This can't be undone.")) return;
     const btn = $("cancel-btn");
     btn.disabled = true; btn.textContent = "Cancelling...";
     try {
