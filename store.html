@@ -75,6 +75,10 @@
     .modal-error { color:var(--danger); font-size:12px; font-weight:700; margin:0 0 8px; min-height:16px; }
     .btn-share { margin-top:12px; background:#f1f5f9; color:var(--primary); border:1px solid var(--border); border-radius:10px; padding:8px 14px; font-size:12px; font-weight:700; cursor:pointer; }
     .btn-share:hover { background:#e2e8f0; }
+    .store-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .store-actions .btn-share { margin-top:0; text-decoration:none; display:inline-flex; align-items:center; gap:5px; }
+    .report-link { background:none; border:0; color:#64748b; font-size:12px; font-weight:600; text-decoration:underline; cursor:pointer; padding:6px; display:none; }
+    .form-field textarea { width:100%; padding:11px; border-radius:10px; border:1px solid var(--border); font-size:14px; resize:vertical; min-height:80px; }
     .legal-foot { text-align: center; padding: 18px 16px 8px; font-size: 12px; color: #64748b; }
     .legal-foot a { color: #64748b; font-weight: 600; }
     .review-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px; }
@@ -86,6 +90,7 @@
     .menu-duration { font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 2px; }
     .empty-box { text-align:center; padding:36px 12px; background:var(--surface); border-radius:14px; border:1px dashed var(--border); color:var(--muted); font-size:13px; grid-column:1/-1; }
   </style>
+<script src="i18n.js"></script>
 </head>
 <body>
 
@@ -107,11 +112,48 @@
       <div id="services-menu-box" class="menu-grid"><div class="empty-box">Loading menu items...</div></div>
     </div>
   </main>
+  <div class="legal-foot" style="padding-bottom:0"><button type="button" class="report-link" id="report-open">Report this shop</button></div>
   <div class="legal-foot"><a href="manage.html">Manage my booking</a> &middot; <a href="privacy.html">Privacy Policy</a> &middot; <a href="terms.html">Terms of Use</a></div>
 
   <div id="lightbox-modal" class="lightbox-modal" role="dialog" aria-modal="true" aria-label="Photo viewer">
     <button class="lightbox-close" id="close-lightbox" aria-label="Close photo"><i class="ph ph-x"></i></button>
     <img id="lightbox-img" class="lightbox-img" src="" alt="Full view">
+  </div>
+
+  <div id="report-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="report-title">
+    <div class="modal-sheet">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h3 id="report-title" style="margin:0;font-size:16px;font-weight:800;">Report this shop</h3>
+        <button id="report-close" aria-label="Close" style="background:none;border:0;cursor:pointer;"><i class="ph ph-x-circle" style="font-size:24px;color:var(--muted);"></i></button>
+      </div>
+      <div id="report-form">
+        <div class="form-field">
+          <label for="report-reason">What is the problem?</label>
+          <select id="report-reason">
+            <option value="">Choose a reason</option>
+            <option value="wrong_info">Wrong information (prices, hours, address)</option>
+            <option value="unsafe">I felt unsafe or was treated badly</option>
+            <option value="scam">This looks like a scam</option>
+            <option value="other">Something else</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="report-details">Tell us more (optional)</label>
+          <textarea id="report-details" maxlength="500" placeholder="What happened?"></textarea>
+        </div>
+        <div class="form-field">
+          <label for="report-contact">Your phone or email, if we may contact you (optional)</label>
+          <input type="text" id="report-contact" maxlength="100" autocomplete="off">
+        </div>
+        <p id="report-error" class="modal-error" role="alert"></p>
+        <button class="btn-book" id="report-submit" style="width:100%;padding:12px;font-size:13px;">Send report</button>
+      </div>
+      <div id="report-done" style="display:none;text-align:center;padding:14px 0;">
+        <div style="font-size:34px;color:var(--success);"><i class="ph ph-check-circle"></i></div>
+        <p style="font-size:14px;font-weight:700;margin:6px 0;">Thank you. We will look into it.</p>
+        <button class="btn-book" id="report-done-btn" style="padding:10px 18px;">Close</button>
+      </div>
+    </div>
   </div>
 
   <div id="booking-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-service-title">
@@ -173,7 +215,7 @@
     const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
     const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
 
-    const STORE_COLUMNS = "id, store_name, category, store_image_url, phone_number, address, status, subscription_expires_at, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, slot_capacity, capacity_mode";
+    const STORE_COLUMNS = "id, store_name, category, store_image_url, phone_number, address, status, subscription_expires_at, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, slot_capacity, capacity_mode, area";
 
     let db = null;
     let selectedService = null;
@@ -459,6 +501,8 @@
           ${bookingOpen ? "" : `<div class="closed-banner"><i class="ph ph-clock"></i> ${esc(availability.message)}</div>`}`;
         document.title = name + " — BOOK.NOW";
         loadReviews(store.id);
+        const reportBtn = $("report-open");
+        if (reportBtn) reportBtn.style.display = "inline-block";
         const hero = $("store-hero-box").querySelector(".hero-content");
         if (hero) {
           const shareBtn = document.createElement("button");
@@ -468,7 +512,28 @@
             if (navigator.share) { try { await navigator.share({ title: name, text, url }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
             window.open("https://wa.me/?text=" + encodeURIComponent(text + ": " + url), "_blank", "noopener");
           });
-          hero.appendChild(shareBtn);
+          // Directions and call buttons, next to share
+          const actions = document.createElement("div");
+          actions.className = "store-actions";
+          const place = [store.address, store.area].filter(Boolean).join(", ");
+          if (place) {
+            const dir = document.createElement("a");
+            dir.className = "btn-share";
+            dir.target = "_blank"; dir.rel = "noopener";
+            dir.href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(place);
+            dir.textContent = "Get directions";
+            actions.appendChild(dir);
+          }
+          const callNum = waNumber(store.phone_number);
+          if (callNum) {
+            const call = document.createElement("a");
+            call.className = "btn-share";
+            call.href = "tel:+" + callNum;
+            call.textContent = "Call";
+            actions.appendChild(call);
+          }
+          actions.appendChild(shareBtn);
+          hero.appendChild(actions);
         }
 
         const { data: services, error: serviceErr } = await db
@@ -610,7 +675,40 @@
       $("customer-name").focus();
     }
 
+    // ----- report this shop -----
+    function openReport() {
+      $("report-reason").value = "";
+      $("report-details").value = "";
+      $("report-contact").value = "";
+      $("report-error").textContent = "";
+      $("report-form").style.display = "block";
+      $("report-done").style.display = "none";
+      $("report-modal").style.display = "flex";
+    }
+    async function submitReport() {
+      const reason = $("report-reason").value;
+      const err = $("report-error");
+      err.textContent = "";
+      if (!reason) { err.textContent = "Choose what the problem is."; return; }
+      if (!storeData) return;
+      const btn = $("report-submit");
+      btn.disabled = true; btn.textContent = "Sending...";
+      try {
+        const { data, error } = await db.rpc("report_shop", { p_store_id: storeData.id, p_reason: reason, p_details: $("report-details").value, p_contact: $("report-contact").value });
+        if (error) throw error;
+        if (!data || data.success === false) { err.textContent = (data && data.message) || "We couldn't send your report."; return; }
+        $("report-form").style.display = "none";
+        $("report-done").style.display = "block";
+      } catch (e) {
+        console.error(e);
+        err.textContent = "We couldn't send your report. Check your connection and try again.";
+      } finally {
+        btn.disabled = false; btn.textContent = "Send report";
+      }
+    }
+
     function closeModals() {
+      $("report-modal").style.display = "none";
       $("booking-modal").style.display = "none";
       $("lightbox-modal").style.display = "none";
     }
@@ -772,6 +870,10 @@
       if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 
       $("close-modal-btn").addEventListener("click", closeModals);
+      $("report-open").addEventListener("click", openReport);
+      $("report-close").addEventListener("click", closeModals);
+      $("report-done-btn").addEventListener("click", closeModals);
+      $("report-submit").addEventListener("click", submitReport);
       $("confirm-booking-btn").addEventListener("click", confirmBooking);
       $("close-lightbox").addEventListener("click", closeModals);
       $("lightbox-modal").addEventListener("click", e => { if (e.target === $("lightbox-modal")) closeModals(); });
