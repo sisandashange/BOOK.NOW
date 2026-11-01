@@ -91,6 +91,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 .sale-badge{background:var(--danger-bg);color:var(--danger);font-size:10px;font-weight:800;padding:2px 6px;border-radius:4px;margin-left:6px;text-transform:uppercase}
 .ref-pill{background:#eff6ff;color:var(--accent);font-family:monospace;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;border:1px solid #bfdbfe;display:inline-block;margin-left:6px}
 .queue-pill{background:#fef3c7;color:#b45309;font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px;border:1px solid #fde68a;display:inline-block;margin-left:4px}
+.bar-row{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:12px}
+.bar-label{width:74px;color:var(--muted);flex-shrink:0}
+.bar-track{flex:1;background:#f1f5f9;border-radius:6px;height:14px;overflow:hidden}
+.bar-fill{background:var(--accent);height:100%;border-radius:6px;min-width:2px}
+.bar-val{width:30px;text-align:right;font-weight:700}
 .operating-hours-box{background:#f8fafc;border:1px solid var(--border);padding:14px;border-radius:12px;margin-top:14px}
 .operating-title{font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -207,6 +212,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       <button class="tab-item" id="tab-settlement-btn">Settlement</button>
       <button class="tab-item" id="tab-moneystore-btn">Money Store</button>
       <button class="tab-item" id="tab-share-btn">Share &amp; QR</button>
+      <button class="tab-item" id="tab-stats-btn">Stats</button>
     </div>
 
     <section id="orders-tab">
@@ -234,6 +240,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         </div>
         <div class="form-field"><label for="store-phone-input">WhatsApp / Contact Number</label><input type="tel" id="store-phone-input" placeholder="e.g. 0821234567"></div>
         <div class="form-field"><label for="store-address-input">Store Physical Location / Address</label><input type="text" id="store-address-input" placeholder="e.g. 12 Fox Street, Maboneng, Johannesburg"></div>
+        <div class="form-field"><label for="store-area-input">Area (suburb or town)</label><input type="text" id="store-area-input" maxlength="60" placeholder="e.g. Soweto"><div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">Customers can filter shops by area on the homepage. Use the same spelling as other shops in your area.</div></div>
         <div class="form-field"><label for="store-capacity-mode">How do you count how busy you are?</label><select id="store-capacity-mode"><option value="BOOKINGS">By number of bookings (e.g. barber chairs)</option><option value="GUESTS">By number of guests (e.g. a shisanyama)</option></select></div>
         <div class="form-field"><label for="store-capacity-input" id="store-capacity-label">Bookings you can take at the same time</label><input type="number" id="store-capacity-input" min="1" max="100" step="1" value="1" inputmode="numeric"><div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">Most barbers and salons count bookings, e.g. 1 for one chair. A shisanyama can count guests, e.g. 30 guests at the same time. Customers then enter how many people are coming. When the limit is reached, that time shows as full.</div></div>
         <div class="operating-hours-box">
@@ -291,6 +298,15 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         <div class="finance-card"><div class="finance-label">Instant EFT Balances</div><div class="finance-value" id="ledger-eft-balance">R0.00</div><div class="finance-note">Completed bookings paid via Instant EFT</div></div>
       </div>
       <div class="ledger-section"><h3>Booking Settlement Details</h3><div id="settlement-orders-list" class="card-list"><div class="empty-box">Settlement details will appear here.</div></div></div>
+    </section>
+
+    <section id="stats-tab" style="display:none">
+      <div class="section-head"><h3><i class="ph ph-chart-bar"></i> Your Numbers</h3><button class="btn-action btn-confirm" id="stats-refresh-btn">Refresh</button></div>
+      <div class="finance-grid" id="stats-tiles"></div>
+      <div class="ledger-section"><h3>Busiest days (last 90 days)</h3><div id="stats-days" class="card"></div></div>
+      <div class="ledger-section"><h3>Busiest times (last 90 days)</h3><div id="stats-hours" class="card"></div></div>
+      <div class="ledger-section"><h3>Top services</h3><div id="stats-services" class="card-list"></div></div>
+      <div class="ledger-section"><button class="btn-primary" id="stats-csv-btn"><i class="ph ph-download-simple"></i> Download all bookings (CSV)</button></div>
     </section>
 
     <section id="share-tab" style="display:none">
@@ -417,7 +433,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
   const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
   const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
-  const TABS = ["orders", "services", "profile", "bank", "settlement", "moneystore", "share"];
+  const TABS = ["orders", "services", "profile", "bank", "settlement", "moneystore", "share", "stats"];
   const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
   const MAX_FILE = 5 * 1024 * 1024;
 
@@ -448,6 +464,89 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
   const setEmpty = (id, msg) => { const el = $(id); if (el) el.replaceChildren(h("div", { class: "empty-box", text: msg })); };
   const setBtn = (b, loading, text) => { if (b) { b.disabled = loading; b.textContent = text; } };
+  let lastBookings = [];
+
+  // ---- Stats: simple numbers a shop owner can act on ----
+  function renderStats() {
+    if (!activeVendor) return;
+    const all = lastBookings || [];
+    const status = b => String(b.status || "").toLowerCase();
+    const active = all.filter(b => status(b) !== "cancelled");
+    const today = saToday();
+    const dayOf = b => b.booking_date || saDate(b.created_at);
+    const addDays = (iso, n) => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+    const dow = (new Date(today + "T12:00:00Z").getUTCDay() + 6) % 7;     // Monday = 0
+    const weekStart = addDays(today, -dow), lastWeekStart = addDays(weekStart, -7);
+    const between = (b, a, z) => { const d = dayOf(b); return d >= a && d <= z; };
+    const thisWeek = active.filter(b => between(b, weekStart, addDays(weekStart, 6))).length;
+    const lastWeek = active.filter(b => between(b, lastWeekStart, addDays(weekStart, -1))).length;
+    const ahead = active.filter(b => between(b, today, addDays(today, 6))).length;
+
+    const done = all.filter(b => status(b) === "completed");
+    const monthKey = today.slice(0, 7), lastMonthKey = addDays(monthKey + "-01", -1).slice(0, 7);
+    const earned = key => done.filter(b => dayOf(b).slice(0, 7) === key).reduce((s, b) => s + bookingPrice(b), 0);
+    const total = done.reduce((s, b) => s + bookingPrice(b), 0);
+    const cancelled = all.length - active.length;
+
+    const tiles = [
+      ["Bookings this week", String(thisWeek), "Last week: " + lastWeek],
+      ["Booked in the next 7 days", String(ahead), "Including today"],
+      ["Earned this month", money(earned(monthKey)), "Last month: " + money(earned(lastMonthKey))],
+      ["Earned in total", money(total), done.length + " completed booking" + (done.length === 1 ? "" : "s")],
+      ["Cancelled", String(cancelled), (all.length ? Math.round(cancelled / all.length * 100) : 0) + "% of all bookings"],
+      ["Customer rating", "…", "From reviews"]
+    ];
+    $("stats-tiles").replaceChildren(...tiles.map(([label, value, note]) =>
+      h("div", { class: "finance-card" }, h("div", { class: "finance-label", text: label }), h("div", { class: "finance-value", text: value }), h("div", { class: "finance-note", text: note }))));
+    db.from("store_ratings").select("avg_rating, review_count").eq("store_id", activeVendor.id).maybeSingle().then(({ data }) => {
+      const v = $("stats-tiles").lastChild.querySelector(".finance-value");
+      v.textContent = data && Number(data.review_count) > 0 ? "\u2605 " + Number(data.avg_rating).toFixed(1) + " (" + data.review_count + ")" : "No reviews yet";
+    }).catch(() => {});
+
+    const bars = (el, rows, emptyText) => {
+      const max = Math.max(1, ...rows.map(r => r[1]));
+      if (!rows.some(r => r[1] > 0)) { el.replaceChildren(h("div", { class: "muted", style: "font-size:12px;color:var(--muted)", text: emptyText })); return; }
+      el.replaceChildren(...rows.map(([label, n]) => h("div", { class: "bar-row" },
+        h("span", { class: "bar-label", text: label }),
+        h("div", { class: "bar-track" }, h("div", { class: "bar-fill", style: "width:" + Math.round(n / max * 100) + "%" })),
+        h("span", { class: "bar-val", text: String(n) }))));
+    };
+    const recent = active.filter(b => between(b, addDays(today, -90), today));
+    const names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const perDay = names.map((nm, i) => [nm, recent.filter(b => (new Date(dayOf(b) + "T12:00:00Z").getUTCDay() + 6) % 7 === i).length]);
+    bars($("stats-days"), perDay, "Not enough bookings yet.");
+    const hours = {};
+    recent.forEach(b => { if (b.booking_time) { const k = b.booking_time.slice(0, 2) + ":00"; hours[k] = (hours[k] || 0) + 1; } });
+    bars($("stats-hours"), Object.entries(hours).sort((a, b) => b[1] - a[1]).slice(0, 6).sort((a, b) => a[0].localeCompare(b[0])), "Not enough bookings yet.");
+
+    const bySvc = {};
+    active.forEach(b => { const k = (b.service_items && b.service_items.title) || "Service"; (bySvc[k] = bySvc[k] || { n: 0, money: 0 }).n++; });
+    done.forEach(b => { const k = (b.service_items && b.service_items.title) || "Service"; (bySvc[k] = bySvc[k] || { n: 0, money: 0 }).money += bookingPrice(b); });
+    const top = Object.entries(bySvc).sort((a, b) => b[1].n - a[1].n).slice(0, 5);
+    $("stats-services").replaceChildren(...(top.length ? top.map(([title, v]) => h("div", { class: "ledger-card" },
+      h("div", { class: "order-title", text: title }),
+      h("div", { class: "order-time", text: v.n + " booking" + (v.n === 1 ? "" : "s") + " \u00b7 " + money(v.money) + " earned" }))) : [h("div", { class: "empty-box", text: "No bookings yet." })]));
+  }
+
+  function downloadBookingsCsv() {
+    const rows = lastBookings || [];
+    if (!rows.length) return alert("There are no bookings to download yet.");
+    // A cell that starts with = + - or @ could run as a formula in a spreadsheet, so it is prefixed with a quote
+    const cell = v => { let s = String(v ?? ""); if (/^[=+\-@]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
+    const head = ["Reference", "Appointment date", "Time", "Length (minutes)", "Customer", "Phone", "Service", "Guests", "Price (ZAR)", "Status", "Payment status", "Payment method", "Booked on"];
+    const lines = [head.map(cell).join(",")].concat(rows.map(b => [
+      b.payment_ref, b.booking_date, b.booking_time, b.duration_minutes || 30, b.customer_name, b.customer_phone,
+      b.service_items && b.service_items.title, b.party_size || 1, bookingPrice(b).toFixed(2), b.status, b.payment_status, b.payment_method,
+      b.created_at ? saDate(b.created_at) : ""
+    ].map(cell).join(",")));
+    const blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "bookings-" + saToday() + ".csv";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+
   const bookingPrice = b => Number(b.booked_price ?? (b.service_items?.sale_price || b.service_items?.price || 0));
   const fileOk = f => IMAGE_TYPES.includes(f.type) && f.size <= MAX_FILE;
   const subRef = v => "REF-" + String(v.store_slug || v.id).toUpperCase().substring(0, 15);
@@ -798,6 +897,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     $("tab-settlement-btn").addEventListener("click", async () => { showTab("settlement"); await loadOrders(); });
     $("tab-moneystore-btn").addEventListener("click", () => { showTab("moneystore"); loadWallet(); });
     $("tab-share-btn").addEventListener("click", () => { showTab("share"); renderSharePanel(); });
+    $("tab-stats-btn").addEventListener("click", async () => { showTab("stats"); await loadOrders(); renderStats(); });
+    $("stats-refresh-btn").addEventListener("click", async () => { await loadOrders(); renderStats(); });
+    $("stats-csv-btn").addEventListener("click", downloadBookingsCsv);
     $("share-copy-btn").addEventListener("click", copyShopLink);
     $("share-wa-btn").addEventListener("click", whatsappShopLink);
     $("poster-print-btn").addEventListener("click", () => { renderSharePanel(); window.print(); });
@@ -956,6 +1058,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     $("store-category-input").value = activeVendor.category || "BARBER";
     $("store-phone-input").value = activeVendor.phone_number || "";
     $("store-address-input").value = activeVendor.address || "";
+    $("store-area-input").value = activeVendor.area || "";
     $("store-capacity-input").value = activeVendor.slot_capacity || 1;
     $("store-capacity-mode").value = activeVendor.capacity_mode || "BOOKINGS";
     updateCapacityLabel();
@@ -984,6 +1087,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         category: $("store-category-input").value,
         phone_number: $("store-phone-input").value.trim(),
         address: $("store-address-input").value.trim(),
+        area: $("store-area-input").value.trim() || null,
         slot_capacity: capacity,
         capacity_mode: $("store-capacity-mode").value,
         opening_time: $("opening-time").value,
@@ -1426,6 +1530,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       if (error) throw error;
 
       const all = bookings || [];
+      lastBookings = all;
 
       // Alert the shop when a booking arrives that it has not seen before
       if (knownBookingIds && knownFor === activeVendor.id) {
