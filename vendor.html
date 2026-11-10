@@ -198,6 +198,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     </div>
   </div>
 
+  <div id="hidden-notice" role="alert" style="display:none;background:#fef2f2;border-bottom:1px solid #fecaca;color:#991b1b;padding:12px 16px;font-size:13px;line-height:1.5;font-weight:600"></div>
+
   <main class="container">
     <div class="stats-container">
       <div class="stat-box"><div class="stat-header"><i class="ph ph-currency-circle-dollar"></i> Vendor Net Revenue</div><div class="stat-value" id="stat-revenue">R0.00</div></div>
@@ -1455,6 +1457,16 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       img.src = activeVendor.store_image_url; img.style.display = "block"; letter.style.display = "none";
     } else {
       img.style.display = "none"; letter.style.display = "flex"; letter.textContent = name.charAt(0).toUpperCase();
+    }
+    // If BOOK.NOW has hidden this shop from customers, say so clearly
+    const notice = $("hidden-notice");
+    if (notice) {
+      if (activeVendor.is_hidden) {
+        notice.textContent = "Your shop is hidden from customers" + (activeVendor.hidden_reason ? " (" + activeVendor.hidden_reason + ")" : "") + ". Please contact BOOK.NOW on 075 297 8917 to sort this out.";
+        notice.style.display = "block";
+      } else {
+        notice.style.display = "none";
+      }
     }
   }
 
