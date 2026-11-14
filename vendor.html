@@ -340,7 +340,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       <div class="section-head"><h3><i class="ph ph-wallet"></i> My Money Store</h3><span class="brand-badge" style="background:#dcfce7;color:#166534">100% Direct Earnings</span></div>
       <div class="finance-grid">
         <div class="finance-card"><div class="finance-label">Total Shop Earnings</div><div class="finance-value" id="wallet-balance">R0.00</div><div class="finance-note">Directly settled to your account</div></div>
-        <div class="finance-card"><div class="finance-label">Platform Subscription</div><div class="finance-value" style="color:var(--accent)" id="wallet-subscription-rate">R299.00/mo</div><div class="finance-note" id="wallet-subscription-note">Flat monthly platform access fee</div></div>
+        <div class="finance-card"><div class="finance-label">Platform Subscription</div><div class="finance-value" style="color:var(--accent)" id="wallet-subscription-rate">R149.00/mo</div><div class="finance-note" id="wallet-subscription-note">Flat monthly platform access fee</div></div>
       </div>
     </section>
   </main>
@@ -1293,7 +1293,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       $("new-biz-name").value = "";
       closeModal("register-modal");
       await initDashboard(data.id);
-      alert("Business registered! Complete the R99 registration payment to activate your store.");
+      alert("Business registered! Complete your R149 monthly subscription payment to activate your store.");
     } catch (err) {
       alert("Could not save business: " + err.message);
     } finally {
@@ -1428,12 +1428,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     main.style.display = "none";
 
     const first = activeVendor.is_first_time !== false;
-    const amount = first ? 99 : 299;
-    $("wallet-subscription-rate").textContent = money(299) + "/mo";
-    $("subscription-heading").textContent = first ? "First-Time Registration Payment" : "Monthly Subscription Renewal";
-    $("subscription-description").textContent = first
-      ? "Pay the R99 special registration fee by EFT to activate your store."
-      : "Pay your R299 monthly subscription by EFT to restore store access.";
+    const amount = 149;
+    $("wallet-subscription-rate").textContent = money(149) + "/mo";
+    $("subscription-heading").textContent = "Monthly Subscription Payment";
+    $("subscription-description").textContent = "Pay your R149 monthly subscription by EFT to activate or restore store access.";
     $("subscription-reference").textContent = subRef(activeVendor);
     $("subscription-amount").textContent = money(amount);
 
@@ -1675,7 +1673,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
       const { error: reqErr } = await db.from("subscription_payment_requests").insert([{
         store_id: activeVendor.id, owner_id: user.id,
-        amount: activeVendor.is_first_time !== false ? 99 : 299,
+        amount: 149,
         payment_reference: subRef(activeVendor), receipt_path: path, status: "PENDING"
       }]);
       if (reqErr) throw reqErr;
