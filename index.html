@@ -141,7 +141,7 @@
       <select id="area-select" class="filter-select" aria-label="Filter by area" style="display:none"><option value="">All areas</option></select>
       <select id="sort-select" class="filter-select" aria-label="Sort shops">
         <option value="new">Newest first</option>
-        <option value="rating">Top rated</option>
+        <option value="rating" disabled>Top rated (load all shops first)</option>
         <option value="name">Name A to Z</option>
       </select>
       <button class="open-chip" id="open-now-chip" type="button" aria-pressed="false">Open now</button>
@@ -263,13 +263,17 @@
       }
 
       const offset = append ? allStores.length : 0;
+      // Silent refreshes reload every page the visitor has already opened.
+      const targetCount = append
+        ? offset + PAGE_SIZE
+        : (silent ? Math.max(PAGE_SIZE, allStores.length) : PAGE_SIZE);
       try {
         const { data, error } = await db
           .from("stores")
           .select("id, store_name, category, area, address, store_image_url, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, service_items(id, title)")
           .eq("status", "active")
           .order("created_at", { ascending: false })
-          .range(offset, offset + PAGE_SIZE - 1);
+          .range(offset, targetCount - 1);
 
         if (error) throw error;
 
@@ -288,8 +292,8 @@
         }));
 
         allStores = append ? allStores.concat(page) : page;
-        hasMoreStores = page.length === PAGE_SIZE;
-        lastRefreshAt = Date.now();
+        hasMoreStores = append ? page.length === PAGE_SIZE : allStores.length === targetCount && page.length === targetCount;
+        if (!append) lastRefreshAt = Date.now();
 
         const areas = [...new Set(allStores.map(s => (s.area || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
         const areaSelect = $("area-select");
@@ -413,10 +417,11 @@
       const wrap = $("load-more-wrap");
       const button = $("load-more");
       const status = $("marketplace-status");
-      wrap.style.display = hasMoreStores ? "" : "none";
+      const filtersActive = activeCat !== "ALL" || Boolean(activeArea) || onlyOpen || Boolean($("search-input").value.trim());
+      wrap.style.display = hasMoreStores && !filtersActive ? "" : "none";
       button.disabled = marketplaceBusy;
       button.textContent = marketplaceBusy ? "Loading..." : "Load more shops";
-      status.textContent = allStores.length ? "Showing " + allStores.length + " shops loaded so far." : "";
+      status.textContent = visibleCount ? "Showing " + visibleCount + " matching shops from " + allStores.length + " loaded." : "";
     }
 
     // Search and category filter work together
@@ -439,6 +444,12 @@
         filtered.sort((a, b) => (a.store_name || "").localeCompare(b.store_name || ""));
       }
 
+      const ratingOption = $("sort-select").querySelector('option[value="rating"]');
+      ratingOption.disabled = hasMoreStores;
+      if (sortBy === "rating" && hasMoreStores) {
+        sortBy = "new";
+        $("sort-select").value = "new";
+      }
       renderStores(filtered);
     }
 
