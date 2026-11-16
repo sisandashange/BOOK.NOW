@@ -90,6 +90,7 @@
     .menu-duration { font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 2px; }
     .empty-box { text-align:center; padding:36px 12px; background:var(--surface); border-radius:14px; border:1px dashed var(--border); color:var(--muted); font-size:13px; grid-column:1/-1; }
   </style>
+<script src="booking-utils.js"></script>
 <script src="i18n.js"></script>
 </head>
 <body>
@@ -206,6 +207,7 @@
       <p id="modal-error" class="modal-error" role="alert"></p>
       <button class="btn-book" id="confirm-booking-btn" style="width:100%;padding:12px;font-size:13px;">Confirm Appointment</button>
     </div>
+    <div id="booking-confirmation" class="modal-sheet" style="display:none"></div>
   </div>
 
   <script>
@@ -224,6 +226,9 @@
     let payMethod = "EFT";
     let chosenTime = "";
     let slotPollBusy = false;
+    let refreshToken = 0;
+    let statusPollBusy = false;
+    let statusMessage = "";
     let customerDataPollBusy = false;
     let lastCustomerStoreSnapshot = null;
     let lastCustomerServicesSnapshot = null;
@@ -236,6 +241,7 @@
     };
 
     const $ = id => document.getElementById(id);
+    const { saNow, saTodayStr, toMin, fmtMin, currentBusinessDate, appointmentInstant, fmtAppt } = window.BookingUtils;
     const money = v => "R" + Number(v || 0).toFixed(2);
     const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c]));
 
@@ -251,14 +257,6 @@
       const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
       const bytes = crypto.getRandomValues(new Uint8Array(6));
       return "BN-" + Array.from(bytes, b => chars[b % chars.length]).join("");
-    }
-
-    function saNow() {
-      const parts = new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Africa/Johannesburg", year: "numeric", month: "2-digit", day: "2-digit",
-        hour: "2-digit", minute: "2-digit", hourCycle: "h23"
-      }).formatToParts(new Date());
-      return Object.fromEntries(parts.filter(p => p.type !== "literal").map(p => [p.type, p.value]));
     }
 
     // South African numbers: 0821234567 -> 27821234567. Returns "" if it doesn't look valid.
@@ -285,14 +283,7 @@
       const n = Math.floor(Number($("party-size").value));
       return Number.isFinite(n) && n >= 1 ? Math.min(n, 50) : 1;
     }
-    function toMin(hhmm) { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; }
-    function fmtMin(m) { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }
-    function saTodayStr() { const n = saNow(); return `${n.year}-${n.month}-${n.day}`; }
     function addDays(dateStr, days) { const d = new Date(dateStr + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); }
-    function fmtAppt(dateStr, timeStr, dur) {
-      const d = new Date(dateStr + "T12:00:00Z").toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-      return d + " at " + timeStr + (Number(dur) > 30 ? " to " + fmtMin(toMin(timeStr) + Number(dur)) : "");
-    }
     function fmtDur(m) {
       m = Number(m) || 30;
       const h = Math.floor(m / 60), r = m % 60;
@@ -310,6 +301,8 @@
 
     // Builds the 30-minute time slots for the chosen date and greys out booked ones
     async function refreshSlots() {
+      const requestToken = ++refreshToken;
+      const requestStoreId = storeData && storeData.id;
       const sel = $("booking-time"), hint = $("slot-hint"), date = $("booking-date").value;
       const mk = (v, t, dis) => { const o = document.createElement("option"); o.value = v; o.textContent = t; o.disabled = !!dis; return o; };
       hint.textContent = "";
@@ -326,11 +319,13 @@
 
       let used = {};
       try {
-        const { data, error } = await db.rpc("get_taken_slots", { p_store_id: storeData.id, p_date: date });
+        const { data, error } = await db.rpc("get_taken_slots", { p_store_id: requestStoreId, p_date: date });
         if (error) throw error;
+        if (requestToken !== refreshToken || !storeData || storeData.id !== requestStoreId || $("booking-date").value !== date) return;
         if (!Array.isArray(data)) throw new Error("Availability response was invalid");
         data.forEach(r => { used[r.booking_time] = r.booked; });
       } catch (e) {
+        if (requestToken !== refreshToken) return;
         console.warn("Could not load taken times:", e);
         chosenTime = "";
         sel.replaceChildren(mk("", "Availability unavailable — try again"));
@@ -338,18 +333,15 @@
         return;
       }
 
-      const now = saNow();
-      const nowMin = date === saTodayStr() ? Number(now.hour) * 60 + Number(now.minute) : -1;
-
       const options = [];
       let free = 0;
       // A longer service uses several 30-minute slots in a row, and the busiest of them decides if it fits
       const cap = Number(storeData.slot_capacity) || 1;
       const need = storeData.capacity_mode === "GUESTS" ? partySize() : 1;
       const dur = (selectedService && Number(selectedService.duration)) || 30;
-      const steps = Math.max(1, Math.round(dur / 30));
+      const steps = Math.max(1, Math.ceil(dur / 30));
       for (let m = open; m + dur <= close; m += 30) {
-        if (nowMin >= 0 && (m % 1440) <= nowMin) continue;
+        if (appointmentInstant(date, m) <= new Date()) continue;
         const label = fmtMin(m);
         let left = cap;
         for (let k = 0; k < steps; k++) left = Math.min(left, cap - (used[fmtMin(m + k * 30)] || 0));
@@ -664,6 +656,37 @@
       }
     }
 
+    async function pollStoreStatus() {
+      if (document.hidden || !storeData || statusPollBusy) return;
+      statusPollBusy = true;
+      try {
+        const { data: latest, error } = await db.from("stores")
+          .select("status, subscription_expires_at, manual_status")
+          .eq("id", storeData.id).maybeSingle();
+        if (error) throw error;
+        const availability = latest ? getAvailability({ ...storeData, ...latest }) : { open: false, hard: true, message: "This shop is no longer available." };
+        // Keep bookingOpen unchanged until the normal page refresh runs after the modal closes.
+        if (latest) Object.assign(storeData, latest);
+        const button = $("confirm-booking-btn");
+        if ($("booking-modal").style.display === "flex" && button.textContent !== "Submitting booking...") {
+          button.disabled = !availability.open;
+          button.textContent = availability.open ? "Confirm Appointment" : "Shop is closed";
+          const errorBox = $("modal-error");
+          if (!availability.open) {
+            statusMessage = availability.message;
+            errorBox.textContent = availability.message;
+          } else if (statusMessage && errorBox.textContent === statusMessage) {
+            errorBox.textContent = "";
+            statusMessage = "";
+          }
+        }
+      } catch (e) {
+        console.warn("Shop status check failed:", e);
+      } finally {
+        statusPollBusy = false;
+      }
+    }
+
     async function refreshCustomerStoreData() {
       if (document.hidden || !storeData || customerDataPollBusy) return;
       // Don't redraw the page while the customer is filling in a booking or report.
@@ -679,11 +702,7 @@
           await loadStorePage();
           return;
         }
-        if (getAvailability(latestStore).hard) {
-          await loadStorePage();
-          storeData = null;
-          return;
-        }
+        const latestAvailability = getAvailability(latestStore);
         const { data: latestServices, error: servicesError } = await db
           .from("service_items")
           .select("id, title, price, sale_price, sale_start_date, sale_end_date, image_urls, duration_minutes")
@@ -693,9 +712,10 @@
 
         const storeChanged = JSON.stringify(latestStore) !== lastCustomerStoreSnapshot;
         const servicesChanged = JSON.stringify(latestServices || []) !== lastCustomerServicesSnapshot;
-        if (storeChanged || servicesChanged) {
-          // Rebuild only when the database data actually changes.
+        if (storeChanged || servicesChanged || (!latestAvailability.open && bookingOpen)) {
+          // Refresh when the shop closes, whether manually or through subscription status.
           await loadStorePage();
+          if (latestAvailability.hard) storeData = null;
         }
       } catch (e) {
         console.warn("Customer shop refresh failed:", e);
@@ -713,7 +733,11 @@
       selectedService = { storeId: storeData.id, serviceId, title, price, duration: Number(duration) || 30 };
       $("modal-service-title").textContent = `${title} (${money(price)})` + (selectedService.duration > 30 ? ` · ${fmtDur(selectedService.duration)}` : "");
       $("modal-error").textContent = "";
-      const today = saTodayStr();
+      const confirmation = $("booking-confirmation");
+      confirmation.style.display = "none";
+      confirmation.replaceChildren();
+      $("booking-modal").querySelector(".modal-sheet").style.display = "block";
+      const today = currentBusinessDate(storeData);
       $("booking-date").min = today;
       $("booking-date").max = addDays(today, 60);
       $("booking-date").value = "";
@@ -762,8 +786,13 @@
     }
 
     function closeModals() {
+      refreshToken++;
       $("report-modal").style.display = "none";
       $("booking-modal").style.display = "none";
+      $("booking-confirmation").style.display = "none";
+      $("booking-modal").querySelector(".modal-sheet").style.display = "block";
+      $("booking-date").value = "";
+      chosenTime = "";
       $("lightbox-modal").style.display = "none";
     }
 
@@ -781,13 +810,21 @@
       if (name.length < 2) { errorBox.textContent = "Enter your full name."; return; }
       if (phone.replace(/\D/g, "").length < 9) { errorBox.textContent = "Enter a valid phone number."; return; }
       if (!date) { errorBox.textContent = "Choose your appointment date."; return; }
-      if (date < saTodayStr()) { errorBox.textContent = "Choose today or a future date."; return; }
+      if (date < currentBusinessDate(storeData)) { errorBox.textContent = "Choose today or a future date."; return; }
       if (guestsMode && (!Number.isFinite(guests) || guests < 1 || guests > Math.min(50, Number(storeData.slot_capacity) || 50))) {
         errorBox.textContent = "Enter how many people are coming (up to " + Math.min(50, Number(storeData.slot_capacity) || 50) + ").";
         return;
       }
       if (!time) { errorBox.textContent = "Choose your appointment time."; return; }
       if (!selectedService) return;
+      let appointmentMinutes = toMin(time);
+      const openingMinutes = toMin(String(storeData.opening_time || "08:00").slice(0, 5));
+      if (appointmentMinutes < openingMinutes) appointmentMinutes += 1440;
+      const requestedInstant = appointmentInstant(date, appointmentMinutes);
+      if (requestedInstant <= new Date()) {
+        errorBox.textContent = "That time has already passed. Choose a later time.";
+        return;
+      }
 
       button.disabled = true;
       button.textContent = "Submitting booking...";
@@ -805,22 +842,30 @@
         }
 
         const bookingId = crypto.randomUUID();
-        const paymentRef = generatePaymentRef();
-
-        // Insert only. Status, payment status, price and queue number are set by the database, which also checks the date and time.
-        const { error } = await db.from("bookings").insert([{
-          id: bookingId,
-          store_id: selectedService.storeId,
-          service_id: selectedService.serviceId,
-          customer_name: name,
-          customer_phone: phone,
-          booking_date: date,
-          booking_time: time,
-          party_size: guests,
-          payment_method: payMethod,
-          payment_ref: paymentRef
-        }]);
-        if (error) throw error;
+        let paymentRef = generatePaymentRef();
+        let insertError = null;
+        for (let attempt = 0; attempt < 2; attempt++) {
+          const result = await db.from("bookings").insert([{
+            id: bookingId,
+            store_id: selectedService.storeId,
+            service_id: selectedService.serviceId,
+            customer_name: name,
+            customer_phone: phone,
+            booking_date: date,
+            booking_time: time,
+            party_size: guests,
+            payment_method: payMethod,
+            payment_ref: paymentRef
+          }]);
+          insertError = result.error;
+          if (!insertError) break;
+          if (insertError.code === "23505" && attempt === 0) {
+            paymentRef = generatePaymentRef();
+            continue;
+          }
+          throw insertError;
+        }
+        if (insertError) throw insertError;
 
         // Read back queue number and price (needs the get_booking_receipt function)
         let receipt = null;
@@ -835,7 +880,9 @@
           timeZone: "Africa/Johannesburg", dateStyle: "medium", timeStyle: "short"
         });
 
-        const apptText = fmtAppt((receipt && receipt.booking_date) || date, (receipt && receipt.booking_time) || time, selectedService.duration);
+        const apptText = receipt && receipt.appointment_at
+          ? fmtAppt(receipt.appointment_at, selectedService.duration)
+          : fmtAppt(requestedInstant.toISOString(), selectedService.duration);
         const shopName = storeData.store_name || "the shop";
         // The shop's bank details are private. They are only released for a booking that exists.
         let pay = null;
@@ -862,7 +909,8 @@
         );
         const waUrl = waPhone ? `https://wa.me/${waPhone}?text=${message}` : "";
 
-        $("booking-modal").querySelector(".modal-sheet").innerHTML = `
+        const confirmation = $("booking-confirmation");
+        confirmation.innerHTML = `
           <div style="text-align:center;padding:10px 0;">
             <div style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;padding:8px 12px;border-radius:8px;font-size:11px;font-weight:800;margin-bottom:10px;">
               APPOINTMENT: ${esc(apptText.toUpperCase())}
@@ -905,13 +953,15 @@
             <a href="manage.html?ref=${encodeURIComponent(paymentRef)}" style="display:block;margin:2px 0 10px;font-size:12px;font-weight:700;color:var(--accent);text-decoration:none;">Need to change or cancel? Manage your booking</a>
             <button id="done-btn" style="background:none;border:none;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;">Done</button>
           </div>`;
+        $("booking-modal").querySelector(".modal-sheet").style.display = "none";
+        confirmation.style.display = "block";
         $("done-btn").addEventListener("click", () => location.reload());
         $("alerts-btn").addEventListener("click", () => enableCustomerAlerts(bookingId, paymentRef, phone, $("alerts-btn"), $("alerts-note")));
 
       } catch (err) {
         console.error("Booking error:", err);
         errorBox.textContent = err && err.code === "23505"
-          ? "That time just filled up. Please choose another time."
+          ? "Please try again — the time slot or payment reference just changed."
           : (err && err.code === "P0001" && err.message ? err.message : "We couldn't save your booking. Check your connection and try again.");
         refreshSlots();
         button.disabled = false;
@@ -939,17 +989,17 @@
       document.addEventListener("keydown", e => { if (e.key === "Escape") closeModals(); });
 
       loadStorePage();
-      // Recheck live slot availability every 3 seconds without reloading the page.
+      // Store/status refreshes every 30s; slots refresh every 15s only while the booking form is open.
+      setInterval(() => { refreshCustomerStoreData(); pollStoreStatus(); }, 30000);
       setInterval(async () => {
-        refreshCustomerStoreData();
         const dateInput = $("booking-date"), timeSelect = $("booking-time"), partyInput = $("party-size");
-        if (document.hidden || !storeData || !dateInput.value || slotPollBusy) return;
+        if (document.hidden || !storeData || $("booking-modal").style.display !== "flex" || !dateInput.value || slotPollBusy) return;
         if (document.activeElement === dateInput || document.activeElement === timeSelect || document.activeElement === partyInput) return;
         slotPollBusy = true;
         try { await refreshSlots(); }
         catch (e) { console.warn("Availability refresh failed:", e); }
         finally { slotPollBusy = false; }
-      }, 3000);
+      }, 15000);
     }
 
     if (document.readyState === "loading") {

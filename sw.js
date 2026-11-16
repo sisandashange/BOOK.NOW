@@ -1,17 +1,26 @@
 // BOOK.NOW service worker: fast repeat visits and a cached app shell on weak networks.
-const CACHE = "booknow-shell-v3";
-const CORE_FILES = ["./", "./index.html", "./manifest.webmanifest", "./i18n.js"];
+const CACHE = "booknow-shell-v4";
+const CORE_FILES = [
+  "./",
+  "./index.html",
+  "./store.html",
+  "./manage.html",
+  "./vendor.html",
+  "./booking-utils.js",
+  "./qr.js",
+  "./manifest.webmanifest",
+  "./i18n.js",
+  "./icon-192.png"
+];
 
 self.addEventListener("install", event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
+    // Do not activate v4 with a partial shell: retain the previous worker if a core asset is missing.
     await Promise.all(CORE_FILES.map(async path => {
-      try {
-        const response = await fetch(path, { cache: "reload" });
-        if (response.ok) await cache.put(path, response);
-      } catch (_) {
-        // A single unavailable file must not prevent the app shell from installing.
-      }
+      const response = await fetch(path, { cache: "reload" });
+      if (!response.ok) throw new Error("Required offline asset unavailable: " + path);
+      await cache.put(path, response);
     }));
     await self.skipWaiting();
   })());
