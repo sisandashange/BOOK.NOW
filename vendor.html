@@ -1744,14 +1744,30 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       bindButtons();
 
-      db.auth.onAuthStateChange(event => { if (event === "SIGNED_OUT") showSignedOut(); });
+      db.auth.onAuthStateChange((event, session) => {
+        if (event === "SIGNED_OUT") {
+          try { if (window.median?.onesignal?.logout) window.median.onesignal.logout(); } catch (_) {}
+          showSignedOut();
+        } else if (session?.user?.id) {
+          try {
+            if (window.median?.onesignal?.login) {
+              Promise.resolve(window.median.onesignal.login(session.user.id)).catch(err => console.warn("OneSignal login:", err));
+            }
+          } catch (err) { console.warn("OneSignal login:", err); }
+        }
+      });
       startAlertPolling();
 
       const { data: { session }, error } = await db.auth.getSession();
       if (error) throw error;
       if (linkError || cameFromEmail) history.replaceState(null, "", location.pathname + location.search);
       if (linkError) alert("That email link has expired or was already used. Please sign in, or register again to get a new link.");
-      if (session) await showDashboard();
+      if (session) {
+        try {
+          if (window.median?.onesignal?.login) await window.median.onesignal.login(session.user.id);
+        } catch (err) { console.warn("OneSignal login:", err); }
+        await showDashboard();
+      }
       if (session && cameFromEmail) setTimeout(() => alert("Your email is confirmed. Welcome to BOOK.NOW! Tap '+ Add Shop' to register your business."), 400);
     } catch (err) {
       console.error("Portal startup error:", err);
