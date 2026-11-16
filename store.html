@@ -779,7 +779,7 @@
         // Read back queue number and price (needs the get_booking_receipt function)
         let receipt = null;
         try {
-          const { data } = await db.rpc("get_booking_receipt", { p_id: bookingId });
+          const { data } = await db.rpc("get_booking_receipt", { p_ref: paymentRef, p_phone: phone });
           receipt = Array.isArray(data) ? data[0] : data;
         } catch (e) { console.warn("Receipt lookup unavailable:", e); }
 
@@ -795,7 +795,7 @@
         let pay = null;
         if (payMethod === "EFT") {
           try {
-            const { data } = await db.rpc("get_payment_details", { p_booking_id: bookingId });
+            const { data } = await db.rpc("get_payment_details", { p_ref: paymentRef, p_phone: phone });
             pay = Array.isArray(data) ? data[0] : data;
           } catch (e) { console.warn("Payment details unavailable:", e); }
         }
