@@ -1,5 +1,5 @@
 // BOOK.NOW service worker: fast repeat visits and a cached app shell on weak networks.
-const CACHE = "booknow-shell-v2";
+const CACHE = "booknow-shell-v3";
 const CORE_FILES = ["./", "./index.html", "./manifest.webmanifest", "./i18n.js"];
 
 self.addEventListener("install", event => {
