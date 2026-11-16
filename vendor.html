@@ -14,6 +14,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="qr.js"></script>
+<script src="booking-utils.js"></script>
 
 <style>
 :root{--primary:#0f172a;--accent:#2563eb;--bg:#f8fafc;--surface:#fff;--text:#0f172a;--muted:#64748b;--border:#e2e8f0;--success:#16a34a;--success-bg:#f0fdf4;--warning-bg:#fffbeb;--warning:#d97706;--danger:#dc2626;--danger-bg:#fef2f2;--radius:16px}
@@ -444,12 +445,21 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   let selectedFiles = [], scanner = null;
 
   const $ = id => document.getElementById(id);
+  const { saNow, currentBusinessDate, appointmentInstant, fmtAppt: formatAppointment, toMin } = window.BookingUtils;
   const money = v => "R" + (Number.isFinite(Number(v)) ? Number(v) : 0).toFixed(2);
   const saDate = d => new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Johannesburg" }).format(d instanceof Date ? d : new Date(d));
   const saToday = () => saDate(new Date());
   const addMin = (hhmm, m) => { const [h, mi] = hhmm.split(":").map(Number); const t = (((h * 60 + mi + m) % 1440) + 1440) % 1440; return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"); };
   const fmtDur = m => { m = Number(m) || 30; const hh = Math.floor(m / 60), r = m % 60; return hh === 0 ? `${r} min` : (r === 0 ? `${hh} h` : `${hh} h ${r} min`); };
-  const fmtAppt = b => new Date(b.booking_date + "T12:00:00Z").toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) + (b.booking_time ? " at " + b.booking_time + (Number(b.duration_minutes) > 30 ? " to " + addMin(b.booking_time, Number(b.duration_minutes)) : "") : "");
+  function fmtAppt(b) {
+    if (!b || !b.booking_date) return "Appointment: not set";
+    const duration = Number(b.duration_minutes || (b.service_items && b.service_items.duration_minutes)) || 0;
+    if (b.appointment_at) return formatAppointment(b.appointment_at, duration);
+    let minutes = toMin(b.booking_time || "00:00");
+    const opening = toMin(String((activeVendor && activeVendor.opening_time) || "08:00").slice(0, 5));
+    if (minutes < opening) minutes += 1440;
+    return formatAppointment(appointmentInstant(b.booking_date, minutes).toISOString(), duration);
+  }
 
   // Safe element builder: text is always inserted as text, never as HTML
   function h(tag, attrs = {}, ...kids) {
@@ -475,7 +485,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     const all = lastBookings || [];
     const status = b => String(b.status || "").toLowerCase();
     const active = all.filter(b => status(b) !== "cancelled");
-    const today = saToday();
+    const today = currentBusinessDate(activeVendor);
     const dayOf = b => b.booking_date || saDate(b.created_at);
     const addDays = (iso, n) => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
     const dow = (new Date(today + "T12:00:00Z").getUTCDay() + 6) % 7;     // Monday = 0
@@ -858,7 +868,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         polling = false;
       }
     };
-    pollTimer = setInterval(check, 3000);
+    pollTimer = setInterval(check, 5000);
     document.addEventListener("visibilitychange", () => { if (!document.hidden) check(); });
   }
 
@@ -1573,7 +1583,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   async function loadOrders() {
     if (!activeVendor) return;
     try {
-      const { data: bookings, error } = await db.from("bookings").select("*, service_items(title, price, sale_price)")
+      const { data: bookings, error } = await db.from("bookings").select("*, service_items(title, price, sale_price, duration_minutes)")
         .eq("store_id", activeVendor.id).order("created_at", { ascending: false });
       if (error) throw error;
 
@@ -1605,7 +1615,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       ownChanges.clear();
       knownFor = activeVendor.id;
 
-      const today = saToday();
+      const today = currentBusinessDate(activeVendor);
       const apptDay = b => b.booking_date || saDate(b.created_at);
       const byTime = (a, b) => String(a.booking_time || "").localeCompare(String(b.booking_time || ""));
       let revenue = 0, eft = 0, activeToday = 0;

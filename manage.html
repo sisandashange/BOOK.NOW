@@ -58,6 +58,7 @@ footer{text-align:center;padding:10px 16px 0;font-size:12px;color:var(--muted)}
 footer a{color:var(--muted);font-weight:600}
 .hidden{display:none!important}
 </style>
+<script src="booking-utils.js"></script>
 <script src="i18n.js"></script>
 </head>
 <body>
@@ -167,8 +168,10 @@ footer a{color:var(--muted);font-weight:600}
   let lookup = { ref: "", phone: "" };
   let chosenTime = "";
   let bookingPollBusy = false;
+  let refreshToken = 0;
 
   const $ = id => document.getElementById(id);
+  const { saNow, saTodayStr, toMin, fmtMin, currentBusinessDate, appointmentInstant, fmtAppt: formatAppointment } = window.BookingUtils;
   const money = v => v == null ? "Not available" : "R" + Number(v).toFixed(2);
 
   function say(text, kind) {
@@ -182,21 +185,15 @@ footer a{color:var(--muted);font-weight:600}
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function saNow() {
-    const parts = new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Africa/Johannesburg", year: "numeric", month: "2-digit", day: "2-digit",
-      hour: "2-digit", minute: "2-digit", hourCycle: "h23"
-    }).formatToParts(new Date());
-    return Object.fromEntries(parts.filter(p => p.type !== "literal").map(p => [p.type, p.value]));
-  }
-  const saTodayStr = () => { const n = saNow(); return `${n.year}-${n.month}-${n.day}`; };
   function addDays(dateStr, days) { const d = new Date(dateStr + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); }
-  const toMin = hhmm => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
-  const fmtMin = m => { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); };
-  function fmtAppt(dateStr, timeStr, dur) {
-    if (!dateStr) return "Not set";
-    const d = new Date(dateStr + "T12:00:00Z").toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-    return d + (timeStr ? " at " + timeStr + (Number(dur) > 30 ? " to " + fmtMin(toMin(timeStr) + Number(dur)) : "") : "");
+  function fmtAppt(booking) {
+    if (!booking || !booking.booking_date) return "Not set";
+    const duration = Number(booking.duration_minutes) || 30;
+    if (booking.appointment_at) return formatAppointment(booking.appointment_at, duration);
+    let minutes = toMin(booking.booking_time || "00:00");
+    const opening = toMin(String(booking.opening_time || "08:00").slice(0, 5));
+    if (minutes < opening) minutes += 1440;
+    return formatAppointment(appointmentInstant(booking.booking_date, minutes).toISOString(), duration);
   }
   function waNumber(raw) {
     let d = String(raw || "").replace(/\D/g, "");
@@ -218,7 +215,7 @@ footer a{color:var(--muted);font-weight:600}
     badge.textContent = STATUS_TEXT[status] || status.toUpperCase();
     badge.className = "badge s-" + (STATUS_TEXT[status] ? status : "pending");
     $("r-service").textContent = bk.service_title || "Service";
-    $("r-when").textContent = fmtAppt(bk.booking_date, bk.booking_time, bk.duration_minutes);
+    $("r-when").textContent = fmtAppt(bk);
     const guests = Number(bk.party_size) || 1;
     $("r-guests-row").classList.toggle("hidden", !(bk.capacity_mode === "GUESTS" || guests > 1));
     $("r-guests").textContent = String(guests);
@@ -253,7 +250,7 @@ footer a{color:var(--muted);font-weight:600}
     const wa = $("wa-shop");
     const num = waNumber(bk.store_phone);
     if (num) {
-      const text = `Hi ${bk.store_name || ""}, this is ${bk.customer_name || "a customer"} about my booking (ref ${bk.payment_ref}) on ${fmtAppt(bk.booking_date, bk.booking_time, bk.duration_minutes)}.`;
+      const text = `Hi ${bk.store_name || ""}, this is ${bk.customer_name || "a customer"} about my booking (ref ${bk.payment_ref}) on ${fmtAppt(bk)}.`;
       wa.href = `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
     }
     wa.classList.toggle("hidden", !num);
@@ -296,6 +293,8 @@ footer a{color:var(--muted);font-weight:600}
 
   // ----- change date or time -----
   async function refreshSlots() {
+    const requestToken = ++refreshToken;
+    const requestRef = lookup.ref;
     const sel = $("new-time"), hint = $("slot-hint"), date = $("new-date").value;
     const mk = (v, t, dis) => { const o = document.createElement("option"); o.value = v; o.textContent = t; o.disabled = !!dis; return o; };
     hint.textContent = "";
@@ -317,9 +316,11 @@ footer a{color:var(--muted);font-weight:600}
     try {
       const { data, error } = await db.rpc("get_taken_slots", { p_store_id: bk.store_id, p_date: date });
       if (error) throw error;
+      if (requestToken !== refreshToken || !bk || lookup.ref !== requestRef || $("new-date").value !== date) return;
       if (!Array.isArray(data)) throw new Error("Availability response was invalid");
       data.forEach(r => { used[r.booking_time] = r.booked; });
     } catch (e) {
+      if (requestToken !== refreshToken) return;
       console.warn("Could not load taken times:", e);
       chosenTime = "";
       sel.replaceChildren(mk("", "Availability unavailable — try again"));
@@ -327,22 +328,20 @@ footer a{color:var(--muted);font-weight:600}
       return;
     }
 
-    const now = saNow();
-    const nowMin = date === saTodayStr() ? Number(now.hour) * 60 + Number(now.minute) : -1;
     const cap = Number(bk.slot_capacity) || 1;
     const need = bk.capacity_mode === "GUESTS" ? (Number(bk.party_size) || 1) : 1;
 
     const options = [];
     let free = 0;
     const dur = Number(bk.duration_minutes) || 30;
-    const steps = Math.max(1, Math.round(dur / 30));
+    const steps = Math.max(1, Math.ceil(dur / 30));
     // This booking's own slots must not count against it when it is moved on the same day
     if (date === bk.booking_date && bk.booking_time) {
       const ownStart = toMin(bk.booking_time);
       for (let k = 0; k < steps; k++) { const key = fmtMin(ownStart + k * 30); used[key] = Math.max(0, (used[key] || 0) - need); }
     }
     for (let m = open; m + dur <= close; m += 30) {
-      if (nowMin >= 0 && (m % 1440) <= nowMin) continue;
+      if (appointmentInstant(date, m) <= new Date()) continue;
       const label = fmtMin(m);
       const isCurrent = date === bk.booking_date && label === bk.booking_time;
       let left = cap;
@@ -362,7 +361,7 @@ footer a{color:var(--muted);font-weight:600}
   }
 
   function openReschedule() {
-    const today = saTodayStr();
+    const today = currentBusinessDate(bk);
     $("new-date").min = today;
     $("new-date").max = addDays(today, 60);
     $("new-date").value = "";
@@ -376,6 +375,10 @@ footer a{color:var(--muted);font-weight:600}
     const date = $("new-date").value, time = $("new-time").value;
     if (!date) return say("Choose your new date.", "err");
     if (!time) return say("Choose your new time.", "err");
+    let appointmentMinutes = toMin(time);
+    const openingMinutes = toMin(String(bk.opening_time || "08:00").slice(0, 5));
+    if (appointmentMinutes < openingMinutes) appointmentMinutes += 1440;
+    if (appointmentInstant(date, appointmentMinutes) <= new Date()) return say("That time has already passed. Choose a later time.", "err");
     const btn = $("confirm-change-btn");
     btn.disabled = true; btn.textContent = "Saving...";
     try {
@@ -386,8 +389,16 @@ footer a{color:var(--muted);font-weight:600}
         refreshSlots();
         return;
       }
-      await findBooking(true);
-      say("Your booking has been moved. The shop will confirm your new time.", "ok");
+      let successMessage = "Your booking has been moved. The shop will confirm your new time.";
+      if (data.payment_ref) {
+        lookup.ref = String(data.payment_ref);
+        $("ref").value = lookup.ref;
+        history.replaceState(null, "", "?ref=" + encodeURIComponent(lookup.ref));
+        successMessage += " Your new reference is " + lookup.ref + ".";
+      }
+      const refreshed = await findBooking(true);
+      if (!refreshed) throw new Error("The booking moved, but could not be reloaded using the new reference " + lookup.ref + ".");
+      say(successMessage, "ok");
     } catch (err) {
       console.error(err);
       say("Something went wrong. Check your connection and try again.", "err");
@@ -534,7 +545,7 @@ footer a{color:var(--muted);font-weight:600}
     $("confirm-change-btn").addEventListener("click", confirmChange);
     $("new-date").addEventListener("change", refreshSlots);
     $("new-time").addEventListener("change", () => { chosenTime = $("new-time").value; });
-    // Refresh the customer's booking status every 3 seconds, without interrupting edits.
+    // Refresh the customer's booking status every 30 seconds, without interrupting edits.
     setInterval(async () => {
       if (document.hidden || !bk || !lookup.ref || bookingPollBusy) return;
       const active = document.activeElement;
@@ -545,7 +556,7 @@ footer a{color:var(--muted);font-weight:600}
       try { await findBooking(true); }
       catch (e) { console.warn("Booking status refresh failed:", e); }
       finally { bookingPollBusy = false; }
-    }, 3000);
+    }, 30000);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
