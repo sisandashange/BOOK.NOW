@@ -142,7 +142,7 @@
       <select id="sort-select" class="filter-select" aria-label="Sort shops">
         <option value="new">Newest first</option>
         <option value="rating" disabled>Top rated (load all shops first)</option>
-        <option value="name">Name A to Z</option>
+        <option value="name" disabled>Name A to Z (load all shops first)</option>
       </select>
       <button class="open-chip" id="open-now-chip" type="button" aria-pressed="false">Open now</button>
     </div>
@@ -268,14 +268,17 @@
         ? offset + PAGE_SIZE
         : (silent ? Math.max(PAGE_SIZE, allStores.length) : PAGE_SIZE);
       try {
+        const requestedEnd = append ? offset + PAGE_SIZE : targetCount;
         const { data, error } = await db
           .from("stores")
           .select("id, store_name, category, area, address, store_image_url, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, service_items(id, title)")
           .eq("status", "active")
           .order("created_at", { ascending: false })
-          .range(offset, targetCount - 1);
+          .range(offset, requestedEnd);
 
         if (error) throw error;
+        const fetched = data || [];
+        const pageData = fetched.slice(0, append ? PAGE_SIZE : targetCount);
 
         const ratings = {};
         const { data: rs, error: ratingsError } = await db
@@ -284,7 +287,7 @@
         if (ratingsError) console.warn("BOOK.NOW ratings unavailable:", ratingsError.message);
         (rs || []).forEach(r => { ratings[r.store_id] = r; });
 
-        const page = (data || []).map(s => ({
+        const page = pageData.map(s => ({
           ...s,
           rating: ratings[s.id] || null,
           cat: normalizeCategory(s.category),
@@ -292,7 +295,7 @@
         }));
 
         allStores = append ? allStores.concat(page) : page;
-        hasMoreStores = append ? page.length === PAGE_SIZE : allStores.length === targetCount && page.length === targetCount;
+        hasMoreStores = fetched.length > (append ? PAGE_SIZE : targetCount);
         if (!append) lastRefreshAt = Date.now();
 
         const areas = [...new Set(allStores.map(s => (s.area || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
@@ -426,6 +429,14 @@
 
     // Search and category filter work together
     function applyFilters() {
+      const ratingOption = $("sort-select").querySelector('option[value="rating"]');
+      const nameOption = $("sort-select").querySelector('option[value="name"]');
+      ratingOption.disabled = hasMoreStores;
+      nameOption.disabled = hasMoreStores;
+      if (hasMoreStores && sortBy !== "new") {
+        sortBy = "new";
+        $("sort-select").value = "new";
+      }
       const term = $("search-input").value.toLowerCase().trim();
 
       const filtered = allStores.filter(s => {
@@ -444,12 +455,6 @@
         filtered.sort((a, b) => (a.store_name || "").localeCompare(b.store_name || ""));
       }
 
-      const ratingOption = $("sort-select").querySelector('option[value="rating"]');
-      ratingOption.disabled = hasMoreStores;
-      if (sortBy === "rating" && hasMoreStores) {
-        sortBy = "new";
-        $("sort-select").value = "new";
-      }
       renderStores(filtered);
     }
 
