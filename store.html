@@ -675,7 +675,13 @@
           .from("stores").select(STORE_COLUMNS).eq("id", storeId).maybeSingle();
         if (storeError) throw storeError;
         if (!latestStore) {
+          storeData = null;
           await loadStorePage();
+          return;
+        }
+        if (getAvailability(latestStore).hard) {
+          await loadStorePage();
+          storeData = null;
           return;
         }
         const { data: latestServices, error: servicesError } = await db
