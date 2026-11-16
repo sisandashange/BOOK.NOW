@@ -244,6 +244,7 @@
 
       if (!window.supabase || !db) {
         showMessage("Couldn't connect. Check your internet and refresh the page.");
+        marketplaceBusy = false;
         return;
       }
 
