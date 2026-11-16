@@ -372,7 +372,7 @@
     };
 
     // Phone alerts for this one booking (customers have no login, so it is tied to the booking number)
-    async function enableCustomerAlerts(bookingId, btn, note) {
+    async function enableCustomerAlerts(bookingId, paymentRef, phone, btn, note) {
       if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
         note.textContent = "This phone can't receive alerts when the page is closed. On an iPhone, add BOOK.NOW to your Home Screen first.";
         return;
@@ -393,7 +393,7 @@
           sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToBytes(key) });
         }
         const j = sub.toJSON();
-        const { data, error } = await db.rpc("save_customer_push", { p_booking_id: bookingId, p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_user_agent: navigator.userAgent });
+        const { data, error } = await db.rpc("save_my_booking_push", { p_ref: paymentRef, p_phone: phone, p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_user_agent: navigator.userAgent });
         if (error || !data || data.success === false) throw new Error((data && data.message) || "save failed");
         btn.textContent = "Alerts are on";
         note.textContent = "You'll get a message when the shop confirms, and a reminder 2 hours before.";
@@ -860,7 +860,7 @@
             <button id="done-btn" style="background:none;border:none;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;">Done</button>
           </div>`;
         $("done-btn").addEventListener("click", () => location.reload());
-        $("alerts-btn").addEventListener("click", () => enableCustomerAlerts(bookingId, $("alerts-btn"), $("alerts-note")));
+        $("alerts-btn").addEventListener("click", () => enableCustomerAlerts(bookingId, paymentRef, phone, $("alerts-btn"), $("alerts-note")));
 
       } catch (err) {
         console.error("Booking error:", err);
