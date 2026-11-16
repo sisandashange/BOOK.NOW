@@ -66,6 +66,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 .btn-confirm{background:#0284c7;color:#fff}
 .btn-complete{background:var(--success);color:#fff}
 .btn-edit{background:#f1f5f9;color:var(--text);border:1px solid var(--border)}
+.btn-delete{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
 .btn-muted{background:#f1f5f9;color:var(--text)}
 .modal{position:fixed;inset:0;background:#0f172a66;display:none;justify-content:center;align-items:flex-end;z-index:100;overflow-y:auto}
 .modal-sheet{background:#fff;width:100%;max-width:600px;padding:24px;border-radius:24px 24px 0 0;margin-top:auto}
@@ -1492,6 +1493,30 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     }
   }
 
+  async function deleteService(service, button) {
+    if (!activeVendor || !service?.id) return;
+    const name = service.title || "this service";
+    if (!confirm("Delete \"" + name + "\"? This cannot be undone. Existing bookings will remain, but their service link will be removed.")) return;
+
+    const originalText = button?.textContent || "Delete Service";
+    if (button) { button.disabled = true; button.textContent = "Deleting..."; }
+    try {
+      const { data, error } = await db.from("service_items")
+        .delete()
+        .eq("id", service.id)
+        .eq("store_id", activeVendor.id)
+        .select("id");
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error("The service was not deleted. Please check that you are signed in as its shop owner and try again.");
+      await loadServices();
+      alert("Service deleted.");
+    } catch (err) {
+      console.error("Delete service error:", err);
+      alert("Could not delete service: " + (err.message || "Please try again."));
+      if (button) { button.disabled = false; button.textContent = originalText; }
+    }
+  }
+
   async function loadServices() {
     if (!activeVendor) return;
     setEmpty("services-list", "Loading services...");
@@ -1517,7 +1542,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
         const photos = Array.isArray(s.image_urls) ? s.image_urls.filter(Boolean) : [];
         if (photos.length) card.appendChild(h("div", { class: "item-gallery" }, ...photos.map(u => h("img", { class: "item-thumb", src: u, alt: s.title || "Service photo", loading: "lazy" }))));
-        card.appendChild(h("div", { class: "order-actions" }, h("button", { class: "btn-action btn-edit", text: "Edit Service & Sale", onclick: () => populateEditServiceForm(s) })));
+        card.appendChild(h("div", { class: "order-actions" }, h("button", { class: "btn-action btn-edit", text: "Edit Service & Sale", onclick: () => populateEditServiceForm(s) }), h("button", { class: "btn-action btn-delete", text: "Delete Service", onclick: event => deleteService(s, event.currentTarget) })));
         return card;
       }));
     } catch (err) {
