@@ -166,6 +166,7 @@ footer a{color:var(--muted);font-weight:600}
   let bk = null;            // the booking that was found
   let lookup = { ref: "", phone: "" };
   let chosenTime = "";
+  let bookingPollBusy = false;
 
   const $ = id => document.getElementById(id);
   const money = v => v == null ? "Not available" : "R" + Number(v).toFixed(2);
@@ -533,6 +534,18 @@ footer a{color:var(--muted);font-weight:600}
     $("confirm-change-btn").addEventListener("click", confirmChange);
     $("new-date").addEventListener("change", refreshSlots);
     $("new-time").addEventListener("change", () => { chosenTime = $("new-time").value; });
+    // Refresh the customer's booking status every 3 seconds, without interrupting edits.
+    setInterval(async () => {
+      if (document.hidden || !bk || !lookup.ref || bookingPollBusy) return;
+      const active = document.activeElement;
+      if (active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return;
+      if (!$("reschedule-card").classList.contains("hidden")) return;
+      if ($("cancel-btn").disabled || $("confirm-change-btn").disabled || $("review-submit").disabled) return;
+      bookingPollBusy = true;
+      try { await findBooking(true); }
+      catch (e) { console.warn("Booking status refresh failed:", e); }
+      finally { bookingPollBusy = false; }
+    }, 3000);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
