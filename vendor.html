@@ -839,12 +839,25 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     document.addEventListener("pointerdown", unlockAudio, { once: true });
     updateAlertsButton();
     const busy = () => ["service-modal", "register-modal", "qr-scanner-modal"].some(id => $(id).style.display === "flex");
-    const check = () => {
-      if (!db || !activeVendor || busy()) return;
+    let polling = false;
+    const check = async () => {
+      if (!db || !activeVendor || busy() || polling || document.hidden) return;
       if ($("dashboard-screen").style.display === "none" || $("subscription-gate").style.display === "block") return;
-      loadOrders();
+      polling = true;
+      try {
+        if ($("tab-services-btn").classList.contains("active")) {
+          await loadServices();
+        } else if ($("tab-moneystore-btn").classList.contains("active")) {
+          await loadWallet();
+        } else {
+          await loadOrders();
+          if ($("tab-stats-btn").classList.contains("active")) renderStats();
+        }
+      } finally {
+        polling = false;
+      }
     };
-    pollTimer = setInterval(check, 30000);
+    pollTimer = setInterval(check, 3000);
     document.addEventListener("visibilitychange", () => { if (!document.hidden) check(); });
   }
 
