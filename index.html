@@ -197,6 +197,7 @@
     let activeCat = "ALL";
     let activeArea = "", sortBy = "new", onlyOpen = false;
     let booted = false;
+    let marketplaceBusy = false;
 
     const FALLBACK_IMAGES = {
       BARBER: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=200&q=70",
@@ -236,8 +237,10 @@
       $("store-grid").replaceChildren(box);
     }
 
-    async function loadMarketplace() {
-      showMessage("Loading available stores...");
+    async function loadMarketplace(silent = false) {
+      if (marketplaceBusy) return;
+      marketplaceBusy = true;
+      if (!silent) showMessage("Loading available stores...");
 
       if (!window.supabase || !db) {
         showMessage("Couldn't connect. Check your internet and refresh the page.");
@@ -273,11 +276,15 @@
         const areaSelect = $("area-select");
         areaSelect.replaceChildren(new Option("All areas", ""), ...areas.map(a => new Option(a, a)));
         areaSelect.style.display = areas.length ? "" : "none";
+        if (activeArea && !areas.includes(activeArea)) activeArea = "";
+        areaSelect.value = activeArea;
 
         applyFilters();
       } catch (err) {
         console.error("Marketplace error:", err);
-        showMessage("Couldn't load stores. Refresh the page to try again.");
+        if (!silent) showMessage("Couldn't load stores. Refresh the page to try again.");
+      } finally {
+        marketplaceBusy = false;
       }
     }
 
@@ -431,6 +438,8 @@
       }
       bindEvents();
       loadMarketplace();
+      // Refresh live marketplace data without reloading the page.
+      setInterval(() => { if (!document.hidden) loadMarketplace(true); }, 3000);
     }
 
     if (document.readyState === "loading") {
