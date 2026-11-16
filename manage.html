@@ -314,9 +314,17 @@ footer a{color:var(--muted);font-weight:600}
 
     const used = {};
     try {
-      const { data } = await db.rpc("get_taken_slots", { p_store_id: bk.store_id, p_date: date });
-      (data || []).forEach(r => { used[r.booking_time] = r.booked; });
-    } catch (e) { console.warn("Could not load taken times:", e); }
+      const { data, error } = await db.rpc("get_taken_slots", { p_store_id: bk.store_id, p_date: date });
+      if (error) throw error;
+      if (!Array.isArray(data)) throw new Error("Availability response was invalid");
+      data.forEach(r => { used[r.booking_time] = r.booked; });
+    } catch (e) {
+      console.warn("Could not load taken times:", e);
+      chosenTime = "";
+      sel.replaceChildren(mk("", "Availability unavailable — try again"));
+      hint.textContent = "We couldn't check this shop's availability. Please try again before choosing a time.";
+      return;
+    }
 
     const now = saNow();
     const nowMin = date === saTodayStr() ? Number(now.hour) * 60 + Number(now.minute) : -1;
