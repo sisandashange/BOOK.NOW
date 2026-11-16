@@ -224,6 +224,9 @@
     let payMethod = "EFT";
     let chosenTime = "";
     let slotPollBusy = false;
+    let customerDataPollBusy = false;
+    let lastCustomerStoreSnapshot = null;
+    let lastCustomerServicesSnapshot = null;
 
     const FALLBACK_IMAGES = {
       BARBER: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=70",
@@ -551,6 +554,8 @@
           .eq("store_id", storeId)
           .order("created_at", { ascending: false });
         if (serviceErr) throw serviceErr;
+        lastCustomerStoreSnapshot = JSON.stringify(store);
+        lastCustomerServicesSnapshot = JSON.stringify(services || []);
 
         const menuBox = $("services-menu-box");
         if (!services || services.length === 0) {
@@ -656,6 +661,40 @@
       } catch (err) {
         console.error("Store load error:", err);
         showStoreMessage('<div class="empty-box">We couldn\'t load this shop. Refresh the page to try again.</div>');
+      }
+    }
+
+    async function refreshCustomerStoreData() {
+      if (document.hidden || !storeData || customerDataPollBusy) return;
+      // Don't redraw the page while the customer is filling in a booking or report.
+      if (["booking-modal", "report-modal", "lightbox-modal"].some(id => $(id)?.style.display === "flex")) return;
+      customerDataPollBusy = true;
+      try {
+        const storeId = storeData.id;
+        const { data: latestStore, error: storeError } = await db
+          .from("stores").select(STORE_COLUMNS).eq("id", storeId).maybeSingle();
+        if (storeError) throw storeError;
+        if (!latestStore) {
+          await loadStorePage();
+          return;
+        }
+        const { data: latestServices, error: servicesError } = await db
+          .from("service_items")
+          .select("id, title, price, sale_price, sale_start_date, sale_end_date, image_urls, duration_minutes")
+          .eq("store_id", storeId)
+          .order("created_at", { ascending: false });
+        if (servicesError) throw servicesError;
+
+        const storeChanged = JSON.stringify(latestStore) !== lastCustomerStoreSnapshot;
+        const servicesChanged = JSON.stringify(latestServices || []) !== lastCustomerServicesSnapshot;
+        if (storeChanged || servicesChanged) {
+          // Rebuild only when the database data actually changes.
+          await loadStorePage();
+        }
+      } catch (e) {
+        console.warn("Customer shop refresh failed:", e);
+      } finally {
+        customerDataPollBusy = false;
       }
     }
 
@@ -896,6 +935,7 @@
       loadStorePage();
       // Recheck live slot availability every 3 seconds without reloading the page.
       setInterval(async () => {
+        refreshCustomerStoreData();
         const dateInput = $("booking-date"), timeSelect = $("booking-time"), partyInput = $("party-size");
         if (document.hidden || !storeData || !dateInput.value || slotPollBusy) return;
         if (document.activeElement === dateInput || document.activeElement === timeSelect || document.activeElement === partyInput) return;
