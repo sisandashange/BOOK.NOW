@@ -274,7 +274,7 @@
           .select("id, store_name, category, area, address, store_image_url, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, service_items(id, title)")
           .eq("status", "active")
           .order("created_at", { ascending: false })
-          .range(offset, requestedEnd);
+          .range(offset, requestedEnd); // PostgREST range end is inclusive: requesting N returns N+1 rows for hasMore detection.
 
         if (error) throw error;
         const fetched = data || [];
@@ -305,14 +305,17 @@
         if (activeArea && !areas.includes(activeArea)) activeArea = "";
         areaSelect.value = activeArea;
 
+        // Unlock pagination before rendering so the filtered count and button state stay correct.
+        marketplaceBusy = false;
         applyFilters();
       } catch (err) {
         console.error("Marketplace error:", err);
         if (!silent && !append) showMessage("Couldn't load stores. Refresh the page to try again.");
         if (append) $("marketplace-status").textContent = "Couldn't load more shops. Please try again.";
-      } finally {
         marketplaceBusy = false;
-        updateLoadMore(allStores.length);
+        const loadMoreButton = $("load-more");
+        loadMoreButton.disabled = false;
+        loadMoreButton.textContent = "Load more shops";
       }
     }
 
