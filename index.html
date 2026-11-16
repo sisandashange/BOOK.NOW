@@ -147,8 +147,12 @@
       <button class="open-chip" id="open-now-chip" type="button" aria-pressed="false">Open now</button>
     </div>
 
-    <div id="store-grid" class="store-grid" aria-live="polite">
+    <div id="store-grid" class="store-grid" aria-label="Available stores">
       <div class="empty-box">Loading available stores...</div>
+    </div>
+    <div id="load-more-wrap" style="display:none;text-align:center;margin:18px 0">
+      <button id="load-more" type="button" class="open-chip">Load more shops</button>
+      <p id="marketplace-status" role="status" aria-live="polite" style="font-size:12px;color:var(--muted);margin:8px 0 0"></p>
     </div>
 
     <div class="list-cta">
@@ -198,6 +202,11 @@
     let activeArea = "", sortBy = "new", onlyOpen = false;
     let booted = false;
     let marketplaceBusy = false;
+    let hasMoreStores = false;
+    let lastRenderedSignature = "";
+    const PAGE_SIZE = 100;
+    const REFRESH_INTERVAL_MS = 30000;
+    let lastRefreshAt = 0;
 
     const FALLBACK_IMAGES = {
       BARBER: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=200&q=70",
@@ -222,12 +231,17 @@
     // Returns true (open), false (closed) or null (unknown)
     function isOpenNow(s) {
       if (s.manual_status === "CLOSED") return false;
+      if (s.manual_status === "OPEN") return true;
       const now = new Date();
       const today = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
       if (s.holiday_start_date && s.holiday_end_date && today >= s.holiday_start_date && today <= s.holiday_end_date) return false;
       if (!s.opening_time || !s.closing_time) return null;
       const hhmm = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
-      return hhmm >= s.opening_time.slice(0, 5) && hhmm < s.closing_time.slice(0, 5);
+      const opening = String(s.opening_time).slice(0, 5);
+      const closing = String(s.closing_time).slice(0, 5);
+      // A closing time at or before opening means the business operates past midnight.
+      if (closing <= opening) return hhmm >= opening || hhmm < closing;
+      return hhmm >= opening && hhmm < closing;
     }
 
     function showMessage(text) {
@@ -237,10 +251,10 @@
       $("store-grid").replaceChildren(box);
     }
 
-    async function loadMarketplace(silent = false) {
+    async function loadMarketplace(silent = false, append = false) {
       if (marketplaceBusy) return;
       marketplaceBusy = true;
-      if (!silent) showMessage("Loading available stores...");
+      if (!silent && !append) showMessage("Loading available stores...");
 
       if (!window.supabase || !db) {
         showMessage("Couldn't connect. Check your internet and refresh the page.");
@@ -248,31 +262,35 @@
         return;
       }
 
+      const offset = append ? allStores.length : 0;
       try {
-        // One request: stores plus their services
         const { data, error } = await db
           .from("stores")
           .select("id, store_name, category, area, address, store_image_url, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, service_items(id, title)")
           .eq("status", "active")
-          .order("created_at", { ascending: false });
+          .order("created_at", { ascending: false })
+          .range(offset, offset + PAGE_SIZE - 1);
 
         if (error) throw error;
 
-        // Real ratings from customer reviews (shops with no reviews yet simply show none)
         const ratings = {};
-        try {
-          const { data: rs } = await db.from("store_ratings").select("store_id, avg_rating, review_count");
-          (rs || []).forEach(r => { ratings[r.store_id] = r; });
-        } catch (_) {}
+        const { data: rs, error: ratingsError } = await db
+          .from("store_ratings")
+          .select("store_id, avg_rating, review_count");
+        if (ratingsError) console.warn("BOOK.NOW ratings unavailable:", ratingsError.message);
+        (rs || []).forEach(r => { ratings[r.store_id] = r; });
 
-        allStores = (data || []).map(s => ({
+        const page = (data || []).map(s => ({
           ...s,
           rating: ratings[s.id] || null,
           cat: normalizeCategory(s.category),
           service_items: s.service_items || []
         }));
 
-        // Area filter: only shows if at least one shop has set its area
+        allStores = append ? allStores.concat(page) : page;
+        hasMoreStores = page.length === PAGE_SIZE;
+        lastRefreshAt = Date.now();
+
         const areas = [...new Set(allStores.map(s => (s.area || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
         const areaSelect = $("area-select");
         areaSelect.replaceChildren(new Option("All areas", ""), ...areas.map(a => new Option(a, a)));
@@ -283,19 +301,33 @@
         applyFilters();
       } catch (err) {
         console.error("Marketplace error:", err);
-        if (!silent) showMessage("Couldn't load stores. Refresh the page to try again.");
+        if (!silent && !append) showMessage("Couldn't load stores. Refresh the page to try again.");
+        if (append) $("marketplace-status").textContent = "Couldn't load more shops. Please try again.";
       } finally {
         marketplaceBusy = false;
+        updateLoadMore(allStores.length);
       }
     }
 
     function renderStores(stores) {
       const container = $("store-grid");
+      const signature = JSON.stringify(stores.map(s => [
+        s.id, s.store_name, s.category, s.area, s.store_image_url,
+        s.opening_time, s.closing_time, s.manual_status,
+        s.rating && s.rating.avg_rating, s.rating && s.rating.review_count,
+        (s.service_items || []).map(i => [i.id, i.title])
+      ]));
+      if (signature === lastRenderedSignature) {
+        updateLoadMore(stores.length);
+        return;
+      }
+      lastRenderedSignature = signature;
 
       if (stores.length === 0) {
         showMessage(allStores.length === 0
           ? "No shops are listed yet. Check back soon."
           : "No shops match your search. Try a different word or category.");
+        updateLoadMore(stores.length);
         return;
       }
 
@@ -374,6 +406,17 @@
       });
 
       container.replaceChildren(...cards);
+      updateLoadMore(stores.length);
+    }
+
+    function updateLoadMore(visibleCount) {
+      const wrap = $("load-more-wrap");
+      const button = $("load-more");
+      const status = $("marketplace-status");
+      wrap.style.display = hasMoreStores ? "" : "none";
+      button.disabled = marketplaceBusy;
+      button.textContent = marketplaceBusy ? "Loading..." : "Load more shops";
+      status.textContent = allStores.length ? "Showing " + allStores.length + " shops loaded so far." : "";
     }
 
     // Search and category filter work together
@@ -426,6 +469,7 @@
         clearTimeout(timer);
         timer = setTimeout(applyFilters, 150);
       });
+      $("load-more").addEventListener("click", () => loadMarketplace(false, true));
     }
 
     function boot() {
@@ -439,8 +483,16 @@
       }
       bindEvents();
       loadMarketplace();
-      // Refresh live marketplace data without reloading the page.
-      setInterval(() => { if (!document.hidden) loadMarketplace(true); }, 3000);
+      // Refresh less aggressively; refresh immediately when a visitor returns.
+      setInterval(() => {
+        if (!document.hidden) loadMarketplace(true, false);
+      }, REFRESH_INTERVAL_MS);
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && Date.now() - lastRefreshAt > 5000) loadMarketplace(true, false);
+      });
+      window.addEventListener("focus", () => {
+        if (Date.now() - lastRefreshAt > 5000) loadMarketplace(true, false);
+      });
     }
 
     if (document.readyState === "loading") {
