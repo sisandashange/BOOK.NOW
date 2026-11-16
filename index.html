@@ -88,6 +88,20 @@
     .btn-list:hover { background: var(--accent-hover); }
     @media (max-width: 580px) { .list-cta { flex-direction: column; align-items: stretch; text-align: center; } }
 
+
+    .app-downloads { margin: 28px 0 8px; padding: 22px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+    .app-downloads h2 { margin: 0 0 6px; font-size: 19px; font-weight: 800; letter-spacing: -0.5px; color: var(--primary); }
+    .app-downloads-intro { margin: 0 0 16px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .app-download-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .app-download-card { border: 1px solid var(--border); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 9px; min-width: 0; }
+    .app-download-icon { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: #eff6ff; color: var(--accent); font-size: 23px; }
+    .app-download-card h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--primary); }
+    .app-download-card p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; flex: 1; }
+    .app-download-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px 12px; border-radius: 11px; background: var(--accent); color: #fff; text-decoration: none; font-size: 13px; font-weight: 800; }
+    .app-download-btn:hover { background: var(--accent-hover); }
+    .app-download-note { margin: 13px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    @media (max-width: 580px) { .app-download-grid { grid-template-columns: 1fr; } }
+
     .legal-foot { text-align: center; padding: 18px 16px 8px; font-size: 12px; color: #64748b; }
     .legal-foot a { color: #64748b; font-weight: 600; }
     .empty-box { text-align: center; padding: 40px 16px; background: var(--surface); border-radius: 16px; border: 1px dashed var(--border); color: var(--muted); font-size: 14px; grid-column: 1 / -1; }
@@ -145,6 +159,30 @@
       <a href="partners.html" class="btn-list">List your business</a>
     </div>
   </main>
+  <section class="app-downloads container" aria-labelledby="app-download-title">
+    <h2 id="app-download-title">Get the BOOK.NOW app</h2>
+    <p class="app-downloads-intro">Choose the app that matches what you want to do. Android apps are available below.</p>
+    <div class="app-download-grid">
+      <article class="app-download-card">
+        <div class="app-download-icon" aria-hidden="true"><i class="ph ph-storefront"></i></div>
+        <h3>BOOK.NOW for Customers</h3>
+        <p>Explore the home screen, discover local shops and make bookings.</p>
+        <a class="app-download-btn" href="https://median.co/share/eeyeyre#apk" target="_blank" rel="noopener noreferrer">
+          <i class="ph ph-download-simple" aria-hidden="true"></i> Download Customer App
+        </a>
+      </article>
+      <article class="app-download-card">
+        <div class="app-download-icon" aria-hidden="true"><i class="ph ph-briefcase"></i></div>
+        <h3>BOOK.NOW for Vendors</h3>
+        <p>Manage your business and keep track of your customer bookings.</p>
+        <a class="app-download-btn" href="https://median.co/share/mbnbnrj#apk" target="_blank" rel="noopener noreferrer">
+          <i class="ph ph-download-simple" aria-hidden="true"></i> Download Vendor App
+        </a>
+      </article>
+    </div>
+    <p class="app-download-note">Android may ask you to allow installation from your browser. Only install apps you trust, and follow the instructions shown by your device.</p>
+  </section>
+
   <div class="legal-foot"><a href="manage.html">Manage my booking</a> &middot; <a href="privacy.html">Privacy Policy</a> &middot; <a href="terms.html">Terms of Use</a></div>
 
   <script>
