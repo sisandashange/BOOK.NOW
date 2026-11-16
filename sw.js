@@ -1,13 +1,29 @@
-// BOOK.NOW service worker: keeps the app installable and shows the last loaded page when offline.
-// Live data (Supabase) is never cached. Pages are always fetched fresh when online.
-const CACHE = "booknow-v1";
+// BOOK.NOW service worker: fast repeat visits and a cached app shell on weak networks.
+const CACHE = "booknow-shell-v2";
+const CORE_FILES = ["./", "./index.html", "./manifest.webmanifest", "./i18n.js"];
 
-self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("install", event => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    await Promise.all(CORE_FILES.map(async path => {
+      try {
+        const response = await fetch(path, { cache: "reload" });
+        if (response.ok) await cache.put(path, response);
+      } catch (_) {
+        // A single unavailable file must not prevent the app shell from installing.
+      }
+    }));
+    await self.skipWaiting();
+  })());
+});
 
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(keys => Promise.all(
+        keys.filter(key => key.startsWith("booknow-") && key !== CACHE)
+          .map(key => caches.delete(key))
+      ))
       .then(() => self.clients.claim())
   );
 });
@@ -15,22 +31,35 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   const req = event.request;
   const url = new URL(req.url);
-  if (req.method !== "GET" || url.origin !== location.origin || /admin/i.test(url.pathname)) return;
+  if (req.method !== "GET" || url.origin !== self.location.origin || /admin/i.test(url.pathname)) return;
 
-  event.respondWith(
-    fetch(req)
-      .then(res => {
-        if (res.ok) {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(req, copy));
-        }
-        return res;
-      })
-      .catch(() => caches.match(req).then(hit => hit || new Response(
-        "You're offline. Reconnect to use BOOK.NOW.",
-        { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
-      )))
-  );
+  // Serve a saved page or asset immediately, while refreshing it for the next visit.
+  const networkPromise = fetch(req).then(response => {
+    if (response.ok) {
+      const copy = response.clone();
+      event.waitUntil(caches.open(CACHE).then(cache => cache.put(req, copy)));
+    }
+    return response;
+  });
+
+  event.waitUntil(networkPromise.then(() => undefined).catch(() => undefined));
+  event.respondWith((async () => {
+    const cached = await caches.match(req);
+    if (cached) return cached;
+
+    try {
+      return await networkPromise;
+    } catch (_) {
+      if (req.mode === "navigate") {
+        const shell = await caches.match("./index.html") || await caches.match("./");
+        if (shell) return shell;
+      }
+      return new Response("You're offline. Reconnect to use BOOK.NOW.", {
+        status: 503,
+        headers: { "Content-Type": "text/plain; charset=utf-8" }
+      });
+    }
+  })());
 });
 
 // ---- Phone alerts sent by the server (they arrive even when the app is closed) ----
