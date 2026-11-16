@@ -313,6 +313,7 @@
         if (!silent && !append) showMessage("Couldn't load stores. Refresh the page to try again.");
         if (append) $("marketplace-status").textContent = "Couldn't load more shops. Please try again.";
         marketplaceBusy = false;
+        // Reset manually so the error message above is not replaced by updateLoadMore().
         const loadMoreButton = $("load-more");
         loadMoreButton.disabled = false;
         loadMoreButton.textContent = "Load more shops";
