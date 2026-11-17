@@ -247,7 +247,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         <div class="form-field"><label for="store-address-input">Store Physical Location / Address</label><input type="text" id="store-address-input" placeholder="e.g. 12 Fox Street, Maboneng, Johannesburg"></div>
         <div class="form-field"><label for="store-area-input">Area (suburb or town)</label><input type="text" id="store-area-input" maxlength="60" placeholder="e.g. Soweto"><div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">Customers can filter shops by area on the homepage. Use the same spelling as other shops in your area.</div></div>
         <div class="form-field"><label for="store-capacity-mode">How do you count how busy you are?</label><select id="store-capacity-mode"><option value="BOOKINGS">By number of bookings (e.g. barber chairs)</option><option value="GUESTS">By number of guests (e.g. a shisanyama)</option></select></div>
-        <div class="form-field"><label for="store-capacity-input" id="store-capacity-label">Bookings you can take at the same time</label><input type="number" id="store-capacity-input" min="1" max="100" step="1" value="1" inputmode="numeric"><div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">Most barbers and salons count bookings, e.g. 1 for one chair. A shisanyama can count guests, e.g. 30 guests at the same time. Customers then enter how many people are coming. When the limit is reached, that time shows as full.</div></div>
+        <div class="form-field"><label for="store-capacity-input" id="store-capacity-label">Bookings you can accept per hour</label><input type="number" id="store-capacity-input" min="1" max="100" step="1" value="1" inputmode="numeric"><div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">Set the maximum number of bookings or guests you can handle in each clock hour. Choose bookings for appointments, or guests for Shisanyama seating. Customers choose their group size when guest capacity is enabled.</div></div>
         <div class="form-field" id="store-takeaway-capacity-field" style="display:none;"><label for="store-takeaway-capacity">Takeaway orders per 30 minutes</label><input type="number" id="store-takeaway-capacity" min="1" max="100" step="1" value="5" inputmode="numeric"><div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">Maximum collection orders your kitchen can handle in each 30-minute time slot.</div></div>
         <div class="operating-hours-box">
           <div class="operating-title"><i class="ph ph-clock" style="color:var(--accent)"></i> Store Schedule &amp; Closure Controls</div>
@@ -1077,8 +1077,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
   function updateCapacityLabel() {
     $("store-capacity-label").textContent = $("store-capacity-mode").value === "GUESTS"
-      ? "Guests you can host at the same time"
-      : "Bookings you can take at the same time";
+      ? "Seats / guests you can host per hour"
+      : "Bookings you can accept per hour";
   }
 
   function populateProfileForm() {
@@ -1088,7 +1088,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     $("store-phone-input").value = activeVendor.phone_number || "";
     $("store-address-input").value = activeVendor.address || "";
     $("store-area-input").value = activeVendor.area || "";
-    $("store-capacity-input").value = activeVendor.slot_capacity || 1;
+    $("store-capacity-input").value = activeVendor.hourly_capacity || activeVendor.slot_capacity || 1;
     $("store-takeaway-capacity").value = activeVendor.takeaway_slot_capacity || 5;
     $("store-takeaway-capacity-field").style.display = /shisanyama|braai/i.test(String(activeVendor.category || "")) ? "block" : "none";
     $("store-capacity-mode").value = activeVendor.capacity_mode || "BOOKINGS";
@@ -1123,6 +1123,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         address: $("store-address-input").value.trim(),
         area: $("store-area-input").value.trim() || null,
         slot_capacity: capacity,
+        hourly_capacity: capacity,
         takeaway_slot_capacity: isShisanyama ? takeawayCapacity : (Number(activeVendor.takeaway_slot_capacity) || 5),
         capacity_mode: $("store-capacity-mode").value,
         opening_time: $("opening-time").value,
@@ -1318,7 +1319,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
       const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") + "-" + Math.floor(1000 + Math.random() * 9000);
       const { data, error } = await db.from("stores").insert([{
-        store_name: name, store_slug: slug, category: $("new-biz-category").value, slot_capacity: $("new-biz-category").value === "SHISANYAMA" ? 30 : 1, capacity_mode: $("new-biz-category").value === "SHISANYAMA" ? "GUESTS" : "BOOKINGS", profile_id: user.id,
+        store_name: name, store_slug: slug, category: $("new-biz-category").value, slot_capacity: $("new-biz-category").value === "SHISANYAMA" ? 30 : 1, hourly_capacity: $("new-biz-category").value === "SHISANYAMA" ? 30 : 1, capacity_mode: $("new-biz-category").value === "SHISANYAMA" ? "GUESTS" : "BOOKINGS", profile_id: user.id,
         status: "pending_payment", is_first_time: true, manual_status: "OPEN", opening_time: "08:00", closing_time: "17:00"
       }]).select().single();
       if (error) throw error;
