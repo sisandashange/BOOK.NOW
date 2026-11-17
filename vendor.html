@@ -920,6 +920,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     $("tab-orders-btn").addEventListener("click", () => showTab("orders"));
     $("tab-services-btn").addEventListener("click", () => showTab("services"));
     $("tab-profile-btn").addEventListener("click", () => { showTab("profile"); populateProfileForm(); });
+    $("store-category-input").addEventListener("change", () => { $("store-takeaway-capacity-field").style.display = /shisanyama|braai/i.test(String($("store-category-input").value || "")) ? "block" : "none"; });
     $("tab-bank-btn").addEventListener("click", () => { showTab("bank"); populateBankForm(); });
     $("tab-settlement-btn").addEventListener("click", async () => { showTab("settlement"); await loadOrders(); });
     $("tab-moneystore-btn").addEventListener("click", () => { showTab("moneystore"); loadWallet(); });
