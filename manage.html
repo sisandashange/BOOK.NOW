@@ -217,8 +217,8 @@ footer a{color:var(--muted);font-weight:600}
     $("r-service").textContent = bk.service_title || "Service";
     $("r-when").textContent = fmtAppt(bk);
     const guests = Number(bk.party_size) || 1;
-    $("r-guests-row").classList.toggle("hidden", !(bk.capacity_mode === "GUESTS" || guests > 1));
-    $("r-guests").textContent = String(guests);
+    $("r-guests-row").classList.toggle("hidden", !(bk.is_takeaway || bk.capacity_mode === "GUESTS" || guests > 1));
+    $("r-guests").textContent = bk.is_takeaway ? "Takeaway — collection" : String(guests);
     $("r-price").textContent = money(bk.booked_price);
     const paid = String(bk.payment_status || "").toUpperCase() === "PAID";
     $("r-pay").textContent = (bk.payment_method === "CASH" ? "Cash" : "EFT") + " · " + (paid ? "Paid" : "Not paid yet");
@@ -313,12 +313,18 @@ footer a{color:var(--muted);font-weight:600}
     if (close < open) close += 1440;
 
     const used = {};
+    let capacity = Number(bk.slot_capacity) || 1;
+    const isTakeaway = bk.is_takeaway === true;
     try {
       const { data, error } = await db.rpc("get_taken_slots", { p_store_id: bk.store_id, p_date: date });
       if (error) throw error;
       if (requestToken !== refreshToken || !bk || lookup.ref !== requestRef || $("new-date").value !== date) return;
       if (!Array.isArray(data)) throw new Error("Availability response was invalid");
-      data.forEach(r => { used[r.booking_time] = r.booked; });
+      data.forEach(r => {
+        used[r.booking_time] = Number(isTakeaway ? r.takeaway_booked : r.booked) || 0;
+        const returnedCapacity = isTakeaway ? r.takeaway_capacity : r.capacity;
+        if (returnedCapacity != null) capacity = Number(returnedCapacity);
+      });
     } catch (e) {
       if (requestToken !== refreshToken) return;
       console.warn("Could not load taken times:", e);
@@ -328,8 +334,8 @@ footer a{color:var(--muted);font-weight:600}
       return;
     }
 
-    const cap = Number(bk.slot_capacity) || 1;
-    const need = bk.capacity_mode === "GUESTS" ? (Number(bk.party_size) || 1) : 1;
+    const cap = capacity;
+    const need = isTakeaway ? 1 : (bk.capacity_mode === "GUESTS" ? (Number(bk.party_size) || 1) : 1);
 
     const options = [];
     let free = 0;
