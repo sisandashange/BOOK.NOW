@@ -313,7 +313,8 @@ footer a{color:var(--muted);font-weight:600}
     if (close < open) close += 1440;
 
     const used = {};
-    let capacity = Number(bk.slot_capacity) || 1;
+    let capacity = Number(bk.hourly_capacity || bk.slot_capacity) || 1;
+    const usedHourly = {};
     const isTakeaway = bk.is_takeaway === true;
     try {
       const { data, error } = await db.rpc("get_taken_slots", { p_store_id: bk.store_id, p_date: date });
@@ -321,8 +322,9 @@ footer a{color:var(--muted);font-weight:600}
       if (requestToken !== refreshToken || !bk || lookup.ref !== requestRef || $("new-date").value !== date) return;
       if (!Array.isArray(data)) throw new Error("Availability response was invalid");
       data.forEach(r => {
-        used[r.booking_time] = Number(isTakeaway ? r.takeaway_booked : r.booked) || 0;
-        const returnedCapacity = isTakeaway ? r.takeaway_capacity : r.capacity;
+        if (isTakeaway) used[r.booking_time] = Number(r.takeaway_booked) || 0;
+        else usedHourly[fmtMin(Math.floor(toMin(r.booking_time) / 60) * 60)] = Number(r.hourly_booked != null ? r.hourly_booked : r.booked) || 0;
+        const returnedCapacity = isTakeaway ? r.takeaway_capacity : (r.hourly_capacity != null ? r.hourly_capacity : r.capacity);
         if (returnedCapacity != null) capacity = Number(returnedCapacity);
       });
     } catch (e) {
@@ -344,14 +346,15 @@ footer a{color:var(--muted);font-weight:600}
     // This booking's own slots must not count against it when it is moved on the same day
     if (date === bk.booking_date && bk.booking_time) {
       const ownStart = toMin(bk.booking_time);
-      for (let k = 0; k < steps; k++) { const key = fmtMin(ownStart + k * 30); used[key] = Math.max(0, (used[key] || 0) - need); }
+      if (isTakeaway) { for (let k = 0; k < steps; k++) { const key = fmtMin(ownStart + k * 30); used[key] = Math.max(0, (used[key] || 0) - need); } }
+      else { const key = fmtMin(Math.floor(ownStart / 60) * 60); usedHourly[key] = Math.max(0, (usedHourly[key] || 0) - need); }
     }
     for (let m = open; m + dur <= close; m += 30) {
       if (appointmentInstant(date, m) <= new Date()) continue;
       const label = fmtMin(m);
       const isCurrent = date === bk.booking_date && label === bk.booking_time;
-      let left = cap;
-      for (let k = 0; k < steps; k++) left = Math.min(left, cap - (used[fmtMin(m + k * 30)] || 0));
+      let left = isTakeaway ? cap : cap - (usedHourly[fmtMin(Math.floor(m / 60) * 60)] || 0);
+      if (isTakeaway) for (let k = 0; k < steps; k++) left = Math.min(left, cap - (used[fmtMin(m + k * 30)] || 0));
       const blocked = isCurrent || left < need;
       if (!blocked) free++;
       let text = dur > 30 ? `${label} to ${fmtMin(m + dur)}` : label;
