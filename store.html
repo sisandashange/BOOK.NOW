@@ -829,7 +829,7 @@
       if (!date) { errorBox.textContent = "Choose your appointment date."; return; }
       if (date < currentBusinessDate(storeData)) { errorBox.textContent = "Choose today or a future date."; return; }
       if (guestsMode && (!Number.isFinite(guests) || guests < 1 || guests > Math.min(50, Number(storeData.hourly_capacity || storeData.slot_capacity) || 50))) {
-        errorBox.textContent = "Enter how many people are coming (up to " + Math.min(50, Number(storeData.slot_capacity) || 50) + ").";
+        errorBox.textContent = "Enter how many people are coming (up to " + Math.min(50, Number(storeData.hourly_capacity || storeData.slot_capacity) || 50) + ").";
         return;
       }
       if (!time) { errorBox.textContent = "Choose your appointment time."; return; }
