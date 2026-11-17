@@ -1110,7 +1110,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     const capacity = Math.floor(Number($("store-capacity-input").value));
     const isShisanyama = /shisanyama|braai/i.test(String($("store-category-input").value || ""));
     const takeawayCapacity = Math.floor(Number($("store-takeaway-capacity").value));
-    if (!Number.isFinite(capacity) || capacity < 1 || capacity > 100) return alert("Bookings at the same time must be a number from 1 to 100.");
+    if (!Number.isFinite(capacity) || capacity < 1 || capacity > 100) return alert("Bookings or guests per hour must be a number from 1 to 100.");
     if (isShisanyama && (!Number.isFinite(takeawayCapacity) || takeawayCapacity < 1 || takeawayCapacity > 100)) return alert("Takeaway capacity must be a number from 1 to 100 orders per 30 minutes.");
     if (hs && he && he < hs) return alert("Holiday end date cannot be before the start date.");
 
