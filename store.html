@@ -761,7 +761,7 @@
       $("party-size").max = seats;
       $("party-size").value = guestsShop ? Math.min(2, seats) : 1;
       chosenTime = "";
-      $("party-hint").textContent = guestsShop ? `This shop seats up to ${seats} people at one time.` : "";
+      $("party-hint").textContent = guestsShop ? `This shop can host up to ${seats} guests per hour.` : "";
       $("takeaway-field").style.display = normalizeCategory(storeData.category) === "SHISANYAMA" ? "block" : "none";
       $("is-takeaway").checked = false;
       refreshSlots();
