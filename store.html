@@ -223,7 +223,7 @@
     const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
     const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
 
-    const STORE_COLUMNS = "id, store_name, category, store_image_url, phone_number, address, status, subscription_expires_at, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, slot_capacity, takeaway_slot_capacity, capacity_mode, area";
+    const STORE_COLUMNS = "id, store_name, category, store_image_url, phone_number, address, status, subscription_expires_at, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, slot_capacity, hourly_capacity, takeaway_slot_capacity, capacity_mode, area";
 
     let db = null;
     let selectedService = null;
@@ -324,7 +324,7 @@
       const guestsShop = storeData.capacity_mode === "GUESTS";
       $("party-field").style.display = (!isTakeaway && guestsShop) ? "block" : "none";
       let usedDineIn = {}, usedTakeaway = {};
-      let dbCapDineIn = Number(storeData.slot_capacity) || 1;
+      let dbCapDineIn = Number(storeData.hourly_capacity || storeData.slot_capacity) || 1;
       let dbCapTakeaway = Number(storeData.takeaway_slot_capacity) || 5;
       try {
         const { data, error } = await db.rpc("get_taken_slots", { p_store_id: requestStoreId, p_date: date });
@@ -332,9 +332,10 @@
         if (requestToken !== refreshToken || !storeData || storeData.id !== requestStoreId || $("booking-date").value !== date) return;
         if (!Array.isArray(data)) throw new Error("Availability response was invalid");
         data.forEach(r => {
-          usedDineIn[r.booking_time] = Number(r.booked) || 0;
+          const hourKey = fmtMin(Math.floor(toMin(r.booking_time) / 60) * 60);
+          usedDineIn[hourKey] = Number(r.hourly_booked != null ? r.hourly_booked : r.booked) || 0;
           usedTakeaway[r.booking_time] = Number(r.takeaway_booked) || 0;
-          if (r.capacity != null) dbCapDineIn = Number(r.capacity);
+          if (r.hourly_capacity != null) dbCapDineIn = Number(r.hourly_capacity);
           if (r.takeaway_capacity != null) dbCapTakeaway = Number(r.takeaway_capacity);
         });
       } catch (e) {
@@ -355,8 +356,8 @@
       for (let m = open; m + dur <= close; m += 30) {
         if (appointmentInstant(date, m) <= new Date()) continue;
         const label = fmtMin(m);
-        let left = cap;
-        for (let k = 0; k < steps; k++) left = Math.min(left, cap - (usedMap[fmtMin(m + k * 30)] || 0));
+        let left = isTakeaway ? cap : cap - (usedDineIn[fmtMin(Math.floor(m / 60) * 60)] || 0);
+        if (isTakeaway) for (let k = 0; k < steps; k++) left = Math.min(left, cap - (usedMap[fmtMin(m + k * 30)] || 0));
         const blocked = left < need;
         if (!blocked) free++;
         let text = dur > 30 ? `${label} to ${fmtMin(m + dur)}` : label;
@@ -755,7 +756,7 @@
       $("booking-date").max = addDays(today, 60);
       $("booking-date").value = "";
       const guestsShop = storeData.capacity_mode === "GUESTS";
-      const seats = Math.min(50, Number(storeData.slot_capacity) || 50);
+      const seats = Math.min(50, Number(storeData.hourly_capacity || storeData.slot_capacity) || 50);
       $("party-field").style.display = guestsShop ? "block" : "none";
       $("party-size").max = seats;
       $("party-size").value = guestsShop ? Math.min(2, seats) : 1;
@@ -827,7 +828,7 @@
       if (phone.replace(/\D/g, "").length < 9) { errorBox.textContent = "Enter a valid phone number."; return; }
       if (!date) { errorBox.textContent = "Choose your appointment date."; return; }
       if (date < currentBusinessDate(storeData)) { errorBox.textContent = "Choose today or a future date."; return; }
-      if (guestsMode && (!Number.isFinite(guests) || guests < 1 || guests > Math.min(50, Number(storeData.slot_capacity) || 50))) {
+      if (guestsMode && (!Number.isFinite(guests) || guests < 1 || guests > Math.min(50, Number(storeData.hourly_capacity || storeData.slot_capacity) || 50))) {
         errorBox.textContent = "Enter how many people are coming (up to " + Math.min(50, Number(storeData.slot_capacity) || 50) + ").";
         return;
       }
