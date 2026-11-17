@@ -180,6 +180,12 @@
         <input type="number" id="party-size" min="1" max="50" value="2" inputmode="numeric">
         <div id="party-hint" style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4;"></div>
       </div>
+      <div class="form-field" id="takeaway-field" style="display:none;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-size:13px;color:var(--text);">
+          <input type="checkbox" id="is-takeaway" style="width:18px;height:18px;margin:0;">
+          <span>Takeaway order — collect, no seating needed</span>
+        </label>
+      </div>
       <div class="form-field">
         <label for="booking-date">Appointment Date</label>
         <input type="date" id="booking-date" required>
@@ -217,7 +223,7 @@
     const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
     const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
 
-    const STORE_COLUMNS = "id, store_name, category, store_image_url, phone_number, address, status, subscription_expires_at, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, slot_capacity, capacity_mode, area";
+    const STORE_COLUMNS = "id, store_name, category, store_image_url, phone_number, address, status, subscription_expires_at, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, slot_capacity, takeaway_slot_capacity, capacity_mode, area";
 
     let db = null;
     let selectedService = null;
@@ -308,22 +314,29 @@
       hint.textContent = "";
       if (!date || !storeData) { sel.replaceChildren(mk("", "Choose a date first")); return; }
       sel.replaceChildren(mk("", "Loading times..."));
-
       const closed = dateClosedReason(storeData, date);
       if (closed) { sel.replaceChildren(mk("", "No times available")); hint.textContent = closed; return; }
-
       const open = toMin(String(storeData.opening_time || "08:00").slice(0, 5));
       let close = toMin(String(storeData.closing_time || "17:00").slice(0, 5));
       if (open === close) { sel.replaceChildren(mk("", "No times available")); hint.textContent = "This shop's opening hours aren't set up yet."; return; }
       if (close < open) close += 1440;
-
-      let used = {};
+      const isTakeaway = $("is-takeaway").checked === true;
+      const guestsShop = storeData.capacity_mode === "GUESTS";
+      $("party-field").style.display = (!isTakeaway && guestsShop) ? "block" : "none";
+      let usedDineIn = {}, usedTakeaway = {};
+      let dbCapDineIn = Number(storeData.slot_capacity) || 1;
+      let dbCapTakeaway = Number(storeData.takeaway_slot_capacity) || 5;
       try {
         const { data, error } = await db.rpc("get_taken_slots", { p_store_id: requestStoreId, p_date: date });
         if (error) throw error;
         if (requestToken !== refreshToken || !storeData || storeData.id !== requestStoreId || $("booking-date").value !== date) return;
         if (!Array.isArray(data)) throw new Error("Availability response was invalid");
-        data.forEach(r => { used[r.booking_time] = r.booked; });
+        data.forEach(r => {
+          usedDineIn[r.booking_time] = Number(r.booked) || 0;
+          usedTakeaway[r.booking_time] = Number(r.takeaway_booked) || 0;
+          if (r.capacity != null) dbCapDineIn = Number(r.capacity);
+          if (r.takeaway_capacity != null) dbCapTakeaway = Number(r.takeaway_capacity);
+        });
       } catch (e) {
         if (requestToken !== refreshToken) return;
         console.warn("Could not load taken times:", e);
@@ -332,19 +345,18 @@
         hint.textContent = "We couldn't check this shop's availability. Please try again before choosing a time.";
         return;
       }
-
-      const options = [];
-      let free = 0;
-      // A longer service uses several 30-minute slots in a row, and the busiest of them decides if it fits
-      const cap = Number(storeData.slot_capacity) || 1;
-      const need = storeData.capacity_mode === "GUESTS" ? partySize() : 1;
+      const cap = isTakeaway ? dbCapTakeaway : dbCapDineIn;
+      const need = (!isTakeaway && guestsShop) ? partySize() : 1;
       const dur = (selectedService && Number(selectedService.duration)) || 30;
       const steps = Math.max(1, Math.ceil(dur / 30));
+      const usedMap = isTakeaway ? usedTakeaway : usedDineIn;
+      const options = [];
+      let free = 0;
       for (let m = open; m + dur <= close; m += 30) {
         if (appointmentInstant(date, m) <= new Date()) continue;
         const label = fmtMin(m);
         let left = cap;
-        for (let k = 0; k < steps; k++) left = Math.min(left, cap - (used[fmtMin(m + k * 30)] || 0));
+        for (let k = 0; k < steps; k++) left = Math.min(left, cap - (usedMap[fmtMin(m + k * 30)] || 0));
         const blocked = left < need;
         if (!blocked) free++;
         let text = dur > 30 ? `${label} to ${fmtMin(m + dur)}` : label;
@@ -353,14 +365,15 @@
         else if (cap > 1) text += ` (${left} left)`;
         options.push(mk(label, text, blocked));
       }
-
-      if (!free) { sel.replaceChildren(mk("", "No times available")); hint.textContent = storeData.capacity_mode === "GUESTS" ? "No times have room for this many people on this date. Try another day or a smaller group." : "No free times on this date. Try another day."; return; }
+      if (!free) {
+        sel.replaceChildren(mk("", "No times available"));
+        hint.textContent = isTakeaway ? "No takeaway collection capacity remains on this date. Try another day." : (guestsShop ? "No times have room for this many people on this date. Try another day or a smaller group." : "No free times on this date. Try another day.");
+        return;
+      }
       sel.replaceChildren(mk("", "Choose a time"), ...options);
-      // Keep the time the customer already picked if it still fits after changing date or group size
       if (chosenTime && options.some(o => o.value === chosenTime && !o.disabled)) sel.value = chosenTime;
       else chosenTime = "";
     }
-
 
     const urlB64ToBytes = b64 => {
       const raw = atob((b64 + "=".repeat((4 - b64.length % 4) % 4)).replace(/-/g, "+").replace(/_/g, "/"));
@@ -748,6 +761,8 @@
       $("party-size").value = guestsShop ? Math.min(2, seats) : 1;
       chosenTime = "";
       $("party-hint").textContent = guestsShop ? `This shop seats up to ${seats} people at one time.` : "";
+      $("takeaway-field").style.display = normalizeCategory(storeData.category) === "SHISANYAMA" ? "block" : "none";
+      $("is-takeaway").checked = false;
       refreshSlots();
       $("booking-modal").style.display = "flex";
       $("customer-name").focus();
@@ -801,7 +816,8 @@
       const phone = $("customer-phone").value.trim();
       const date = $("booking-date").value;
       const time = $("booking-time").value;
-      const guestsMode = !!storeData && storeData.capacity_mode === "GUESTS";
+      const isTakeaway = $("is-takeaway").checked === true;
+      const guestsMode = !isTakeaway && !!storeData && storeData.capacity_mode === "GUESTS";
       const guests = guestsMode ? Math.floor(Number($("party-size").value)) : 1;
       const button = $("confirm-booking-btn");
       const errorBox = $("modal-error");
@@ -855,7 +871,8 @@
             booking_time: time,
             party_size: guests,
             payment_method: payMethod,
-            payment_ref: paymentRef
+            payment_ref: paymentRef,
+            is_takeaway: isTakeaway
           }]);
           insertError = result.error;
           if (!insertError) break;
@@ -902,7 +919,7 @@
         const message = encodeURIComponent(
           `Hi ${shopName}! I just booked "${selectedService.title}" (${money(price)}) on BOOK.NOW.\n\n` +
           `Name: ${name}\nPhone: ${phone}\nAppointment: ${apptText} (South African time)\n` +
-          (guestsMode ? `Guests: ${guests}\n` : "") +
+          (isTakeaway ? "Order type: Takeaway\n" : (guestsMode ? `Guests: ${guests}\n` : "")) +
           `Payment ref: ${paymentRef}\nPayment: ${payNote}\n` +
           (queueNumber ? `Booking number for that day: #${queueNumber}\n` : "") +
           `\nPlease confirm my appointment.`
@@ -983,6 +1000,7 @@
       $("lightbox-modal").addEventListener("click", e => { if (e.target === $("lightbox-modal")) closeModals(); });
       $("booking-date").addEventListener("change", refreshSlots);
       $("party-size").addEventListener("change", refreshSlots);
+      $("is-takeaway").addEventListener("change", () => { chosenTime = ""; refreshSlots(); });
       $("booking-time").addEventListener("change", () => { chosenTime = $("booking-time").value; });
       $("pay-method-eft").addEventListener("click", () => setPaymentMethod("EFT"));
       $("pay-method-cash").addEventListener("click", () => setPaymentMethod("CASH"));
