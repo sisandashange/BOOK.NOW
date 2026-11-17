@@ -247,6 +247,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         <div class="form-field"><label for="store-area-input">Area (suburb or town)</label><input type="text" id="store-area-input" maxlength="60" placeholder="e.g. Soweto"><div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">Customers can filter shops by area on the homepage. Use the same spelling as other shops in your area.</div></div>
         <div class="form-field"><label for="store-capacity-mode">How do you count how busy you are?</label><select id="store-capacity-mode"><option value="BOOKINGS">By number of bookings (e.g. barber chairs)</option><option value="GUESTS">By number of guests (e.g. a shisanyama)</option></select></div>
         <div class="form-field"><label for="store-capacity-input" id="store-capacity-label">Bookings you can take at the same time</label><input type="number" id="store-capacity-input" min="1" max="100" step="1" value="1" inputmode="numeric"><div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">Most barbers and salons count bookings, e.g. 1 for one chair. A shisanyama can count guests, e.g. 30 guests at the same time. Customers then enter how many people are coming. When the limit is reached, that time shows as full.</div></div>
+        <div class="form-field" id="store-takeaway-capacity-field" style="display:none;"><label for="store-takeaway-capacity">Takeaway orders per 30 minutes</label><input type="number" id="store-takeaway-capacity" min="1" max="100" step="1" value="5" inputmode="numeric"><div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">Maximum collection orders your kitchen can handle in each 30-minute time slot.</div></div>
         <div class="operating-hours-box">
           <div class="operating-title"><i class="ph ph-clock" style="color:var(--accent)"></i> Store Schedule &amp; Closure Controls</div>
           <div class="two-col">
@@ -1086,6 +1087,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     $("store-address-input").value = activeVendor.address || "";
     $("store-area-input").value = activeVendor.area || "";
     $("store-capacity-input").value = activeVendor.slot_capacity || 1;
+    $("store-takeaway-capacity").value = activeVendor.takeaway_slot_capacity || 5;
+    $("store-takeaway-capacity-field").style.display = /shisanyama|braai/i.test(String(activeVendor.category || "")) ? "block" : "none";
     $("store-capacity-mode").value = activeVendor.capacity_mode || "BOOKINGS";
     updateCapacityLabel();
     $("opening-time").value = String(activeVendor.opening_time || "08:00").slice(0, 5);
@@ -1103,7 +1106,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     const he = $("holiday-end-date").value || null;
     if (!name) return alert("Business name is required.");
     const capacity = Math.floor(Number($("store-capacity-input").value));
+    const isShisanyama = /shisanyama|braai/i.test(String($("store-category-input").value || ""));
+    const takeawayCapacity = Math.floor(Number($("store-takeaway-capacity").value));
     if (!Number.isFinite(capacity) || capacity < 1 || capacity > 100) return alert("Bookings at the same time must be a number from 1 to 100.");
+    if (isShisanyama && (!Number.isFinite(takeawayCapacity) || takeawayCapacity < 1 || takeawayCapacity > 100)) return alert("Takeaway capacity must be a number from 1 to 100 orders per 30 minutes.");
     if (hs && he && he < hs) return alert("Holiday end date cannot be before the start date.");
 
     setBtn(button, true, "Saving Profile...");
@@ -1115,6 +1121,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         address: $("store-address-input").value.trim(),
         area: $("store-area-input").value.trim() || null,
         slot_capacity: capacity,
+        takeaway_slot_capacity: isShisanyama ? takeawayCapacity : (Number(activeVendor.takeaway_slot_capacity) || 5),
         capacity_mode: $("store-capacity-mode").value,
         opening_time: $("opening-time").value,
         closing_time: $("closing-time").value,
@@ -1571,7 +1578,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
           h("div", { class: "order-title", text: b.customer_name ? `${b.customer_name} — ${b.customer_phone || ""}` : "Service booking" }),
           h("div", { class: "order-price", text: money(amount) })),
         row("Appointment", b.booking_date ? fmtAppt(b) : "Not set (older booking)"),
-        row("Guests", String(b.party_size || 1)),
+        row("Order type", b.is_takeaway ? "TAKEAWAY — collection" : "Dine-in / booking"),
+        row("Guests", b.is_takeaway ? "Not seated" : String(b.party_size || 1)),
         row("Booking status", String(b.status || "pending").replaceAll("_", " ")),
         row("Payment ref", b.payment_ref),
         row("Payment method", String(b.payment_method || "EFT").replaceAll("_", " ")),
