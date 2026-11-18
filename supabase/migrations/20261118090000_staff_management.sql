@@ -217,6 +217,10 @@ declare
   weekday smallint;
   work record;
 begin
+  if lower(coalesce(new.status, '')) = 'cancelled' then
+    return new;
+  end if;
+
   if coalesce(new.staff_assignment_mode, 'NONE') = 'NONE' then
     new.staff_id := null;
     return new;
@@ -323,5 +327,5 @@ $$;
 
 drop trigger if exists zz_assign_validate_booking_staff on public.bookings;
 create trigger zz_assign_validate_booking_staff
-before insert or update of booking_date, booking_time, staff_id, staff_assignment_mode, duration_minutes on public.bookings
+before insert or update of booking_date, booking_time, staff_id, staff_assignment_mode, duration_minutes, status on public.bookings
 for each row execute function public.assign_and_validate_booking_staff();
