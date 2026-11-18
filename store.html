@@ -378,6 +378,26 @@
       const dur = (selectedService && Number(selectedService.duration)) || 30;
       const steps = Math.max(1, Math.ceil(dur / 30));
       const usedMap = isTakeaway ? usedTakeaway : usedDineIn;
+      let staffAvailability = null;
+      if (!isTakeaway && bookableStaff.length) {
+        const selectedWorker = $("booking-staff").value;
+        const { data: staffSlots, error: staffError } = await db.rpc("get_staff_slot_availability", {
+          p_store_id: requestStoreId,
+          p_service_id: selectedService.serviceId,
+          p_date: date,
+          p_duration: dur,
+          p_staff_id: selectedWorker && selectedWorker !== "ANY" ? selectedWorker : null
+        });
+        if (requestToken !== refreshToken || !storeData || storeData.id !== requestStoreId || $("booking-date").value !== date) return;
+        if (staffError || !Array.isArray(staffSlots)) {
+          console.warn("Could not load worker availability:", staffError);
+          chosenTime = "";
+          sel.replaceChildren(mk("", "Worker availability unavailable — try again"));
+          hint.textContent = "We couldn't check staff availability. Please try again before choosing a time.";
+          return;
+        }
+        staffAvailability = Object.fromEntries(staffSlots.map(slot => [String(slot.slot_time).slice(0,5), Number(slot.available_count) || 0]));
+      }
       const options = [];
       let free = 0;
       for (let m = open; m + dur <= close; m += 30) {
@@ -385,10 +405,13 @@
         const label = fmtMin(m);
         let left = isTakeaway ? cap : cap - (usedDineIn[fmtMin(Math.floor(m / 60) * 60)] || 0);
         if (isTakeaway) for (let k = 0; k < steps; k++) left = Math.min(left, cap - (usedMap[fmtMin(m + k * 30)] || 0));
-        const blocked = left < need;
+        const workerCount = staffAvailability === null ? null : (staffAvailability[label] || 0);
+        const workerBlocked = workerCount !== null && workerCount < 1;
+        const blocked = left < need || workerBlocked;
         if (!blocked) free++;
         let text = dur > 30 ? `${label} to ${fmtMin(m + dur)}` : label;
-        if (left <= 0) text += " (full)";
+        if (workerBlocked) text += " (no worker available)";
+        else if (left <= 0) text += " (full)";
         else if (blocked) text += ` (only ${left} left)`;
         else if (cap > 1) text += ` (${left} left)`;
         options.push(mk(label, text, blocked));
@@ -1030,6 +1053,7 @@
       $("lightbox-modal").addEventListener("click", e => { if (e.target === $("lightbox-modal")) closeModals(); });
       $("booking-date").addEventListener("change", refreshSlots);
       $("party-size").addEventListener("change", refreshSlots);
+      $("booking-staff").addEventListener("change", () => { chosenTime = ""; refreshSlots(); });
       $("is-takeaway").addEventListener("change", () => { chosenTime = ""; if ($("staff-choice-field")) $("staff-choice-field").style.display = $("is-takeaway").checked ? "none" : (bookableStaff.length ? "block" : "none"); refreshSlots(); });
       $("booking-time").addEventListener("change", () => { chosenTime = $("booking-time").value; });
       $("pay-method-eft").addEventListener("click", () => setPaymentMethod("EFT"));
