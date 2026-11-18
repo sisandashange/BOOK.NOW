@@ -499,7 +499,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     const all = lastBookings || [];
     const status = b => String(b.status || "").toLowerCase();
     const active = all.filter(b => status(b) !== "cancelled");
-    const today = currentBusinessDate(activeVendor);
+    const today = saToday();
     const dayOf = b => b.booking_date || saDate(b.created_at);
     const addDays = (iso, n) => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
     const dow = (new Date(today + "T12:00:00Z").getUTCDay() + 6) % 7;     // Monday = 0
@@ -589,7 +589,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   function calendarDate(iso, offset) { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + offset); return d.toISOString().slice(0,10); }
   function renderCalendar() {
     if (!activeVendor) return;
-    const today = currentBusinessDate(activeVendor);
+    const today = saToday();
     if (!selectedCalendarDate) selectedCalendarDate = today;
     const date = new Date(selectedCalendarDate + "T12:00:00Z");
     const mondayOffset = (date.getUTCDay() + 6) % 7;
@@ -967,9 +967,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
     $("tab-orders-btn").addEventListener("click", () => showTab("orders"));
     $("tab-calendar-btn").addEventListener("click", async () => { showTab("calendar"); await loadOrders(); renderCalendar(); });
-    $("calendar-prev-btn").addEventListener("click", () => { selectedCalendarDate = calendarDate(selectedCalendarDate || currentBusinessDate(activeVendor), -7); renderCalendar(); });
-    $("calendar-next-btn").addEventListener("click", () => { selectedCalendarDate = calendarDate(selectedCalendarDate || currentBusinessDate(activeVendor), 7); renderCalendar(); });
-    $("calendar-today-btn").addEventListener("click", () => { selectedCalendarDate = currentBusinessDate(activeVendor); renderCalendar(); });
+    $("calendar-prev-btn").addEventListener("click", () => { selectedCalendarDate = calendarDate(selectedCalendarDate || saToday(), -7); renderCalendar(); });
+    $("calendar-next-btn").addEventListener("click", () => { selectedCalendarDate = calendarDate(selectedCalendarDate || saToday(), 7); renderCalendar(); });
+    $("calendar-today-btn").addEventListener("click", () => { selectedCalendarDate = saToday(); renderCalendar(); });
     $("calendar-refresh-btn").addEventListener("click", async () => { await loadOrders(); renderCalendar(); });
     $("tab-services-btn").addEventListener("click", () => showTab("services"));
     $("tab-profile-btn").addEventListener("click", () => { showTab("profile"); populateProfileForm(); });
@@ -1678,7 +1678,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       ownChanges.clear();
       knownFor = activeVendor.id;
 
-      const today = currentBusinessDate(activeVendor);
+      const today = saToday();
       const apptDay = b => b.booking_date || saDate(b.created_at);
       const byTime = (a, b) => String(a.booking_time || "").localeCompare(String(b.booking_time || ""));
       let revenue = 0, eft = 0, activeToday = 0;
