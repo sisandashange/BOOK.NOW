@@ -215,6 +215,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     <div class="nav-tabs">
       <button class="tab-item active" id="tab-orders-btn">Bookings Queue</button>
       <button class="tab-item" id="tab-calendar-btn">Calendar</button>
+      <button class="tab-item" id="tab-staff-btn">Staff</button>
       <button class="tab-item" id="tab-services-btn">Services</button>
       <button class="tab-item" id="tab-profile-btn">Store Profile</button>
       <button class="tab-item" id="tab-bank-btn">Bank &amp; EFT</button>
@@ -237,6 +238,19 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       <div id="orders-list" class="card-list"><div class="empty-box">No appointments today.</div></div>
       <div class="section-head" style="margin-top:24px"><h3>Upcoming Appointments</h3></div>
       <div id="upcoming-list" class="card-list"><div class="empty-box">No upcoming appointments.</div></div>
+    </section>
+
+    
+    <section id="staff-tab" style="display:none">
+      <div class="section-head"><h3><i class="ph ph-users"></i> Staff Management</h3><button class="btn-action btn-confirm" id="staff-refresh-btn">Refresh</button></div>
+      <p class="small-tip">Add workers, choose which services they provide, and set their weekly working hours. Staff do not need separate BOOK.NOW accounts.</p>
+      <div class="card" style="margin-bottom:16px">
+        <h3 style="margin-top:0">Add a staff member</h3>
+        <div class="form-field"><label for="staff-name-input">Full name</label><input id="staff-name-input" maxlength="80" placeholder="e.g. Thabo Mkhize"></div>
+        <div class="form-field"><label for="staff-title-input">Job title</label><input id="staff-title-input" maxlength="60" placeholder="e.g. Barber"></div>
+        <button class="btn-primary" id="staff-add-btn">Add staff member</button>
+      </div>
+      <div id="staff-list" class="card-list"><div class="empty-box">Loading staff…</div></div>
     </section>
 
     <section id="services-tab" style="display:none">
@@ -451,7 +465,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
   const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
   const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
-  const TABS = ["orders", "calendar", "services", "profile", "bank", "settlement", "moneystore", "share", "stats"];
+  const TABS = ["orders", "calendar", "staff", "services", "profile", "bank", "settlement", "moneystore", "share", "stats"];
   const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
   const MAX_FILE = 5 * 1024 * 1024;
 
@@ -625,6 +639,109 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       $(t + "-tab").style.display = t === name ? "block" : "none";
       $("tab-" + t + "-btn").classList.toggle("active", t === name);
     });
+  }
+
+
+  // ---------- Staff management ----------
+  const STAFF_DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  async function loadStaff() {
+    if (!activeVendor || !$("staff-list")) return;
+    setEmpty("staff-list", "Loading staff...");
+    try {
+      const [staffRes, servicesRes] = await Promise.all([
+        db.from("staff_members").select("id, full_name, job_title, is_active").eq("store_id", activeVendor.id).order("full_name"),
+        db.from("service_items").select("id, title").eq("store_id", activeVendor.id).order("title")
+      ]);
+      if (staffRes.error) throw staffRes.error;
+      if (servicesRes.error) throw servicesRes.error;
+      const staff = staffRes.data || [], services = servicesRes.data || [];
+      if (!staff.length) return setEmpty("staff-list", "No staff members yet. Add your first worker above.");
+      const [linksRes, hoursRes] = await Promise.all([
+        db.from("staff_services").select("staff_id, service_id").in("staff_id", staff.map(x => x.id)),
+        db.from("staff_working_hours").select("id, staff_id, day_of_week, is_working, start_time, end_time").in("staff_id", staff.map(x => x.id))
+      ]);
+      if (linksRes.error) throw linksRes.error;
+      if (hoursRes.error) throw hoursRes.error;
+      const links = linksRes.data || [], hours = hoursRes.data || [];
+      $("staff-list").replaceChildren(...staff.map(member => {
+        const card = h("div", {class:"order-card"});
+        const top = h("div",{style:"display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"},
+          h("div",{},h("div",{class:"order-title",text:member.full_name}),h("div",{class:"order-time",text:member.job_title})),
+          h("button",{type:"button",class:"btn-action "+(member.is_active?"btn-edit":"btn-confirm"),text:member.is_active?"Deactivate":"Activate",onClick:()=>toggleStaff(member.id,!member.is_active)}));
+        card.append(top);
+        card.append(h("div",{class:"form-field",style:"margin-top:14px"},h("label",{text:"Services this worker can perform"})));
+        const serviceWrap=h("div",{style:"display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px"});
+        services.forEach(service=>{
+          const cb=h("input",{type:"checkbox",value:service.id});
+          cb.checked=links.some(link=>link.staff_id===member.id && link.service_id===service.id);
+          cb.addEventListener("change",()=>saveStaffService(member.id,service.id,cb.checked));
+          serviceWrap.append(h("label",{style:"display:flex;gap:8px;align-items:center;font-size:14px"},cb,document.createTextNode(service.title)));
+        });
+        card.append(serviceWrap);
+        card.append(h("h4",{text:"Weekly working hours",style:"margin:18px 0 8px"}));
+        const hourRows=STAFF_DAYS.map((day,index)=>{
+          const saved=hours.find(x=>x.staff_id===member.id && Number(x.day_of_week)===index);
+          const enabled=h("input",{type:"checkbox"});
+          enabled.checked=!!(saved && saved.is_working);
+          const start=h("input",{type:"time",value:saved?.start_time?String(saved.start_time).slice(0,5):"09:00",style:"max-width:115px"});
+          const end=h("input",{type:"time",value:saved?.end_time?String(saved.end_time).slice(0,5):"17:00",style:"max-width:115px"});
+          start.disabled=end.disabled=!enabled.checked;
+          enabled.addEventListener("change",()=>{start.disabled=end.disabled=!enabled.checked;});
+          const save=h("button",{type:"button",class:"btn-action btn-edit",text:"Save",onClick:()=>saveStaffHours(member.id,index,enabled.checked,start.value,end.value)});
+          return h("div",{style:"display:grid;grid-template-columns:minmax(90px,1fr) auto auto auto;gap:7px;align-items:center;margin:8px 0"},
+            h("label",{style:"display:flex;gap:6px;align-items:center"},enabled,day),start,end,save);
+        });
+        hourRows.forEach(r=>card.append(r));
+        card.append(h("button",{type:"button",class:"btn-action",style:"margin-top:12px;color:#b91c1c",text:"Remove staff member",onClick:()=>deleteStaff(member.id,member.full_name)}));
+        return card;
+      }));
+    } catch(err) {
+      console.error("Staff load failed:",err);
+      setEmpty("staff-list","Staff management is not available yet. Please refresh after the update is installed.");
+    }
+  }
+  async function addStaff() {
+    const name=$("staff-name-input").value.trim(), title=$("staff-title-input").value.trim()||"Staff member";
+    if(name.length<2) return alert("Enter the staff member's full name.");
+    const btn=$("staff-add-btn"); setBtn(btn,true,"Adding…");
+    try {
+      const {data,error}=await db.from("staff_members").insert({store_id:activeVendor.id,full_name:name,job_title:title}).select("id").single();
+      if(error) throw error;
+      $("staff-name-input").value=""; $("staff-title-input").value="";
+      await loadStaff();
+      alert("Staff member added. Assign their services and working hours before customers can book them.");
+    } catch(err){alert("Could not add staff member: "+err.message);}
+    finally{setBtn(btn,false,"Add staff member");}
+  }
+  async function toggleStaff(id,active) {
+    try { const {error}=await db.from("staff_members").update({is_active:active,updated_at:new Date().toISOString()}).eq("id",id); if(error)throw error; await loadStaff(); }
+    catch(err){alert("Could not update staff status: "+err.message);}
+  }
+  async function saveStaffService(staffId,serviceId,checked) {
+    try {
+      const result=checked
+        ? await db.from("staff_services").upsert({staff_id:staffId,service_id:serviceId},{onConflict:"staff_id,service_id"})
+        : await db.from("staff_services").delete().eq("staff_id",staffId).eq("service_id",serviceId);
+      if(result.error)throw result.error;
+    } catch(err){alert("Could not save service assignment: "+err.message);await loadStaff();}
+  }
+  async function saveStaffHours(staffId,day,working,start,end) {
+    try {
+      let result;
+      if(!working) result=await db.from("staff_working_hours").upsert({staff_id:staffId,day_of_week:day,is_working:false,start_time:null,end_time:null},{onConflict:"staff_id,day_of_week"});
+      else {
+        if(!start||!end||start>=end) return alert("Choose valid start and finish times.");
+        result=await db.from("staff_working_hours").upsert({staff_id:staffId,day_of_week:day,is_working:true,start_time:start,end_time:end},{onConflict:"staff_id,day_of_week"});
+      }
+      if(result.error)throw result.error;
+      alert("Working hours saved.");
+      await loadStaff();
+    } catch(err){alert("Could not save working hours: "+err.message);}
+  }
+  async function deleteStaff(id,name) {
+    if(!confirm("Remove "+name+" from this shop? Existing bookings will remain, but future staff assignments will no longer use this worker.")) return;
+    try { const {error}=await db.from("staff_members").delete().eq("id",id); if(error)throw error; await loadStaff(); }
+    catch(err){alert("Could not remove staff member: "+err.message);}
   }
 
   // ---------- Share link, QR poster ----------
@@ -967,6 +1084,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
     $("tab-orders-btn").addEventListener("click", () => showTab("orders"));
     $("tab-calendar-btn").addEventListener("click", async () => { showTab("calendar"); await loadOrders(); renderCalendar(); });
+    $("tab-staff-btn").addEventListener("click", async () => { showTab("staff"); await loadStaff(); });
+    $("staff-add-btn").addEventListener("click", addStaff);
+    $("staff-refresh-btn").addEventListener("click", loadStaff);
     $("calendar-prev-btn").addEventListener("click", () => { selectedCalendarDate = calendarDate(selectedCalendarDate || saToday(), -7); renderCalendar(); });
     $("calendar-next-btn").addEventListener("click", () => { selectedCalendarDate = calendarDate(selectedCalendarDate || saToday(), 7); renderCalendar(); });
     $("calendar-today-btn").addEventListener("click", () => { selectedCalendarDate = saToday(); renderCalendar(); });
