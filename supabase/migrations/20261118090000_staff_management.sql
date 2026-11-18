@@ -119,8 +119,87 @@ as $$
   order by sm.full_name;
 $$;
 
+
 revoke all on function public.get_bookable_staff(uuid, uuid) from public;
 grant execute on function public.get_bookable_staff(uuid, uuid) to anon, authenticated;
+
+-- Return the shop's 30-minute slots with the number of eligible workers free
+-- for the full service duration. This is a display filter; the booking trigger
+-- remains the authoritative concurrency-safe validator.
+create or replace function public.get_staff_slot_availability(
+  p_store_id uuid,
+  p_service_id uuid,
+  p_date date,
+  p_duration integer,
+  p_staff_id uuid default null
+)
+returns table(slot_time text, available_count integer)
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $
+  with shop as (
+    select
+      extract(hour from opening_time)::integer * 60 + extract(minute from opening_time)::integer as open_min,
+      case
+        when closing_time <= opening_time
+          then extract(hour from closing_time)::integer * 60 + extract(minute from closing_time)::integer + 1440
+        else extract(hour from closing_time)::integer * 60 + extract(minute from closing_time)::integer
+      end as close_min
+    from public.stores
+    where id = p_store_id
+      and lower(coalesce(status, '')) = 'active'
+      and coalesce(is_hidden, false) = false
+  ),
+  slots as (
+    select gs.minute_of_day,
+      to_char(make_time((gs.minute_of_day / 60)::integer, (gs.minute_of_day % 60)::integer, 0), 'HH24:MI') as slot_label,
+      public.compute_appointment_at(
+        p_store_id,
+        p_date,
+        make_time((gs.minute_of_day / 60)::integer, (gs.minute_of_day % 60)::integer, 0)
+      ) as starts_at
+    from shop
+    cross join lateral generate_series(
+      shop.open_min,
+      least(shop.close_min - greatest(coalesce(p_duration,30),30), 1439),
+      30
+    ) as gs(minute_of_day)
+    where p_date is not null
+      and p_duration between 30 and 480
+  )
+  select slots.slot_label,
+    count(sm.id)::integer as available_count
+  from slots
+  left join public.staff_members sm
+    on sm.store_id = p_store_id
+   and sm.is_active = true
+   and (p_staff_id is null or sm.id = p_staff_id)
+  join public.staff_services ss
+    on ss.staff_id = sm.id and ss.service_id = p_service_id
+  join public.staff_working_hours wh
+    on wh.staff_id = sm.id
+   and wh.day_of_week = extract(dow from p_date)::smallint
+   and wh.is_working = true
+   and slots.minute_of_day >= extract(hour from wh.start_time)::integer * 60 + extract(minute from wh.start_time)::integer
+   and slots.minute_of_day + greatest(coalesce(p_duration,30),30)
+       <= extract(hour from wh.end_time)::integer * 60 + extract(minute from wh.end_time)::integer
+  where not exists (
+    select 1
+    from public.bookings b
+    where b.staff_id = sm.id
+      and b.booking_date = p_date
+      and coalesce(b.status, '') <> 'cancelled'
+      and b.appointment_at < slots.starts_at + make_interval(mins => greatest(coalesce(b.duration_minutes,30),30))
+      and slots.starts_at < b.appointment_at + make_interval(mins => greatest(coalesce(b.duration_minutes,30),30))
+  )
+  group by slots.minute_of_day, slots.slot_label
+  order by slots.minute_of_day;
+$;
+
+revoke all on function public.get_staff_slot_availability(uuid, uuid, date, integer, uuid) from public;
+grant execute on function public.get_staff_slot_availability(uuid, uuid, date, integer, uuid) to anon, authenticated;
 
 -- This trigger runs after prepare_booking alphabetically, so duration and appointment_at
 -- are already populated. Existing bookings and bookings using mode NONE are untouched.
