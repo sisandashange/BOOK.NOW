@@ -167,6 +167,11 @@
         <button id="close-modal-btn" aria-label="Close booking form" style="background:none;border:0;cursor:pointer;"><i class="ph ph-x-circle" style="font-size:24px;color:var(--muted);"></i></button>
       </div>
 
+      <div class="form-field" id="staff-choice-field" style="display:none;">
+        <label for="booking-staff">Who would you like to book with?</label>
+        <select id="booking-staff"><option value="ANY">Any available worker</option></select>
+        <div style="font-size:11px;color:var(--muted);margin-top:5px;">Choose a specific worker or let the shop assign someone who is free.</div>
+      </div>
       <div class="form-field">
         <label for="customer-name">Your Full Name</label>
         <input type="text" id="customer-name" placeholder="e.g. Sipho Dlamini" autocomplete="name">
@@ -231,6 +236,7 @@
     let bookingOpen = false;
     let payMethod = "EFT";
     let chosenTime = "";
+    let bookableStaff = [];
     let slotPollBusy = false;
     let refreshToken = 0;
     let statusPollBusy = false;
@@ -305,6 +311,27 @@
       return "";
     }
 
+
+    async function loadBookableStaff() {
+      bookableStaff = [];
+      const field = $("staff-choice-field"), select = $("booking-staff");
+      if (!field || !select || !selectedService) return;
+      field.style.display = "none";
+      select.replaceChildren(new Option("Any available worker", "ANY"));
+      try {
+        const {data,error}=await db.rpc("get_bookable_staff",{p_store_id:selectedService.storeId,p_service_id:selectedService.serviceId});
+        if(error) throw error;
+        if(Array.isArray(data)) bookableStaff=data;
+        if(bookableStaff.length) {
+          bookableStaff.forEach(person=>select.append(new Option(person.staff_name+" · "+person.job_title,person.staff_id)));
+          select.value="ANY";
+          field.style.display="block";
+        }
+      } catch(err) {
+        console.warn("Staff list unavailable; keeping standard booking flow:",err);
+      }
+    }
+
     // Builds the 30-minute time slots for the chosen date and greys out booked ones
     async function refreshSlots() {
       const requestToken = ++refreshToken;
@@ -351,6 +378,26 @@
       const dur = (selectedService && Number(selectedService.duration)) || 30;
       const steps = Math.max(1, Math.ceil(dur / 30));
       const usedMap = isTakeaway ? usedTakeaway : usedDineIn;
+      let staffAvailability = null;
+      if (!isTakeaway && bookableStaff.length) {
+        const selectedWorker = $("booking-staff").value;
+        const { data: staffSlots, error: staffError } = await db.rpc("get_staff_slot_availability", {
+          p_store_id: requestStoreId,
+          p_service_id: selectedService.serviceId,
+          p_date: date,
+          p_duration: dur,
+          p_staff_id: selectedWorker && selectedWorker !== "ANY" ? selectedWorker : null
+        });
+        if (requestToken !== refreshToken || !storeData || storeData.id !== requestStoreId || $("booking-date").value !== date) return;
+        if (staffError || !Array.isArray(staffSlots)) {
+          console.warn("Could not load worker availability:", staffError);
+          chosenTime = "";
+          sel.replaceChildren(mk("", "Worker availability unavailable — try again"));
+          hint.textContent = "We couldn't check staff availability. Please try again before choosing a time.";
+          return;
+        }
+        staffAvailability = Object.fromEntries(staffSlots.map(slot => [String(slot.slot_time).slice(0,5), Number(slot.available_count) || 0]));
+      }
       const options = [];
       let free = 0;
       for (let m = open; m + dur <= close; m += 30) {
@@ -358,10 +405,13 @@
         const label = fmtMin(m);
         let left = isTakeaway ? cap : cap - (usedDineIn[fmtMin(Math.floor(m / 60) * 60)] || 0);
         if (isTakeaway) for (let k = 0; k < steps; k++) left = Math.min(left, cap - (usedMap[fmtMin(m + k * 30)] || 0));
-        const blocked = left < need;
+        const workerCount = staffAvailability === null ? null : (staffAvailability[label] || 0);
+        const workerBlocked = workerCount !== null && workerCount < 1;
+        const blocked = left < need || workerBlocked;
         if (!blocked) free++;
         let text = dur > 30 ? `${label} to ${fmtMin(m + dur)}` : label;
-        if (left <= 0) text += " (full)";
+        if (workerBlocked) text += " (no worker available)";
+        else if (left <= 0) text += " (full)";
         else if (blocked) text += ` (only ${left} left)`;
         else if (cap > 1) text += ` (${left} left)`;
         options.push(mk(label, text, blocked));
@@ -764,7 +814,7 @@
       $("party-hint").textContent = guestsShop ? `This shop can host up to ${seats} guests per hour.` : "";
       $("takeaway-field").style.display = normalizeCategory(storeData.category) === "SHISANYAMA" ? "block" : "none";
       $("is-takeaway").checked = false;
-      refreshSlots();
+      loadBookableStaff().then(() => refreshSlots());
       $("booking-modal").style.display = "flex";
       $("customer-name").focus();
     }
@@ -873,7 +923,9 @@
             party_size: guests,
             payment_method: payMethod,
             payment_ref: paymentRef,
-            is_takeaway: isTakeaway
+            is_takeaway: isTakeaway,
+            staff_assignment_mode: (!isTakeaway && bookableStaff.length) ? ($("booking-staff").value === "ANY" ? "ANY" : "SPECIFIC") : "NONE",
+            staff_id: !isTakeaway && bookableStaff.length && $("booking-staff").value !== "ANY" ? $("booking-staff").value : null
           }]);
           insertError = result.error;
           if (!insertError) break;
@@ -1001,7 +1053,8 @@
       $("lightbox-modal").addEventListener("click", e => { if (e.target === $("lightbox-modal")) closeModals(); });
       $("booking-date").addEventListener("change", refreshSlots);
       $("party-size").addEventListener("change", refreshSlots);
-      $("is-takeaway").addEventListener("change", () => { chosenTime = ""; refreshSlots(); });
+      $("booking-staff").addEventListener("change", () => { chosenTime = ""; refreshSlots(); });
+      $("is-takeaway").addEventListener("change", () => { chosenTime = ""; if ($("staff-choice-field")) $("staff-choice-field").style.display = $("is-takeaway").checked ? "none" : (bookableStaff.length ? "block" : "none"); refreshSlots(); });
       $("booking-time").addEventListener("change", () => { chosenTime = $("booking-time").value; });
       $("pay-method-eft").addEventListener("click", () => setPaymentMethod("EFT"));
       $("pay-method-cash").addEventListener("click", () => setPaymentMethod("CASH"));
