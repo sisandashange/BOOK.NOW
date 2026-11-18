@@ -901,8 +901,8 @@
             payment_method: payMethod,
             payment_ref: paymentRef,
             is_takeaway: isTakeaway,
-            staff_assignment_mode: bookableStaff.length ? ($("booking-staff").value === "ANY" ? "ANY" : "SPECIFIC") : "NONE",
-            staff_id: bookableStaff.length && $("booking-staff").value !== "ANY" ? $("booking-staff").value : null
+            staff_assignment_mode: (!isTakeaway && bookableStaff.length) ? ($("booking-staff").value === "ANY" ? "ANY" : "SPECIFIC") : "NONE",
+            staff_id: !isTakeaway && bookableStaff.length && $("booking-staff").value !== "ANY" ? $("booking-staff").value : null
           }]);
           insertError = result.error;
           if (!insertError) break;
@@ -1030,7 +1030,7 @@
       $("lightbox-modal").addEventListener("click", e => { if (e.target === $("lightbox-modal")) closeModals(); });
       $("booking-date").addEventListener("change", refreshSlots);
       $("party-size").addEventListener("change", refreshSlots);
-      $("is-takeaway").addEventListener("change", () => { chosenTime = ""; refreshSlots(); });
+      $("is-takeaway").addEventListener("change", () => { chosenTime = ""; if ($("staff-choice-field")) $("staff-choice-field").style.display = $("is-takeaway").checked ? "none" : (bookableStaff.length ? "block" : "none"); refreshSlots(); });
       $("booking-time").addEventListener("change", () => { chosenTime = $("booking-time").value; });
       $("pay-method-eft").addEventListener("click", () => setPaymentMethod("EFT"));
       $("pay-method-cash").addEventListener("click", () => setPaymentMethod("CASH"));
