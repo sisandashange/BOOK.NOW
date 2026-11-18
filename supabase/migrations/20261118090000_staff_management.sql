@@ -202,6 +202,7 @@ begin
           select 1 from public.bookings b
           where b.staff_id = sm.id and b.booking_date = new.booking_date
             and coalesce(b.status, '') <> 'cancelled'
+            and b.id <> new.id
             and b.appointment_at < new.appointment_at + make_interval(mins => greatest(coalesce(new.duration_minutes,30),1))
             and new.appointment_at < b.appointment_at + make_interval(mins => greatest(coalesce(b.duration_minutes,30),1))
         )
@@ -225,6 +226,7 @@ begin
       select 1 from public.bookings b
       where b.staff_id = chosen_id and b.booking_date = new.booking_date
         and coalesce(b.status, '') <> 'cancelled'
+        and b.id <> new.id
         and b.appointment_at < new.appointment_at + make_interval(mins => greatest(coalesce(new.duration_minutes,30),1))
         and new.appointment_at < b.appointment_at + make_interval(mins => greatest(coalesce(b.duration_minutes,30),1))
     ) then
@@ -239,5 +241,5 @@ $$;
 
 drop trigger if exists zz_assign_validate_booking_staff on public.bookings;
 create trigger zz_assign_validate_booking_staff
-before insert on public.bookings
+before insert or update of booking_date, booking_time, staff_id, staff_assignment_mode, duration_minutes on public.bookings
 for each row execute function public.assign_and_validate_booking_staff();
