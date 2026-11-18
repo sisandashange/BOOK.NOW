@@ -1678,7 +1678,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       ownChanges.clear();
       knownFor = activeVendor.id;
 
-      const today = saToday();
+      const today = currentBusinessDate(activeVendor);
       const apptDay = b => b.booking_date || saDate(b.created_at);
       const byTime = (a, b) => String(a.booking_time || "").localeCompare(String(b.booking_time || ""));
       let revenue = 0, eft = 0, activeToday = 0;
