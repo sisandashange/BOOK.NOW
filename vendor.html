@@ -148,6 +148,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     <div class="form-field"><label for="auth-email">Email Address</label><input type="email" id="auth-email" autocomplete="email" placeholder="owner@business.co.za"></div>
     <div class="form-field"><label for="auth-password">Password</label><input type="password" id="auth-password" autocomplete="current-password" placeholder="Password (8+ characters to register)"></div>
     <button class="btn-primary" id="auth-submit-btn">Sign In</button>
+    <div id="invite-password-box" style="display:none;margin-top:16px">
+      <div class="form-field"><label for="invite-new-password">Create your staff password</label><input type="password" id="invite-new-password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters"></div>
+      <button class="btn-primary" id="invite-set-password-btn">Set password &amp; continue</button>
+    </div>
     <span class="link-btn" id="toggle-auth-btn" role="button" tabindex="0">Need an account? Register as Partner</span>
     <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:14px;line-height:1.5">By registering you agree to our <a href="terms.html" target="_blank" rel="noopener" style="color:var(--muted)">Terms of Use</a> and <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--muted)">Privacy Policy</a>.</div>
   </div>
@@ -427,6 +431,17 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   </div>
 </div>
 
+<div id="staff-dashboard-screen" style="display:none">
+  <div class="top-nav">
+    <div class="brand"><i class="ph ph-calendar-check" style="font-size:22px;color:var(--accent)"></i> BOOK.NOW <span class="brand-badge">STAFF</span></div>
+    <button class="btn-primary" style="width:auto;padding:8px 12px;background:#fee2e2;color:#991b1b" id="staff-logout-btn">Log out</button>
+  </div>
+  <main class="container">
+    <div class="section-head"><div><h3 id="staff-dashboard-name">Staff Bookings</h3><div class="order-time" id="staff-dashboard-shop">Your assigned bookings</div></div><button class="btn-action btn-confirm" id="staff-bookings-refresh-btn">Refresh</button></div>
+    <div id="staff-bookings-list" class="card-list"><div class="empty-box">Loading your bookings…</div></div>
+  </main>
+</div>
+
 <div id="subscription-gate" style="display:none">
   <div class="subscription-card">
     <div style="text-align:center">
@@ -469,7 +484,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
   const MAX_FILE = 5 * 1024 * 1024;
 
-  let db = null, activeVendor = null, isSignUpMode = false, booted = false;
+  let db = null, activeVendor = null, currentStaffMember = null, isSignUpMode = false, booted = false;
   let selectedFiles = [], scanner = null;
 
   const $ = id => document.getElementById(id);
@@ -628,7 +643,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       const status = String(b.status || "pending").toUpperCase();
       const card = h("div",{class:"calendar-appointment"+(status==="CANCELLED"?" cancelled":"")});
       card.append(h("div",{style:"display:flex;justify-content:space-between;gap:8px;align-items:flex-start"},h("strong",{text:(b.booking_time || "Time not set")+" · "+(b.service_items?.title || "Booking")}),h("span",{class:"order-status status-"+status.toLowerCase(),text:status})),h("div",{class:"order-time",style:"color:#0f172a;font-weight:600",text:(b.customer_name || "Guest")+(b.customer_phone ? " · "+b.customer_phone : "")}));
-      if (b.staff_members?.full_name) card.append(h("div",{class:"order-time",style:"font-weight:700;color:#0f172a",text:"Staff: "+b.staff_members.full_name}));
+      if (b.staff_assignment_mode === "ANY" && (status === "PENDING" || status === "CONFIRMED")) card.append(h("div",{class:"order-time",style:"font-weight:700;color:#b45309",text:"Awaiting staff acceptance"}));
+      else if (b.staff_members?.full_name) card.append(h("div",{class:"order-time",style:"font-weight:700;color:#0f172a",text:"Staff: "+b.staff_members.full_name}));
       if (b.is_takeaway) card.append(h("div",{class:"takeaway-badge",text:"TAKEAWAY — COLLECTION"}));
       if (Number(b.party_size)>1) card.append(h("div",{class:"order-time",text:"Guests: "+b.party_size}));
       return card;
@@ -650,7 +666,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     setEmpty("staff-list", "Loading staff...");
     try {
       const [staffRes, servicesRes] = await Promise.all([
-        db.from("staff_members").select("id, full_name, job_title, is_active").eq("store_id", activeVendor.id).order("full_name"),
+        db.from("staff_members").select("id, full_name, job_title, is_active, user_id, invited_email, invite_status").eq("store_id", activeVendor.id).order("full_name"),
         db.from("service_items").select("id, title").eq("store_id", activeVendor.id).order("title")
       ]);
       if (staffRes.error) throw staffRes.error;
@@ -670,6 +686,13 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
           h("div",{},h("div",{class:"order-title",text:member.full_name}),h("div",{class:"order-time",text:member.job_title})),
           h("button",{type:"button",class:"btn-action "+(member.is_active?"btn-edit":"btn-confirm"),text:member.is_active?"Deactivate":"Activate",onclick:()=>toggleStaff(member.id,!member.is_active)}));
         card.append(top);
+        if (member.user_id) {
+          card.append(h("div",{class:"order-time",style:"margin-top:10px;font-weight:700;color:#166534",text:"Staff login linked: "+(member.invited_email || "email")}));
+        } else {
+          const inviteEmail=h("input",{type:"email",placeholder:"Worker email address",autocomplete:"email",style:"width:100%;padding:10px;border:1px solid var(--border);border-radius:9px;margin-top:12px"});
+          const inviteBtn=h("button",{type:"button",class:"btn-action btn-confirm",text:"Create staff login & send invite",style:"margin-top:8px",onclick:()=>inviteStaffLogin(member.id,inviteEmail,inviteBtn)});
+          card.append(inviteEmail,inviteBtn);
+        }
         card.append(h("div",{class:"form-field",style:"margin-top:14px"},h("label",{text:"Services this worker can perform"})));
         const serviceWrap=h("div",{style:"display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px"});
         services.forEach(service=>{
@@ -693,7 +716,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
             h("label",{style:"display:flex;gap:6px;align-items:center"},enabled,day),start,end,save);
         });
         hourRows.forEach(r=>card.append(r));
-        card.append(h("button",{type:"button",class:"btn-action",style:"margin-top:12px;color:#b91c1c",text:"Remove staff member",onclick:()=>deleteStaff(member.id,member.full_name)}));
+        if (!member.user_id) {
+          card.append(h("button",{type:"button",class:"btn-action",style:"margin-top:12px;color:#b91c1c",text:"Remove staff member",onclick:()=>deleteStaff(member.id,member.full_name)}));
+        } else {
+          card.append(h("div",{class:"small-tip",text:"This staff login is linked. Deactivate the worker to stop their booking access; keep the record for accountability."}));
+        }
         return card;
       }));
     } catch(err) {
@@ -714,9 +741,39 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     } catch(err){alert("Could not add staff member: "+err.message);}
     finally{setBtn(btn,false,"Add staff member");}
   }
+  async function inviteStaffLogin(staffId, emailInput, button) {
+    const email = String(emailInput.value || "").trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert("Enter a valid email address for this worker.");
+    if (!activeVendor) return alert("Select a shop first.");
+    setBtn(button, true, "Sending invite...");
+    try {
+      const { data, error } = await db.functions.invoke("invite-staff", {
+        body: { staff_id: staffId, store_id: activeVendor.id, email }
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      alert("Invitation sent. The worker must open the email and create their own password.");
+      await loadStaff();
+    } catch (err) {
+      alert("Could not send staff invitation: " + err.message);
+    } finally {
+      setBtn(button, false, "Create staff login & send invite");
+    }
+  }
+
   async function toggleStaff(id,active) {
-    try { const {error}=await db.from("staff_members").update({is_active:active,updated_at:new Date().toISOString()}).eq("id",id); if(error)throw error; await loadStaff(); }
-    catch(err){alert("Could not update staff status: "+err.message);}
+    if (!activeVendor) return;
+    try {
+      const { data, error } = await db.functions.invoke("manage-staff-access", {
+        body: { staff_id: id, store_id: activeVendor.id, is_active: active }
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      await loadStaff();
+      alert(active ? "Staff access restored." : "Staff access disabled.");
+    } catch(err) {
+      alert("Could not update staff access: " + err.message);
+    }
   }
   async function saveStaffService(staffId,serviceId,checked) {
     try {
@@ -1088,6 +1145,30 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     $("tab-staff-btn").addEventListener("click", async () => { showTab("staff"); await loadStaff(); });
     $("staff-add-btn").addEventListener("click", addStaff);
     $("staff-refresh-btn").addEventListener("click", loadStaff);
+    $("staff-logout-btn").addEventListener("click", logout);
+    $("staff-bookings-refresh-btn").addEventListener("click", loadStaffBookings);
+    $("invite-set-password-btn").addEventListener("click", async () => {
+      const password = $("invite-new-password").value;
+      if (password.length < 8) return alert("Use a password with at least 8 characters.");
+      const button = $("invite-set-password-btn");
+      setBtn(button, true, "Saving password...");
+      try {
+        const { error } = await db.auth.updateUser({ password });
+        if (error) throw error;
+        $("invite-new-password").value = "";
+        $("invite-password-box").style.display = "none";
+        const { error: activationError } = await db.rpc("activate_staff_login");
+        if (activationError) {
+          console.error("Staff login activation status update failed:", activationError);
+          alert("Your password was saved, but we could not update the invitation status. Your shop owner may need to check your staff account.");
+        }
+        await showDashboard();
+      } catch (err) {
+        alert("Could not set your password: " + err.message);
+      } finally {
+        setBtn(button, false, "Set password & continue");
+      }
+    });
     $("calendar-prev-btn").addEventListener("click", () => { selectedCalendarDate = calendarDate(selectedCalendarDate || saToday(), -7); renderCalendar(); });
     $("calendar-next-btn").addEventListener("click", () => { selectedCalendarDate = calendarDate(selectedCalendarDate || saToday(), 7); renderCalendar(); });
     $("calendar-today-btn").addEventListener("click", () => { selectedCalendarDate = saToday(); renderCalendar(); });
@@ -1240,9 +1321,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
   function showSignedOut() {
     activeVendor = null;
+    currentStaffMember = null;
     knownBookingIds = null; knownFor = null; knownBookingStates = new Map(); ownChanges.clear();
     clearNewBookingBanner();
     $("dashboard-screen").style.display = "none";
+    $("staff-dashboard-screen").style.display = "none";
+    $("invite-password-box").style.display = "none";
+    $("auth-submit-btn").style.display = "";
+    $("toggle-auth-btn").style.display = "";
+    $("auth-heading").textContent = "Partner Login";
+    $("auth-subheading").textContent = "Access your business dashboard securely";
+    $("auth-submit-btn").textContent = "Sign In";
+    $("toggle-auth-btn").textContent = "Need an account? Register as Partner";
     $("subscription-gate").style.display = "none";
     $("auth-screen").style.display = "flex";
     showTab("orders");
@@ -1561,6 +1651,53 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     }
   }
 
+  async function loadStaffBookings() {
+    if (!currentStaffMember) return;
+    setEmpty("staff-bookings-list", "Loading your bookings...");
+    try {
+      const { data, error } = await db.from("bookings")
+        .select("id, store_id, customer_name, customer_phone, booking_date, booking_time, appointment_at, duration_minutes, status, party_size, staff_id, staff_assignment_mode, is_takeaway, created_at, service_items(title), staff_members(full_name)")
+        .eq("store_id", currentStaffMember.store_id)
+        .order("booking_date", { ascending: true })
+        .order("booking_time", { ascending: true });
+      if (error) throw error;
+      const rows = data || [];
+      if (!rows.length) return setEmpty("staff-bookings-list", "No bookings are assigned to you right now.");
+      $("staff-bookings-list").replaceChildren(...rows.map(b => {
+        const status = String(b.status || "pending").toUpperCase();
+        const card = h("div", { class: "order-card" });
+        card.append(
+          h("div", { class: "order-title", text: b.service_items?.title || "Booking" }),
+          h("div", { class: "order-time", style: "font-weight:700;color:#0f172a", text: (b.booking_date || "") + " · " + (b.booking_time || "") }),
+          h("div", { class: "order-time", style: "color:#0f172a;font-weight:600", text: (b.customer_name || "Customer") + (b.customer_phone ? " · " + b.customer_phone : "") }),
+          h("div", { class: "order-time", text: "Status: " + status + (Number(b.party_size) > 1 ? " · Guests: " + b.party_size : "") })
+        );
+        if (b.staff_assignment_mode === "ANY" && (status === "PENDING" || status === "CONFIRMED")) {
+          card.append(h("div", { class: "order-time", style: "font-weight:700;color:#b45309;margin-top:6px", text: "Available for eligible staff — first to accept gets this booking." }));
+          card.append(h("button", { type: "button", class: "btn-primary", style: "margin-top:10px", text: "Accept booking", onclick: () => acceptStaffBooking(b.id) }));
+        } else if (b.staff_members?.full_name) {
+          card.append(h("div", { class: "order-time", style: "font-weight:700", text: "Assigned to: " + b.staff_members.full_name }));
+        }
+        return card;
+      }));
+    } catch (err) {
+      console.error("Staff bookings load failed:", err);
+      setEmpty("staff-bookings-list", "Could not load bookings. Please refresh or contact the shop owner.");
+    }
+  }
+
+  async function acceptStaffBooking(bookingId) {
+    try {
+      const { error } = await db.rpc("accept_staff_booking", { p_booking_id: bookingId });
+      if (error) throw error;
+      alert("Booking accepted and assigned to you.");
+      await loadStaffBookings();
+    } catch (err) {
+      alert(err.message || "This booking may already have been accepted by another worker.");
+      await loadStaffBookings();
+    }
+  }
+
   async function showDashboard() {
     $("auth-screen").style.display = "none";
     $("dashboard-screen").style.display = "block";
@@ -1581,13 +1718,38 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       select.replaceChildren(h("option", { value: "", text: "Switch Shop" }));
 
       if (!vendors || vendors.length === 0) {
-        activeVendor = null;
+        const { data: staff, error: staffError } = await db.from("staff_members")
+          .select("id, store_id, full_name, job_title, is_active")
+          .eq("user_id", user.id).maybeSingle();
+        if (staffError) throw staffError;
+        if (staff) {
+          currentStaffMember = staff;
+          $("dashboard-screen").style.display = "none";
+          $("subscription-gate").style.display = "none";
+          $("staff-dashboard-screen").style.display = "block";
+          if (!staff.is_active) {
+            $("staff-dashboard-name").textContent = "Staff access paused";
+            $("staff-dashboard-shop").textContent = "The shop owner has deactivated this staff account. Contact the owner to restore access.";
+            $("staff-bookings-refresh-btn").style.display = "none";
+            setEmpty("staff-bookings-list", "Your access to bookings is currently disabled.");
+          } else {
+            $("staff-dashboard-name").textContent = staff.full_name + " · Staff";
+            $("staff-dashboard-shop").textContent = "Bookings assigned to you and unclaimed bookings for your services";
+            $("staff-bookings-refresh-btn").style.display = "";
+            await loadStaffBookings();
+          }
+          return;
+        }
+        currentStaffMember = null;
+        $("staff-dashboard-screen").style.display = "none";
         $("biz-display-name").textContent = "No Business Found";
         $("biz-display-type").textContent = "Tap '+ Add Shop' above";
         $("subscription-gate").style.display = "none";
         document.querySelector("main.container").style.display = "block";
         return;
       }
+      currentStaffMember = null;
+      $("staff-dashboard-screen").style.display = "none";
 
       vendors.forEach(v => select.appendChild(h("option", { value: String(v.id), text: v.store_name || "Unnamed Business" })));
       activeVendor = vendors.find(v => String(v.id) === String(preferredId)) || vendors[0];
@@ -1831,7 +1993,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
             b.party_size > 1 ? h("div", { style: "font-weight:700;color:var(--text)", text: "Guests: " + b.party_size }) : null,
             h("div", {}, h("span", { class: "order-meta-label", text: "Booked on: " }), h("span", { class: "order-meta-value", text: when }))),
           h("div", { class: "order-status status-" + st.toLowerCase(), text: st }),
-          b.staff_members?.full_name ? h("div", { class: "order-time", style:"font-weight:700;color:#0f172a", text: "Staff: "+b.staff_members.full_name }) : null,
+          b.staff_assignment_mode === "ANY" && (st === "PENDING" || st === "CONFIRMED") ? h("div", { class: "order-time", style:"font-weight:700;color:#b45309", text: "Awaiting staff acceptance" }) : (b.staff_members?.full_name ? h("div", { class: "order-time", style:"font-weight:700;color:#0f172a", text: "Staff: "+b.staff_members.full_name }) : null),
           b.is_takeaway ? h("div", { class: "takeaway-badge", text: "TAKEAWAY — COLLECTION" }) : null,
           h("span", { class: "ref-pill", text: "REF: " + (b.payment_ref || "N/A") }),
           h("span", { class: "queue-pill", text: b.booking_time ? "TIME " + b.booking_time : "BOOKING #" + (b.queue_number || "1") }));
@@ -1935,8 +2097,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       if (!window.supabase) throw new Error("The Supabase library did not load. Refresh the page.");
       // Read the email-link result before the library clears it from the address bar
       const linkParams = new URLSearchParams(location.hash.replace(/^#/, ""));
+      const queryParams = new URLSearchParams(location.search);
       const linkError = linkParams.get("error_description");
-      const cameFromEmail = linkParams.has("access_token") || linkParams.get("type") === "signup";
+      const emailLinkType = linkParams.get("type") || queryParams.get("type") || (queryParams.has("staff_invite") ? "invite" : null);
+      const cameFromEmail = linkParams.has("access_token") || emailLinkType === "signup" || queryParams.has("code") || queryParams.has("staff_invite");
 
       db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       bindButtons();
@@ -1955,17 +2119,31 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       });
       startAlertPolling();
 
+      const authCode = queryParams.get("code");
+      if (authCode) {
+        const { error: exchangeError } = await db.auth.exchangeCodeForSession(authCode);
+        if (exchangeError) throw exchangeError;
+      }
       const { data: { session }, error } = await db.auth.getSession();
       if (error) throw error;
-      if (linkError || cameFromEmail) history.replaceState(null, "", location.pathname + location.search);
+      if (linkError || cameFromEmail) history.replaceState(null, "", location.pathname);
       if (linkError) alert("That email link has expired or was already used. Please sign in, or register again to get a new link.");
+      if (session && (emailLinkType === "invite" || emailLinkType === "recovery")) {
+        $("auth-screen").style.display = "flex";
+        $("invite-password-box").style.display = "block";
+        $("auth-heading").textContent = "Set your BOOK.NOW password";
+        $("auth-subheading").textContent = "Create a password to access your staff bookings.";
+        $("auth-submit-btn").style.display = "none";
+        $("toggle-auth-btn").style.display = "none";
+        return;
+      }
       if (session) {
         try {
           if (window.median?.onesignal?.login) await window.median.onesignal.login(session.user.id);
         } catch (err) { console.warn("OneSignal login:", err); }
         await showDashboard();
       }
-      if (session && cameFromEmail) setTimeout(() => alert("Your email is confirmed. Welcome to BOOK.NOW! Tap '+ Add Shop' to register your business."), 400);
+      if (session && cameFromEmail) setTimeout(() => alert("Your email is confirmed. Welcome to BOOK.NOW!"), 400);
     } catch (err) {
       console.error("Portal startup error:", err);
       alert("Could not start the Partner Portal: " + err.message);
