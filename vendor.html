@@ -45,6 +45,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 .stat-header{font-size:12px;font-weight:600;color:var(--muted)}
 .stat-value{font-size:22px;font-weight:700;margin-top:7px;overflow-wrap:anywhere}
 .nav-tabs{display:flex;gap:4px;background:#e2e8f0;padding:4px;border-radius:12px;margin-bottom:20px;overflow-x:auto}
+.calendar-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:12px 0 16px}.calendar-day{border:1px solid var(--border);background:#fff;border-radius:10px;padding:9px 2px;text-align:center;color:var(--text);min-width:0}.calendar-day.active{background:var(--accent);border-color:var(--accent);color:#fff}.calendar-day .day-name{font-size:10px;font-weight:700;display:block}.calendar-day .day-number{font-size:15px;font-weight:800;display:block;margin-top:4px}.calendar-day .day-count{font-size:9px;display:block;margin-top:3px;opacity:.8}.calendar-controls{display:flex;align-items:center;justify-content:space-between;gap:8px}.calendar-controls button{border:1px solid var(--border);background:#fff;border-radius:9px;padding:8px 11px;font-weight:700;color:var(--text)}.calendar-appointment{background:#fff;border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:12px;margin-bottom:9px}.calendar-appointment.cancelled{border-left-color:#dc2626;opacity:.75}
 .tab-item{flex:1;min-width:70px;padding:10px 5px;border:0;background:transparent;font-size:12px;font-weight:600;color:var(--muted);border-radius:8px;white-space:nowrap}
 .tab-item.active{background:#fff;color:var(--text);box-shadow:0 1px 3px #00000012}
 .section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
@@ -213,6 +214,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
     <div class="nav-tabs">
       <button class="tab-item active" id="tab-orders-btn">Bookings Queue</button>
+      <button class="tab-item" id="tab-calendar-btn">Calendar</button>
       <button class="tab-item" id="tab-services-btn">Services</button>
       <button class="tab-item" id="tab-profile-btn">Store Profile</button>
       <button class="tab-item" id="tab-bank-btn">Bank &amp; EFT</button>
@@ -221,6 +223,14 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       <button class="tab-item" id="tab-share-btn">Share &amp; QR</button>
       <button class="tab-item" id="tab-stats-btn">Stats</button>
     </div>
+
+    <section id="calendar-tab" style="display:none">
+      <div class="section-head"><h3><i class="ph ph-calendar"></i> Booking Calendar</h3><button class="btn-action btn-confirm" id="calendar-refresh-btn">Refresh</button></div>
+      <div class="calendar-controls"><button type="button" id="calendar-prev-btn" aria-label="Previous week">‹</button><strong id="calendar-week-label">This week</strong><button type="button" id="calendar-next-btn" aria-label="Next week">›</button></div>
+      <div class="calendar-week" id="calendar-week-days"></div>
+      <div class="section-head"><h3 id="calendar-selected-label">Appointments</h3><button type="button" class="btn-action btn-edit" id="calendar-today-btn">Today</button></div>
+      <div id="calendar-day-list" class="card-list"><div class="empty-box">Loading appointments…</div></div>
+    </section>
 
     <section id="orders-tab">
       <div class="section-head"><h3>Today's Appointments</h3></div>
@@ -441,7 +451,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
   const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
   const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
-  const TABS = ["orders", "services", "profile", "bank", "settlement", "moneystore", "share", "stats"];
+  const TABS = ["orders", "calendar", "services", "profile", "bank", "settlement", "moneystore", "share", "stats"];
   const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
   const MAX_FILE = 5 * 1024 * 1024;
 
@@ -573,6 +583,41 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     $(id).style.display = "none";
     const open = ["register-modal", "service-modal", "qr-scanner-modal"].some(m => $(m).style.display === "flex");
     document.body.style.overflow = open ? "hidden" : "";
+  }
+
+  let selectedCalendarDate = "";
+  function calendarDate(iso, offset) { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + offset); return d.toISOString().slice(0,10); }
+  function renderCalendar() {
+    if (!activeVendor) return;
+    const today = currentBusinessDate(activeVendor);
+    if (!selectedCalendarDate) selectedCalendarDate = today;
+    const date = new Date(selectedCalendarDate + "T12:00:00Z");
+    const mondayOffset = (date.getUTCDay() + 6) % 7;
+    const weekStart = calendarDate(selectedCalendarDate, -mondayOffset);
+    const weekEnd = calendarDate(weekStart, 6);
+    const label = d => new Date(d + "T12:00:00Z").toLocaleDateString("en-ZA", {timeZone:"UTC",month:"short",day:"numeric"});
+    $("calendar-week-label").textContent = label(weekStart) + " – " + label(weekEnd);
+    const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    const all = lastBookings || [];
+    $("calendar-week-days").replaceChildren(...days.map((name,i) => {
+      const day = calendarDate(weekStart,i);
+      const count = all.filter(b => (b.booking_date || saDate(b.created_at)) === day && String(b.status || "").toLowerCase() !== "cancelled").length;
+      const btn = h("button", {type:"button", class:"calendar-day" + (day === selectedCalendarDate ? " active" : ""), "aria-pressed": day === selectedCalendarDate ? "true" : "false"});
+      btn.append(h("span",{class:"day-name",text:name}),h("span",{class:"day-number",text:String(Number(day.slice(-2)))}),h("span",{class:"day-count",text:count ? count+" booked" : "—"}));
+      btn.addEventListener("click", () => { selectedCalendarDate = day; renderCalendar(); });
+      return btn;
+    }));
+    $("calendar-selected-label").textContent = "Appointments · " + new Date(selectedCalendarDate + "T12:00:00Z").toLocaleDateString("en-ZA",{timeZone:"UTC",weekday:"long",day:"numeric",month:"long"});
+    const rows = all.filter(b => (b.booking_date || saDate(b.created_at)) === selectedCalendarDate).sort((a,b)=>String(a.booking_time||"").localeCompare(String(b.booking_time||"")));
+    if (!rows.length) { setEmpty("calendar-day-list","No appointments on this day."); return; }
+    $("calendar-day-list").replaceChildren(...rows.map(b => {
+      const status = String(b.status || "pending").toUpperCase();
+      const card = h("div",{class:"calendar-appointment"+(status==="CANCELLED"?" cancelled":"")});
+      card.append(h("div",{style:"display:flex;justify-content:space-between;gap:8px;align-items:flex-start"},h("strong",{text:(b.booking_time || "Time not set")+" · "+(b.service_items?.title || "Booking")}),h("span",{class:"order-status status-"+status.toLowerCase(),text:status})),h("div",{class:"order-time",style:"color:#0f172a;font-weight:600",text:(b.customer_name || "Guest")+(b.customer_phone ? " · "+b.customer_phone : "")}));
+      if (b.is_takeaway) card.append(h("div",{class:"takeaway-badge",text:"TAKEAWAY — COLLECTION"}));
+      if (Number(b.party_size)>1) card.append(h("div",{class:"order-time",text:"Guests: "+b.party_size}));
+      return card;
+    }));
   }
 
   function showTab(name) {
@@ -921,6 +966,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     $("close-qr-scanner-btn").addEventListener("click", closeQrScanner);
 
     $("tab-orders-btn").addEventListener("click", () => showTab("orders"));
+    $("tab-calendar-btn").addEventListener("click", async () => { showTab("calendar"); await loadOrders(); renderCalendar(); });
+    $("calendar-prev-btn").addEventListener("click", () => { selectedCalendarDate = calendarDate(selectedCalendarDate || currentBusinessDate(activeVendor), -7); renderCalendar(); });
+    $("calendar-next-btn").addEventListener("click", () => { selectedCalendarDate = calendarDate(selectedCalendarDate || currentBusinessDate(activeVendor), 7); renderCalendar(); });
+    $("calendar-today-btn").addEventListener("click", () => { selectedCalendarDate = currentBusinessDate(activeVendor); renderCalendar(); });
+    $("calendar-refresh-btn").addEventListener("click", async () => { await loadOrders(); renderCalendar(); });
     $("tab-services-btn").addEventListener("click", () => showTab("services"));
     $("tab-profile-btn").addEventListener("click", () => { showTab("profile"); populateProfileForm(); });
     $("store-category-input").addEventListener("change", () => { $("store-takeaway-capacity-field").style.display = /shisanyama|braai/i.test(String($("store-category-input").value || "")) ? "block" : "none"; });
@@ -1684,6 +1734,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       if (!upcoming.length) setEmpty("upcoming-list", "No upcoming appointments.");
       else $("upcoming-list").replaceChildren(...upcoming.map(buildCard));
 
+      renderCalendar();
       $("stat-revenue").textContent = money(revenue);
       $("stat-count").textContent = String(activeToday);
       $("ledger-gross").textContent = money(revenue);
