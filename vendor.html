@@ -668,7 +668,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         const card = h("div", {class:"order-card"});
         const top = h("div",{style:"display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"},
           h("div",{},h("div",{class:"order-title",text:member.full_name}),h("div",{class:"order-time",text:member.job_title})),
-          h("button",{type:"button",class:"btn-action "+(member.is_active?"btn-edit":"btn-confirm"),text:member.is_active?"Deactivate":"Activate",onClick:()=>toggleStaff(member.id,!member.is_active)}));
+          h("button",{type:"button",class:"btn-action "+(member.is_active?"btn-edit":"btn-confirm"),text:member.is_active?"Deactivate":"Activate",onclick:()=>toggleStaff(member.id,!member.is_active)}));
         card.append(top);
         card.append(h("div",{class:"form-field",style:"margin-top:14px"},h("label",{text:"Services this worker can perform"})));
         const serviceWrap=h("div",{style:"display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px"});
@@ -688,12 +688,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
           const end=h("input",{type:"time",value:saved?.end_time?String(saved.end_time).slice(0,5):"17:00",style:"max-width:115px"});
           start.disabled=end.disabled=!enabled.checked;
           enabled.addEventListener("change",()=>{start.disabled=end.disabled=!enabled.checked;});
-          const save=h("button",{type:"button",class:"btn-action btn-edit",text:"Save",onClick:()=>saveStaffHours(member.id,index,enabled.checked,start.value,end.value)});
+          const save=h("button",{type:"button",class:"btn-action btn-edit",text:"Save",onclick:()=>saveStaffHours(member.id,index,enabled.checked,start.value,end.value)});
           return h("div",{style:"display:grid;grid-template-columns:minmax(90px,1fr) auto auto auto;gap:7px;align-items:center;margin:8px 0"},
             h("label",{style:"display:flex;gap:6px;align-items:center"},enabled,day),start,end,save);
         });
         hourRows.forEach(r=>card.append(r));
-        card.append(h("button",{type:"button",class:"btn-action",style:"margin-top:12px;color:#b91c1c",text:"Remove staff member",onClick:()=>deleteStaff(member.id,member.full_name)}));
+        card.append(h("button",{type:"button",class:"btn-action",style:"margin-top:12px;color:#b91c1c",text:"Remove staff member",onclick:()=>deleteStaff(member.id,member.full_name)}));
         return card;
       }));
     } catch(err) {
