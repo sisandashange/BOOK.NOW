@@ -167,6 +167,11 @@
         <button id="close-modal-btn" aria-label="Close booking form" style="background:none;border:0;cursor:pointer;"><i class="ph ph-x-circle" style="font-size:24px;color:var(--muted);"></i></button>
       </div>
 
+      <div class="form-field" id="staff-choice-field" style="display:none;">
+        <label for="booking-staff">Who would you like to book with?</label>
+        <select id="booking-staff"><option value="ANY">Any available worker</option></select>
+        <div style="font-size:11px;color:var(--muted);margin-top:5px;">Choose a specific worker or let the shop assign someone who is free.</div>
+      </div>
       <div class="form-field">
         <label for="customer-name">Your Full Name</label>
         <input type="text" id="customer-name" placeholder="e.g. Sipho Dlamini" autocomplete="name">
@@ -231,6 +236,7 @@
     let bookingOpen = false;
     let payMethod = "EFT";
     let chosenTime = "";
+    let bookableStaff = [];
     let slotPollBusy = false;
     let refreshToken = 0;
     let statusPollBusy = false;
@@ -303,6 +309,27 @@
         return "The shop is closed on this date. Try another day.";
       }
       return "";
+    }
+
+
+    async function loadBookableStaff() {
+      bookableStaff = [];
+      const field = $("staff-choice-field"), select = $("booking-staff");
+      if (!field || !select || !selectedService) return;
+      field.style.display = "none";
+      select.replaceChildren(new Option("Any available worker", "ANY"));
+      try {
+        const {data,error}=await db.rpc("get_bookable_staff",{p_store_id:selectedService.storeId,p_service_id:selectedService.serviceId});
+        if(error) throw error;
+        if(Array.isArray(data)) bookableStaff=data;
+        if(bookableStaff.length) {
+          bookableStaff.forEach(person=>select.append(new Option(person.staff_name+" · "+person.job_title,person.staff_id)));
+          select.value="ANY";
+          field.style.display="block";
+        }
+      } catch(err) {
+        console.warn("Staff list unavailable; keeping standard booking flow:",err);
+      }
     }
 
     // Builds the 30-minute time slots for the chosen date and greys out booked ones
@@ -764,7 +791,7 @@
       $("party-hint").textContent = guestsShop ? `This shop can host up to ${seats} guests per hour.` : "";
       $("takeaway-field").style.display = normalizeCategory(storeData.category) === "SHISANYAMA" ? "block" : "none";
       $("is-takeaway").checked = false;
-      refreshSlots();
+      loadBookableStaff().then(() => refreshSlots());
       $("booking-modal").style.display = "flex";
       $("customer-name").focus();
     }
@@ -873,7 +900,9 @@
             party_size: guests,
             payment_method: payMethod,
             payment_ref: paymentRef,
-            is_takeaway: isTakeaway
+            is_takeaway: isTakeaway,
+            staff_assignment_mode: bookableStaff.length ? ($("booking-staff").value === "ANY" ? "ANY" : "SPECIFIC") : "NONE",
+            staff_id: bookableStaff.length && $("booking-staff").value !== "ANY" ? $("booking-staff").value : null
           }]);
           insertError = result.error;
           if (!insertError) break;
