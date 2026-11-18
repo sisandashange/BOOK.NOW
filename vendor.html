@@ -499,7 +499,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     const all = lastBookings || [];
     const status = b => String(b.status || "").toLowerCase();
     const active = all.filter(b => status(b) !== "cancelled");
-    const today = saToday();
+    const today = currentBusinessDate(activeVendor);
     const dayOf = b => b.booking_date || saDate(b.created_at);
     const addDays = (iso, n) => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
     const dow = (new Date(today + "T12:00:00Z").getUTCDay() + 6) % 7;     // Monday = 0
@@ -589,7 +589,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   function calendarDate(iso, offset) { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + offset); return d.toISOString().slice(0,10); }
   function renderCalendar() {
     if (!activeVendor) return;
-    const today = saToday();
+    const today = currentBusinessDate(activeVendor);
     if (!selectedCalendarDate) selectedCalendarDate = today;
     const date = new Date(selectedCalendarDate + "T12:00:00Z");
     const mondayOffset = (date.getUTCDay() + 6) % 7;
