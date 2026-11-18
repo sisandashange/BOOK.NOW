@@ -908,12 +908,10 @@
           return;
         }
 
-        const bookingId = crypto.randomUUID();
         let paymentRef = generatePaymentRef();
         let insertError = null;
         for (let attempt = 0; attempt < 2; attempt++) {
           const result = await db.from("bookings").insert([{
-            id: bookingId,
             store_id: selectedService.storeId,
             service_id: selectedService.serviceId,
             customer_name: name,
