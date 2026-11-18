@@ -935,13 +935,16 @@
         }
         if (insertError) throw insertError;
 
-        // Read back queue number and price (needs the get_booking_receipt function)
+        // Read back the database-generated booking ID and receipt details.
+        // This RPC verifies both the payment reference and customer's phone.
         let receipt = null;
         try {
-          const { data } = await db.rpc("get_booking_receipt", { p_ref: paymentRef, p_phone: phone });
+          const { data, error: receiptError } = await db.rpc("get_booking_receipt_v2", { p_ref: paymentRef, p_phone: phone });
+          if (receiptError) throw receiptError;
           receipt = Array.isArray(data) ? data[0] : data;
         } catch (e) { console.warn("Receipt lookup unavailable:", e); }
 
+        const bookingId = receipt && receipt.id ? receipt.id : null;
         const queueNumber = receipt && receipt.queue_number ? receipt.queue_number : null;
         const price = receipt && receipt.booked_price != null ? receipt.booked_price : selectedService.price;
         const when = new Date(receipt && receipt.created_at ? receipt.created_at : Date.now()).toLocaleString("en-ZA", {
@@ -1007,7 +1010,7 @@
             <div class="info-box"><p>Pay cash at the shop. Show this screen and your reference <strong>${esc(paymentRef)}</strong>.</p></div>`}
 
             <div style="background:#fff;border:2px dashed var(--border);padding:10px;border-radius:14px;margin-bottom:12px;display:inline-block;">
-              ${window.BNQR
+              ${window.BNQR && bookingId
                 ? `<div role="img" aria-label="Booking QR code" style="width:130px;height:130px;margin:0 auto;">${BNQR.svg(bookingId, { margin: 1 })}</div>`
                 : `<div style="font-size:12px;color:var(--muted);padding:8px;">Show reference <strong>${esc(paymentRef)}</strong> at the shop.</div>`}
               <div style="font-size:10px;font-weight:800;color:var(--danger);margin-top:4px;text-transform:uppercase;">Unpaid. Ref: ${esc(paymentRef)}</div>
@@ -1024,7 +1027,12 @@
         $("booking-modal").querySelector(".modal-sheet").style.display = "none";
         confirmation.style.display = "block";
         $("done-btn").addEventListener("click", () => location.reload());
-        $("alerts-btn").addEventListener("click", () => enableCustomerAlerts(bookingId, paymentRef, phone, $("alerts-btn"), $("alerts-note")));
+        if (bookingId) {
+          $("alerts-btn").addEventListener("click", () => enableCustomerAlerts(bookingId, paymentRef, phone, $("alerts-btn"), $("alerts-note")));
+        } else {
+          $("alerts-btn").disabled = true;
+          $("alerts-note").textContent = "Your booking is saved. Keep your payment reference safe; phone alerts are temporarily unavailable.";
+        }
 
       } catch (err) {
         console.error("Booking error:", err);
