@@ -628,6 +628,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       const status = String(b.status || "pending").toUpperCase();
       const card = h("div",{class:"calendar-appointment"+(status==="CANCELLED"?" cancelled":"")});
       card.append(h("div",{style:"display:flex;justify-content:space-between;gap:8px;align-items:flex-start"},h("strong",{text:(b.booking_time || "Time not set")+" · "+(b.service_items?.title || "Booking")}),h("span",{class:"order-status status-"+status.toLowerCase(),text:status})),h("div",{class:"order-time",style:"color:#0f172a;font-weight:600",text:(b.customer_name || "Guest")+(b.customer_phone ? " · "+b.customer_phone : "")}));
+      if (b.staff_members?.full_name) card.append(h("div",{class:"order-time",style:"font-weight:700;color:#0f172a",text:"Staff: "+b.staff_members.full_name}));
       if (b.is_takeaway) card.append(h("div",{class:"takeaway-badge",text:"TAKEAWAY — COLLECTION"}));
       if (Number(b.party_size)>1) card.append(h("div",{class:"order-time",text:"Guests: "+b.party_size}));
       return card;
@@ -1766,7 +1767,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   async function loadOrders() {
     if (!activeVendor) return;
     try {
-      const { data: bookings, error } = await db.from("bookings").select("*, service_items(title, price, sale_price, duration_minutes)")
+      const { data: bookings, error } = await db.from("bookings").select("*, service_items(title, price, sale_price, duration_minutes), staff_members(full_name)")
         .eq("store_id", activeVendor.id).order("created_at", { ascending: false });
       if (error) throw error;
 
@@ -1830,6 +1831,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
             b.party_size > 1 ? h("div", { style: "font-weight:700;color:var(--text)", text: "Guests: " + b.party_size }) : null,
             h("div", {}, h("span", { class: "order-meta-label", text: "Booked on: " }), h("span", { class: "order-meta-value", text: when }))),
           h("div", { class: "order-status status-" + st.toLowerCase(), text: st }),
+          b.staff_members?.full_name ? h("div", { class: "order-time", style:"font-weight:700;color:#0f172a", text: "Staff: "+b.staff_members.full_name }) : null,
           b.is_takeaway ? h("div", { class: "takeaway-badge", text: "TAKEAWAY — COLLECTION" }) : null,
           h("span", { class: "ref-pill", text: "REF: " + (b.payment_ref || "N/A") }),
           h("span", { class: "queue-pill", text: b.booking_time ? "TIME " + b.booking_time : "BOOKING #" + (b.queue_number || "1") }));
