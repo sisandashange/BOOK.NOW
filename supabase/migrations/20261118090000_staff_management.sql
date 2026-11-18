@@ -191,7 +191,7 @@ as $
     where b.staff_id = sm.id
       and b.booking_date = p_date
       and coalesce(b.status, '') <> 'cancelled'
-      and b.appointment_at < slots.starts_at + make_interval(mins => greatest(coalesce(b.duration_minutes,30),30))
+      and b.appointment_at < slots.starts_at + make_interval(mins => greatest(coalesce(p_duration,30),30))
       and slots.starts_at < b.appointment_at + make_interval(mins => greatest(coalesce(b.duration_minutes,30),30))
   )
   group by slots.minute_of_day, slots.slot_label
