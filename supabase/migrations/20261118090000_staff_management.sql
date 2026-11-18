@@ -138,7 +138,7 @@ language sql
 stable
 security definer
 set search_path = public, pg_temp
-as $
+as $staffslots$
   with shop as (
     select
       extract(hour from opening_time)::integer * 60 + extract(minute from opening_time)::integer as open_min,
@@ -196,7 +196,7 @@ as $
   )
   group by slots.minute_of_day, slots.slot_label
   order by slots.minute_of_day;
-$;
+$staffslots$;
 
 revoke all on function public.get_staff_slot_availability(uuid, uuid, date, integer, uuid) from public;
 grant execute on function public.get_staff_slot_availability(uuid, uuid, date, integer, uuid) to anon, authenticated;
