@@ -150,6 +150,9 @@ begin
   local_start := new.appointment_at at time zone 'Africa/Johannesburg';
   local_end := local_start + make_interval(mins => greatest(coalesce(new.duration_minutes, 30), 1));
   weekday := extract(dow from local_start)::smallint;
+  if local_end::date <> local_start::date then
+    raise exception 'Staff appointments cannot cross midnight.';
+  end if;
 
   if new.staff_assignment_mode = 'SPECIFIC' then
     if new.staff_id is null then raise exception 'Choose a staff member.'; end if;
