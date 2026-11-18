@@ -1,17 +1,19 @@
 # BOOK.NOW staff login deployment checklist
 
-This feature is staged on `feature/staff-login-dashboard`. It is not live.
+## Production deployment status — 19 November 2026
 
-## Before deployment
+- The additive `staff_login` database migration has been applied to the BOOK.NOW production project.
+- `invite-staff` and `manage-staff-access` are deployed and ACTIVE with JWT verification enabled.
+- The updated vendor portal and service-worker cache refresh are staged in PR #8; merge and Pages deployment are still required before the staff UI is live.
+- The Supabase Auth allowed redirect URL `https://getbooknow.co.za/vendor.html*` still needs to be confirmed/added in the Dashboard.
+- Invitation, staff visibility, first-worker acceptance, and deactivation/reactivation still require end-to-end tests.
 
-1. Review the migration `20261119090000_staff_login.sql` after confirming the current production schema is still at the staff-management baseline.
-2. Add the following Supabase Auth redirect URL to the project's allowed redirect URLs:
-   - `https://getbooknow.co.za/vendor.html*`
-3. Confirm the Edge Function runtime exposes `SUPABASE_PUBLISHABLE_KEYS` and `SUPABASE_SECRET_KEYS` (JSON objects with a `default` key), or the legacy `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY`. The secret/service-role key must remain server-side only.
-4. Deploy `supabase/functions/invite-staff/index.ts` as the `invite-staff` Edge Function with JWT verification enabled.
-5. Deploy `supabase/functions/manage-staff-access/index.ts` as the `manage-staff-access` Edge Function with JWT verification enabled.
-6. Apply the migration only after explicit production approval.
-7. Publish the GitHub branch only after code review and successful tests.
+## Remaining setup before inviting staff
+
+1. Add `https://getbooknow.co.za/vendor.html*` to the Supabase Auth allowed redirect URLs.
+2. Confirm the Edge Function runtime exposes `SUPABASE_PUBLISHABLE_KEYS` and `SUPABASE_SECRET_KEYS` (JSON objects with a `default` key), or the legacy `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY`. The secret/service-role key must remain server-side only.
+3. Merge PR #8 and confirm GitHub Pages deployment succeeds.
+4. Complete the required tests below before sending real staff invitations.
 
 ## Required tests
 
