@@ -131,6 +131,87 @@ BEGIN
   WHERE ref_fingerprint = private.booking_reference_fingerprint('BN-NOTREAL');
   IF v_count <> 0 THEN RAISE EXCEPTION 'Unknown reference was persisted'; END IF;
 
+
+  -- Exercise the other seven public RPCs with a wrong phone. Every RPC must
+  -- share the same reference fingerprint and increment the same failure row.
+  PERFORM private.booking_reference_clear('BN-CITEST1');
+  PERFORM * FROM public.cancel_my_booking('BN-CITEST1', '0829999999');
+  SELECT failures INTO v_count FROM private.booking_reference_attempts
+  WHERE ref_fingerprint = private.booking_reference_fingerprint('BN-CITEST1');
+  IF v_count <> 1 THEN RAISE EXCEPTION 'cancel_my_booking did not record a failed identity'; END IF;
+
+  PERFORM private.booking_reference_clear('BN-CITEST1');
+  PERFORM public.reschedule_my_booking('BN-CITEST1', '0829999999', current_date + 2, '11:00');
+  SELECT failures INTO v_count FROM private.booking_reference_attempts
+  WHERE ref_fingerprint = private.booking_reference_fingerprint('BN-CITEST1');
+  IF v_count <> 1 THEN RAISE EXCEPTION 'reschedule_my_booking did not record a failed identity'; END IF;
+
+  PERFORM private.booking_reference_clear('BN-CITEST1');
+  PERFORM * FROM public.get_booking_receipt_v2('BN-CITEST1', '0829999999');
+  SELECT failures INTO v_count FROM private.booking_reference_attempts
+  WHERE ref_fingerprint = private.booking_reference_fingerprint('BN-CITEST1');
+  IF v_count <> 1 THEN RAISE EXCEPTION 'get_booking_receipt_v2 did not record a failed identity'; END IF;
+
+  PERFORM private.booking_reference_clear('BN-CITEST1');
+  PERFORM * FROM public.get_my_payment_details('BN-CITEST1', '0829999999');
+  SELECT failures INTO v_count FROM private.booking_reference_attempts
+  WHERE ref_fingerprint = private.booking_reference_fingerprint('BN-CITEST1');
+  IF v_count <> 1 THEN RAISE EXCEPTION 'get_my_payment_details did not record a failed identity'; END IF;
+
+  PERFORM private.booking_reference_clear('BN-CITEST1');
+  PERFORM * FROM public.get_payment_details('BN-CITEST1', '0829999999');
+  SELECT failures INTO v_count FROM private.booking_reference_attempts
+  WHERE ref_fingerprint = private.booking_reference_fingerprint('BN-CITEST1');
+  IF v_count <> 1 THEN RAISE EXCEPTION 'get_payment_details did not record a failed identity'; END IF;
+
+  PERFORM private.booking_reference_clear('BN-CITEST1');
+  PERFORM public.submit_review('BN-CITEST1', '0829999999', 5, 'CI wrong identity');
+  SELECT failures INTO v_count FROM private.booking_reference_attempts
+  WHERE ref_fingerprint = private.booking_reference_fingerprint('BN-CITEST1');
+  IF v_count <> 1 THEN RAISE EXCEPTION 'submit_review did not record a failed identity'; END IF;
+
+  PERFORM private.booking_reference_clear('BN-CITEST1');
+  PERFORM public.save_my_booking_push(
+    'BN-CITEST1', '0829999999',
+    'https://fcm.googleapis.com/fcm/send/ci-test-endpoint',
+    'abcdefghijklmnopqrstuv', 'abcdefghijk', 'CI test'
+  );
+  SELECT failures INTO v_count FROM private.booking_reference_attempts
+  WHERE ref_fingerprint = private.booking_reference_fingerprint('BN-CITEST1');
+  IF v_count <> 1 THEN RAISE EXCEPTION 'save_my_booking_push did not record a failed identity'; END IF;
+
+  -- Valid identity followed by a business-rule rejection must not count as a
+  -- failed identity. A completed booking cannot be cancelled.
+  PERFORM private.booking_reference_clear('BN-CITEST1');
+  UPDATE public.bookings SET status = 'completed' WHERE id = v_id;
+  PERFORM public.cancel_my_booking('BN-CITEST1', '0821234567');
+  SELECT count(*) INTO v_count FROM private.booking_reference_attempts
+  WHERE ref_fingerprint = private.booking_reference_fingerprint('BN-CITEST1');
+  IF v_count <> 0 THEN RAISE EXCEPTION 'Business-rule rejection incorrectly counted as failed identity'; END IF;
+  UPDATE public.bookings SET status = 'confirmed' WHERE id = v_id;
+
+  -- A valid booking with no configured bank details is still a valid identity.
+  PERFORM * FROM public.get_my_payment_details('BN-CITEST1', '0821234567');
+  SELECT count(*) INTO v_count FROM private.booking_reference_attempts
+  WHERE ref_fingerprint = private.booking_reference_fingerprint('BN-CITEST1');
+  IF v_count <> 0 THEN RAISE EXCEPTION 'Missing bank details incorrectly counted as failed identity'; END IF;
+
+  -- Every one of the eight customer RPC definitions must call the shared limiter.
+  IF (
+    SELECT count(*)
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname IN (
+        'find_my_booking', 'cancel_my_booking', 'reschedule_my_booking',
+        'get_booking_receipt_v2', 'get_my_payment_details', 'get_payment_details',
+        'submit_review', 'save_my_booking_push'
+      )
+      AND pg_get_functiondef(p.oid) LIKE '%private.booking_reference_throttle%'
+  ) <> 8 THEN
+    RAISE EXCEPTION 'One or more customer RPCs do not call the shared limiter';
+  END IF;
+
   -- Stale 15-minute window must not impose a delay.
   PERFORM private.booking_reference_record_failure('BN-CITEST1');
   UPDATE private.booking_reference_attempts
