@@ -87,8 +87,8 @@ CREATE OR REPLACE FUNCTION public.validate_booking_slot(
 ) RETURNS void LANGUAGE plpgsql AS $$ BEGIN RETURN; END $$;
 
 -- Apply the exact migration under test after the synthetic base schema exists.
-\ir ../migrations/20261119170000_booking_reference_attempt_limiter.sql
-\ir ../migrations/20261119200000_booking_reference_throttle_timeout_fix.sql
+\ir ../migrations/20261119074731_booking_reference_attempt_limiter.sql
+\ir ../migrations/20261119192024_booking_reference_throttle_timeout_fix.sql
 
 DO $$
 DECLARE
