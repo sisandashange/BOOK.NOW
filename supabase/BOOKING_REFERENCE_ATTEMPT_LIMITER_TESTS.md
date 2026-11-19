@@ -28,6 +28,7 @@ Run only against a disposable local database or isolated Supabase development br
 9. **Concurrent attempts:** send simultaneous failed attempts against one synthetic reference; verify the escalating delay is consistent and concurrent calls cannot bypass serialization.
 10. **Permissions:** `anon` and `authenticated` cannot use the private schema, read the secret, or execute private helper functions. Existing public RPC execute grants remain unchanged.
 11. **Regression:** verify normal booking receipt, manage-my-booking lookup, EFT details, cancel/reschedule, review, and push setup all retain their current response shapes and behaviour.
+12. **Temporary-object shadowing:** in a test session, create temporary tables with names matching referenced public tables (for example `bookings` and `reviews`), then call the affected `SECURITY DEFINER` RPCs. Verify they continue to use `public` tables; all functions with a non-empty search path must place `pg_temp` last.
 
 ## Review notes / limitations
 
