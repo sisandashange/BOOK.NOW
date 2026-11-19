@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "supabase/migrations/20261119210000_public_role_least_privilege.sql"
+      - "supabase/migrations/20261119192942_public_role_least_privilege.sql"
       - "supabase/tests/public_role_least_privilege_ci.sql"
       - ".github/workflows/public-role-least-privilege-tests.yml"
 
