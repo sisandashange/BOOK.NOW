@@ -139,7 +139,7 @@ REVOKE ALL ON FUNCTION private.booking_reference_record_failure(text) FROM PUBLI
 REVOKE ALL ON FUNCTION private.booking_reference_clear(text) FROM PUBLIC, anon, authenticated;
 
 COMMENT ON TABLE private.booking_reference_attempts IS
-  'Keyed HMAC fingerprints and rolling failure counts for existing BOOK.NOW booking references; no raw references or phone numbers are stored.';
+  'Keyed HMAC fingerprints and 15-minute fixed-window failure counts for existing BOOK.NOW booking references; no raw references or phone numbers are stored.';
 COMMENT ON FUNCTION private.booking_reference_is_blocked(text) IS
   'Returns true after 10 failed reference/phone matches in a 15-minute window.';
 
