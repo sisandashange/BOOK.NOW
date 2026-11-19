@@ -4,13 +4,13 @@ This change is proposed on `security/booking-reference-attempt-limiter` only. It
 
 ## Intended behaviour
 
-- Ten failed reference/phone matches for an **existing** booking reference within a 15-minute window cause later customer RPC attempts for that reference to return the same generic not-found response for the remainder of the window.
+- Repeated failed reference/phone matches for an **existing** booking reference cause an escalating delay on later attempts, capped at 3 seconds. A correct phone/reference pair is still allowed through and clears the counter; there is no hard lockout.
 - The limiter is shared across booking lookup, receipt retrieval, EFT-detail retrieval, cancellation, rescheduling, review submission, and customer push registration. This prevents switching RPCs to bypass the same reference's limit.
 - Successful reference/phone verification clears that reference's failed-attempt counter.
 - Business-rule failures after identity is verified (for example, a paid booking cannot be rescheduled) do not count as failed identity attempts.
 - Unknown/random references are not persisted in the limiter table. This avoids creating unbounded rows from random guesses.
 - The limiter stores only a keyed HMAC fingerprint of the booking reference. It does not store raw booking references or phone numbers.
-- Requests for the same reference are serialized with a transaction-scoped advisory lock so concurrent failures cannot race past the threshold.
+- Requests for the same reference are serialized with a transaction-scoped advisory lock so concurrent failures cannot bypass the escalating delay.
 - No frontend changes are required; RPC names, parameters, return shapes, and existing grants are preserved.
 
 ## Required isolated-environment tests
@@ -18,10 +18,10 @@ This change is proposed on `security/booking-reference-attempt-limiter` only. It
 Run only against a disposable local database or isolated Supabase development branch with synthetic test bookings. Do not use real customer bookings.
 
 1. **Successful lookup:** correct reference + correct phone returns the existing booking fields and clears prior failures.
-2. **Below threshold:** nine wrong-phone attempts against one synthetic existing reference do not prevent a subsequent correct lookup.
-3. **Threshold:** after ten failed matches, the next attempt is rejected with the generic not-found response.
-4. **Shared limiter:** once blocked, try the same reference through lookup, receipt, EFT details, cancellation, rescheduling, review, and push registration. None should reveal booking data or perform a mutation.
-5. **Window expiry:** after 15 minutes from the first failure, the reference can be verified again.
+2. **Escalating delay:** issue repeated wrong-phone attempts against one synthetic existing reference and verify the delay increases but never exceeds 3 seconds.
+3. **No lockout:** after many failed matches, a correct phone/reference pair must still succeed and clear the counter.
+4. **Shared limiter:** verify the same reference's recent failure count affects lookup, receipt, EFT details, cancellation, rescheduling, review, and push registration consistently; correct identity must still pass.
+5. **Window expiry:** after 15 minutes without further failures, the delay returns to its baseline.
 6. **Unknown references:** repeated random/nonexistent references do not create rows in `private.booking_reference_attempts`.
 7. **Valid identity, no bank details:** a valid reference/phone with no configured EFT details must not increment the failure counter.
 8. **Valid identity, business-rule rejection:** paid, cancelled, too-close-to-appointment, already-reviewed, or non-completed bookings must not increment the identity failure counter after the correct phone is supplied.
@@ -32,5 +32,5 @@ Run only against a disposable local database or isolated Supabase development br
 ## Review notes / limitations
 
 - The limiter is reference-scoped, not IP-scoped. Unknown references are intentionally not recorded. BOOK.NOW references are generated from six cryptographically random bytes; this makes random reference discovery substantially harder, while the limiter slows phone-number guessing once a valid reference is targeted.
-- A person who knows a valid reference can cause a temporary 15-minute lockout for that reference by submitting ten incorrect phone matches. This is an unavoidable trade-off in this reference-scoped design; monitor support reports before considering a different threshold.
+- A person who knows a valid reference can cause a temporary delay for that reference by submitting incorrect phone matches, but cannot lock the customer out. The delay is capped at 3 seconds, and the correct phone clears it.
 - No live database, production booking, user account, website deployment, or Founder Dashboard has been changed by this proposal.
