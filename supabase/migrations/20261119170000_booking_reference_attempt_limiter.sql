@@ -1,6 +1,6 @@
 -- BOOK.NOW customer booking-reference attempt limiter.
 -- Proposal only: this migration is on a review branch and has NOT been applied.
--- Ten failed phone/reference matches for an existing reference trigger a 15-minute
+-- Repeated failed phone/reference matches for an existing reference trigger an escalating soft delay (maximum 3 seconds)
 -- cooldown across all public customer RPCs that accept a booking reference + phone.
 -- Unknown references are not stored, preventing random-reference attempts from
 -- creating unbounded rate-limit rows. Only keyed HMAC fingerprints are stored.
@@ -42,17 +42,18 @@ AS $function$
   WHERE s.singleton = true;
 $function$;
 
-CREATE OR REPLACE FUNCTION private.booking_reference_is_blocked(p_ref text)
-RETURNS boolean
+CREATE OR REPLACE FUNCTION private.booking_reference_throttle(p_ref text)
+RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $function$
 DECLARE
   v_fingerprint bytea;
+  v_failures integer := 0;
 BEGIN
   IF length(btrim(coalesce(p_ref, ''))) < 4 THEN
-    RETURN false;
+    RETURN;
   END IF;
 
   v_fingerprint := private.booking_reference_fingerprint(p_ref);
@@ -60,19 +61,20 @@ BEGIN
     RAISE EXCEPTION 'Booking security configuration is unavailable';
   END IF;
 
-  -- Serialize requests for the same reference so concurrent failures cannot
-  -- race past the threshold. The transaction lock is released automatically.
+  -- Serialize requests for this reference. A soft delay slows repeated guesses
+  -- but never blocks a genuine customer who supplies the correct phone number.
   PERFORM pg_advisory_xact_lock(
     hashtextextended(encode(v_fingerprint, 'hex'), 8126)
   );
 
-  RETURN EXISTS (
-    SELECT 1
-    FROM private.booking_reference_attempts AS a
-    WHERE a.ref_fingerprint = v_fingerprint
-      AND a.window_started > now() - interval '15 minutes'
-      AND a.failures >= 10
-  );
+  SELECT a.failures INTO v_failures
+  FROM private.booking_reference_attempts AS a
+  WHERE a.ref_fingerprint = v_fingerprint
+    AND a.window_started > now() - interval '15 minutes';
+
+  IF coalesce(v_failures, 0) > 0 THEN
+    PERFORM pg_sleep(LEAST(3.0, 0.25 * v_failures));
+  END IF;
 END;
 $function$;
 
@@ -134,14 +136,14 @@ AS $function$
 $function$;
 
 REVOKE ALL ON FUNCTION private.booking_reference_fingerprint(text) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION private.booking_reference_is_blocked(text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION private.booking_reference_throttle(text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION private.booking_reference_record_failure(text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION private.booking_reference_clear(text) FROM PUBLIC, anon, authenticated;
 
 COMMENT ON TABLE private.booking_reference_attempts IS
   'Keyed HMAC fingerprints and 15-minute fixed-window failure counts for existing BOOK.NOW booking references; no raw references or phone numbers are stored.';
-COMMENT ON FUNCTION private.booking_reference_is_blocked(text) IS
-  'Returns true after 10 failed reference/phone matches in a 15-minute window.';
+COMMENT ON FUNCTION private.booking_reference_throttle(text) IS
+  'Applies a capped soft delay based on recent failed reference/phone matches; it never blocks a verified customer.';
 
 -- Customer booking lookup.
 CREATE OR REPLACE FUNCTION public.find_my_booking(p_ref text, p_phone text)
@@ -160,10 +162,7 @@ SECURITY DEFINER
 SET search_path = 'public', 'pg_temp'
 AS $function$
 BEGIN
-  IF private.booking_reference_is_blocked(p_ref) THEN
-    PERFORM pg_sleep(0.4);
-    RETURN;
-  END IF;
+  PERFORM private.booking_reference_throttle(p_ref);
 
   IF length(coalesce(btrim(p_ref), '')) < 4
      OR length(public.phone_digits(p_phone)) < 9
@@ -215,10 +214,7 @@ AS $function$
 DECLARE
   b record;
 BEGIN
-  IF private.booking_reference_is_blocked(p_ref) THEN
-    PERFORM pg_sleep(0.4);
-    RETURN jsonb_build_object('success', false, 'message', 'We could not find that booking.');
-  END IF;
+  PERFORM private.booking_reference_throttle(p_ref);
 
   SELECT * INTO b
   FROM public.bookings
@@ -268,10 +264,7 @@ DECLARE
   new_appt timestamptz;
   attempt integer := 0;
 BEGIN
-  IF private.booking_reference_is_blocked(p_ref) THEN
-    PERFORM pg_sleep(0.4);
-    RETURN jsonb_build_object('success', false, 'message', 'We could not find that booking.');
-  END IF;
+  PERFORM private.booking_reference_throttle(p_ref);
 
   SELECT * INTO b
   FROM public.bookings
@@ -365,10 +358,7 @@ SECURITY DEFINER
 SET search_path = ''
 AS $function$
 BEGIN
-  IF private.booking_reference_is_blocked(p_ref) THEN
-    PERFORM pg_sleep(0.4);
-    RETURN;
-  END IF;
+  PERFORM private.booking_reference_throttle(p_ref);
 
   RETURN QUERY
   SELECT b.id, b.queue_number, b.booked_price, b.created_at, b.payment_ref,
@@ -397,10 +387,7 @@ SECURITY DEFINER
 SET search_path = 'public'
 AS $function$
 BEGIN
-  IF private.booking_reference_is_blocked(p_ref) THEN
-    PERFORM pg_sleep(0.4);
-    RETURN;
-  END IF;
+  PERFORM private.booking_reference_throttle(p_ref);
 
   IF NOT EXISTS (
     SELECT 1 FROM public.bookings AS b
@@ -434,10 +421,7 @@ SECURITY DEFINER
 SET search_path = ''
 AS $function$
 BEGIN
-  IF private.booking_reference_is_blocked(p_ref) THEN
-    PERFORM pg_sleep(0.4);
-    RETURN;
-  END IF;
+  PERFORM private.booking_reference_throttle(p_ref);
 
   IF NOT EXISTS (
     SELECT 1 FROM public.bookings AS b
@@ -484,10 +468,7 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'message', 'Choose a rating from 1 to 5 stars.');
   END IF;
 
-  IF private.booking_reference_is_blocked(p_ref) THEN
-    PERFORM pg_sleep(0.4);
-    RETURN jsonb_build_object('success', false, 'message', 'We could not find that booking. Check the reference and phone number.');
-  END IF;
+  PERFORM private.booking_reference_throttle(p_ref);
 
   SELECT * INTO b
   FROM public.bookings
@@ -518,7 +499,7 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'message', 'Please keep your review under 500 characters.');
   END IF;
 
-  parts := regexp_split_to_array(btrim(coalesce(b.customer_name, 'Customer')), '\\s+');
+  parts := regexp_split_to_array(btrim(coalesce(b.customer_name, 'Customer')), '\s+');
   nm := parts[1];
   IF array_length(parts, 1) > 1 THEN
     nm := nm || ' ' || upper(left(parts[array_length(parts, 1)], 1)) || '.';
@@ -546,7 +527,7 @@ DECLARE
   v_count integer;
 BEGIN
   IF p_endpoint IS NULL
-     OR p_endpoint !~* '^https://(fcm\\.googleapis\\.com|updates\\.push\\.services\\.mozilla\\.com|web\\.push\\.apple\\.com)(/|$)'
+     OR p_endpoint !~* '^https://(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|web\.push\.apple\.com)(/|$)'
      OR length(p_endpoint) < 20
      OR length(p_endpoint) > 1000
      OR coalesce(length(p_p256dh), 0) < 20
@@ -554,10 +535,7 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'message', 'That alert subscription is not valid.');
   END IF;
 
-  IF private.booking_reference_is_blocked(p_ref) THEN
-    PERFORM pg_sleep(0.4);
-    RETURN jsonb_build_object('success', false, 'message', 'We could not find that booking. Check the reference and phone number.');
-  END IF;
+  PERFORM private.booking_reference_throttle(p_ref);
 
   SELECT b.id, b.status INTO v_booking_id, v_status
   FROM public.bookings AS b
