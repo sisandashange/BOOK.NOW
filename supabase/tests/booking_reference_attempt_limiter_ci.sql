@@ -88,6 +88,7 @@ CREATE OR REPLACE FUNCTION public.validate_booking_slot(
 
 -- Apply the exact migration under test after the synthetic base schema exists.
 \ir ../migrations/20261119170000_booking_reference_attempt_limiter.sql
+\ir ../migrations/20261119200000_booking_reference_throttle_timeout_fix.sql
 
 DO $$
 DECLARE
@@ -222,13 +223,13 @@ BEGIN
   v_elapsed := extract(epoch FROM clock_timestamp() - v_started);
   IF v_elapsed > 0.5 THEN RAISE EXCEPTION 'Expired window still delayed request: % seconds', v_elapsed; END IF;
 
-  -- The throttle delay is capped at 2.6 seconds (the RPC adds at most 0.4s).
+  -- The throttle delay leaves headroom under the 3-second anon API timeout.
   UPDATE private.booking_reference_attempts SET failures = 1000, window_started = now()
   WHERE ref_fingerprint = private.booking_reference_fingerprint('BN-CITEST1');
   v_started := clock_timestamp();
   PERFORM private.booking_reference_throttle('BN-CITEST1');
   v_elapsed := extract(epoch FROM clock_timestamp() - v_started);
-  IF v_elapsed < 2.4 OR v_elapsed > 3.2 THEN
+  IF v_elapsed < 1.6 OR v_elapsed > 2.4 THEN
     RAISE EXCEPTION 'Throttle cap outside expected range: % seconds', v_elapsed;
   END IF;
 
