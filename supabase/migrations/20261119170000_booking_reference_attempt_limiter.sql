@@ -44,20 +44,36 @@ $function$;
 
 CREATE OR REPLACE FUNCTION private.booking_reference_is_blocked(p_ref text)
 RETURNS boolean
-LANGUAGE sql
-STABLE
+LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $function$
-  SELECT
-    length(btrim(coalesce(p_ref, ''))) >= 4
-    AND EXISTS (
-      SELECT 1
-      FROM private.booking_reference_attempts AS a
-      WHERE a.ref_fingerprint = private.booking_reference_fingerprint(p_ref)
-        AND a.window_started > now() - interval '15 minutes'
-        AND a.failures >= 10
-    );
+DECLARE
+  v_fingerprint bytea;
+BEGIN
+  IF length(btrim(coalesce(p_ref, ''))) < 4 THEN
+    RETURN false;
+  END IF;
+
+  v_fingerprint := private.booking_reference_fingerprint(p_ref);
+  IF v_fingerprint IS NULL THEN
+    RAISE EXCEPTION 'Booking security configuration is unavailable';
+  END IF;
+
+  -- Serialize requests for the same reference so concurrent failures cannot
+  -- race past the threshold. The transaction lock is released automatically.
+  PERFORM pg_advisory_xact_lock(
+    hashtextextended(encode(v_fingerprint, 'hex'), 8126)
+  );
+
+  RETURN EXISTS (
+    SELECT 1
+    FROM private.booking_reference_attempts AS a
+    WHERE a.ref_fingerprint = v_fingerprint
+      AND a.window_started > now() - interval '15 minutes'
+      AND a.failures >= 10
+  );
+END;
 $function$;
 
 CREATE OR REPLACE FUNCTION private.booking_reference_record_failure(p_ref text)
