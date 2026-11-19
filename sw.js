@@ -103,7 +103,13 @@ self.addEventListener("notificationclick", event => {
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
       for (const c of list) {
-        if (c.url.startsWith(self.registration.scope) && "focus" in c) return c.focus();
+        if (c.url.startsWith(self.registration.scope) && "focus" in c) {
+          // Reuse an existing app window, but navigate it to the notification's destination first.
+          if ("navigate" in c && c.url !== target) {
+            try { await c.navigate(target); } catch (_) { /* Focus remains a safe fallback. */ }
+          }
+          return c.focus();
+        }
       }
       return self.clients.openWindow(target);
     })
