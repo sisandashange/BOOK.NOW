@@ -384,7 +384,7 @@ CREATE OR REPLACE FUNCTION public.get_my_payment_details(p_ref text, p_phone tex
 RETURNS TABLE(bank_name text, account_holder text, account_number text, branch_code text)
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = 'public'
+SET search_path = 'public', 'pg_temp'
 AS $function$
 BEGIN
   PERFORM private.booking_reference_throttle(p_ref);
@@ -456,7 +456,7 @@ CREATE OR REPLACE FUNCTION public.submit_review(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = 'public'
+SET search_path = 'public', 'pg_temp'
 AS $function$
 DECLARE
   b record;
