@@ -1,0 +1,44 @@
+name: Public role least-privilege regression tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "supabase/migrations/20261119210000_public_role_least_privilege.sql"
+      - "supabase/tests/public_role_least_privilege_ci.sql"
+      - ".github/workflows/public-role-least-privilege-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-regression:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: booknow_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d booknow_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - name: Check out PR
+        uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Run public role privilege regression tests
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql "postgresql://postgres@localhost:5432/booknow_ci" \
+            --set ON_ERROR_STOP=1 \
+            --file supabase/tests/public_role_least_privilege_ci.sql
