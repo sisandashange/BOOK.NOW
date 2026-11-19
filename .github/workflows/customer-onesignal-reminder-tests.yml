@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "supabase/migrations/20261119203000_native_customer_reminder_scheduler.sql"
+      - "supabase/migrations/20261119192341_native_customer_reminder_scheduler.sql"
       - "supabase/tests/customer_onesignal_reminder_ci.sql"
       - ".github/workflows/customer-onesignal-reminder-tests.yml"
 

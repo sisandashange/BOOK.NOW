@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "supabase/migrations/20261119170000_booking_reference_attempt_limiter.sql"
+      - "supabase/migrations/20261119074731_booking_reference_attempt_limiter.sql"
       - "supabase/tests/booking_reference_attempt_limiter_ci.sql"
       - ".github/workflows/booking-reference-limiter-tests.yml"
   push:
