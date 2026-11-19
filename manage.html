@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="qr.js"></script>
 <style>
 :root{--primary:#0f172a;--accent:#2563eb;--accent-hover:#1d4ed8;--bg:#f8fafc;--surface:#fff;--text:#0f172a;--muted:#64748b;--border:#e2e8f0;--success:#16a34a;--warning:#d97706;--danger:#dc2626;--radius:18px}
 *{box-sizing:border-box;font-family:'Plus Jakarta Sans',sans-serif;-webkit-tap-highlight-color:transparent}
@@ -54,6 +55,7 @@ h1{font-size:24px;letter-spacing:-.8px;margin:6px 0 6px}
 .star{background:none;border:0;font-size:38px;line-height:1;color:#cbd5e1;cursor:pointer;padding:2px 4px}
 .star.on{color:#f59e0b}
 .hint{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4}
+.receipt-qr{display:flex;justify-content:center;padding:12px;background:#fff;border:1px dashed var(--border);border-radius:12px;margin:12px 0}.receipt-qr svg{width:190px;height:190px;display:block}.staff-row{display:none}
 footer{text-align:center;padding:10px 16px 0;font-size:12px;color:var(--muted)}
 footer a{color:var(--muted);font-weight:600}
 .hidden{display:none!important}
@@ -96,6 +98,16 @@ footer a{color:var(--muted);font-weight:600}
       <div class="detail"><span>Price</span><span id="r-price"></span></div>
       <div class="detail"><span>Payment</span><span id="r-pay"></span></div>
       <div class="detail"><span>Reference</span><span id="r-ref"></span></div>
+      <div class="detail staff-row" id="r-staff-row"><span>Your staff member</span><span id="r-staff"></span></div>
+    </div>
+
+    <div class="card" id="customer-receipt-card">
+      <p class="shop" style="font-size:16px;text-align:center">Your BOOK.NOW receipt</p>
+      <p class="muted" style="text-align:center;margin:0">Save this image and show the QR code when you arrive at the shop.</p>
+      <div class="receipt-qr" id="manage-receipt-qr"></div>
+      <p class="muted" style="text-align:center">The shop can scan this code to find your booking.</p>
+      <button type="button" class="btn" id="download-manage-receipt">Save receipt as image</button>
+      <p class="hint" id="receipt-image-note" style="text-align:center"></p>
     </div>
 
     <div id="alerts-box" class="hidden" style="margin-bottom:14px">
@@ -223,6 +235,11 @@ footer a{color:var(--muted);font-weight:600}
     const paid = String(bk.payment_status || "").toUpperCase() === "PAID";
     $("r-pay").textContent = (bk.payment_method === "CASH" ? "Cash" : "EFT") + " · " + (paid ? "Paid" : "Not paid yet");
     $("r-ref").textContent = bk.payment_ref || "";
+    const staffVisible = status === "confirmed" && !!bk.staff_name;
+    $("r-staff-row").style.display = staffVisible ? "flex" : "none";
+    $("r-staff").textContent = staffVisible ? (bk.staff_name + (bk.staff_job_title ? " · " + bk.staff_job_title : "")) : "";
+    if (window.BNQR && bk.booking_id) $("manage-receipt-qr").innerHTML = BNQR.svg(bk.booking_id, { margin: 2 });
+    else $("manage-receipt-qr").textContent = "Receipt QR is unavailable. Show your booking reference at the shop.";
 
     const needsEft = String(bk.payment_method || "").toUpperCase() === "EFT" && !paid && (status === "pending" || status === "confirmed");
     $("pay-box").classList.toggle("hidden", !needsEft);
@@ -263,6 +280,16 @@ footer a{color:var(--muted);font-weight:600}
     const row = Array.isArray(data) ? data[0] : data;
     if (!row) return false;
     bk = row;
+    bk.staff_name = null;
+    bk.staff_job_title = null;
+    if (String(bk.status || "").toLowerCase() === "confirmed") {
+      try {
+        const staffResult = await db.rpc("get_my_booking_staff", { p_ref: lookup.ref, p_phone: lookup.phone });
+        if (staffResult.error) throw staffResult.error;
+        const staffRow = Array.isArray(staffResult.data) ? staffResult.data[0] : staffResult.data;
+        if (staffRow) { bk.staff_name = staffRow.staff_name || null; bk.staff_job_title = staffRow.job_title || null; }
+      } catch (staffError) { console.warn("Confirmed staff name is temporarily unavailable:", staffError); }
+    }
     render();
     $("lookup-card").classList.add("hidden");
     if (!quiet) say("");
@@ -289,6 +316,48 @@ footer a{color:var(--muted);font-weight:600}
     } finally {
       btn.disabled = false; btn.textContent = "Find my booking";
     }
+  }
+
+
+  async function downloadCustomerReceipt() {
+    const btn = $("download-manage-receipt");
+    if (!bk || !bk.booking_id || !window.BNQR) return say("The receipt QR isn't available yet. Please refresh and try again.", "err");
+    btn.disabled = true; btn.textContent = "Preparing image...";
+    try {
+      const W = 900, H = 1120, canvas = document.createElement("canvas");
+      canvas.width = W; canvas.height = H;
+      const c = canvas.getContext("2d");
+      c.fillStyle = "#ffffff"; c.fillRect(0, 0, W, H);
+      c.fillStyle = "#0f172a"; c.textAlign = "center"; c.font = "800 48px Arial"; c.fillText("BOOK.NOW", W/2, 82);
+      c.fillStyle = "#2563eb"; c.font = "700 25px Arial"; c.fillText("BOOKING RECEIPT", W/2, 126);
+      c.strokeStyle = "#e2e8f0"; c.lineWidth = 2; c.beginPath(); c.moveTo(70,160); c.lineTo(830,160); c.stroke();
+      const rows = [
+        ["Shop", bk.store_name || "Shop"], ["Service", bk.service_title || "Service"],
+        ["Customer", bk.customer_name || "Customer"], ["Appointment", fmtAppt(bk)],
+        ["Status", STATUS_TEXT[String(bk.status || "pending").toLowerCase()] || String(bk.status || "").toUpperCase()],
+        ["Staff member", bk.staff_name || (String(bk.status).toLowerCase()==="confirmed" ? "Not assigned" : "Shown after shop confirmation")],
+        ["Price", money(bk.booked_price)], ["Payment reference", bk.payment_ref || ""]
+      ];
+      let y=220; c.textAlign="left";
+      for (const [label,value] of rows) {
+        c.fillStyle="#64748b"; c.font="600 21px Arial"; c.fillText(label.toUpperCase(),85,y);
+        c.fillStyle="#0f172a"; c.font="700 26px Arial";
+        const txt=String(value); c.fillText(txt.length>38?txt.slice(0,35)+"...":txt,85,y+34); y+=94;
+      }
+      const svg=BNQR.svg(bk.booking_id,{margin:3});
+      const img=new Image();
+      await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);});
+      const q=300; c.drawImage(img,(W-q)/2, y+4,q,q);
+      c.textAlign="center"; c.fillStyle="#64748b"; c.font="600 18px Arial"; c.fillText("Show this QR code when you arrive. The shop will scan it.",W/2,y+q+42);
+      c.fillStyle="#94a3b8"; c.font="16px Arial"; c.fillText("Keep your payment reference safe.",W/2,H-34);
+      const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
+      if(!blob) throw new Error("Image creation failed");
+      const url=URL.createObjectURL(blob), a=document.createElement("a");
+      a.href=url; a.download="BOOK-NOW-receipt-"+String(bk.payment_ref||"booking").replace(/[^A-Za-z0-9-]/g,"")+".png";
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+      $("receipt-image-note").textContent="Receipt image saved. Keep it in your phone gallery.";
+    } catch(err) { console.error(err); say("We couldn't create the receipt image. You can still show this QR code on screen.", "err"); }
+    finally { btn.disabled=false; btn.textContent="Save receipt as image"; }
   }
 
   // ----- change date or time -----
@@ -539,6 +608,7 @@ footer a{color:var(--muted);font-weight:600}
       $("stars").appendChild(b);
     }
     $("review-submit").addEventListener("click", submitReview);
+    $("download-manage-receipt").addEventListener("click", downloadCustomerReceipt);
     $("show-bank-btn").addEventListener("click", showBankDetails);
     $("alerts-btn").addEventListener("click", enableAlerts);
     if ("serviceWorker" in navigator) {
