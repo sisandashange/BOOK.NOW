@@ -324,7 +324,7 @@ footer a{color:var(--muted);font-weight:600}
     if (!bk || !bk.booking_id || !window.BNQR) return say("The receipt QR isn't available yet. Please refresh and try again.", "err");
     btn.disabled = true; btn.textContent = "Preparing image...";
     try {
-      const W = 900, H = 1120, canvas = document.createElement("canvas");
+      const W = 900, H = 1400, canvas = document.createElement("canvas");
       canvas.width = W; canvas.height = H;
       const c = canvas.getContext("2d");
       c.fillStyle = "#ffffff"; c.fillRect(0, 0, W, H);
