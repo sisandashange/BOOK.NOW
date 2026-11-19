@@ -73,7 +73,7 @@ BEGIN
     AND a.window_started > now() - interval '15 minutes';
 
   IF coalesce(v_failures, 0) > 0 THEN
-    PERFORM pg_sleep(LEAST(3.0, 0.25 * v_failures));
+    PERFORM pg_sleep(LEAST(2.6, 0.25 * v_failures));
   END IF;
 END;
 $function$;
