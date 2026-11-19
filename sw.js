@@ -101,7 +101,7 @@ self.addEventListener("notificationclick", event => {
   event.notification.close();
   const target = new URL((event.notification.data && event.notification.data.url) || "vendor.html", self.registration.scope).href;
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async list => {
       for (const c of list) {
         if (c.url.startsWith(self.registration.scope) && "focus" in c) {
           // Reuse an existing app window, but navigate it to the notification's destination first.
