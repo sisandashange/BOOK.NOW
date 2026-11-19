@@ -120,7 +120,7 @@ BEGIN
     failures = CASE
       WHEN private.booking_reference_attempts.window_started <= now() - interval '15 minutes'
       THEN 1
-      ELSE private.booking_reference_attempts.failures + 1
+      ELSE LEAST(1000, private.booking_reference_attempts.failures + 1)
     END;
 END;
 $function$;
