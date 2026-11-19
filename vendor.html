@@ -439,6 +439,15 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   </div>
   <main class="container">
     <div class="section-head"><div><h3 id="staff-dashboard-name">Staff Bookings</h3><div class="order-time" id="staff-dashboard-shop">Your assigned bookings</div></div><button class="btn-action btn-confirm" id="staff-bookings-refresh-btn">Refresh</button></div>
+    <div class="card" style="margin-bottom:14px;background:#f8fafc;border:1px solid #e2e8f0">
+      <strong style="display:block;margin-bottom:6px">How booking acceptance works</strong>
+      <div class="order-time">Accepting assigns the booking to you. The shop owner must still confirm it. Once confirmed, you'll see that here.</div>
+    </div>
+    <div class="finance-grid" style="margin-bottom:14px">
+      <div class="finance-card"><div class="finance-label">Available to accept</div><div class="finance-value" id="staff-count-available">0</div></div>
+      <div class="finance-card"><div class="finance-label">Waiting for owner</div><div class="finance-value" id="staff-count-waiting">0</div></div>
+      <div class="finance-card"><div class="finance-label">Confirmed for you</div><div class="finance-value" id="staff-count-confirmed">0</div></div>
+    </div>
     <div id="staff-bookings-list" class="card-list"><div class="empty-box">Loading your bookings…</div></div>
   </main>
 </div>
@@ -1663,21 +1672,50 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         .order("booking_time", { ascending: true });
       if (error) throw error;
       const rows = data || [];
-      if (!rows.length) return setEmpty("staff-bookings-list", "No bookings are assigned to you right now.");
+      const mine = rows.filter(b => b.staff_id === currentStaffMember.id);
+      const available = rows.filter(b => b.staff_assignment_mode === "ANY" && ["PENDING", "CONFIRMED"].includes(String(b.status || "").toUpperCase()));
+      const waiting = mine.filter(b => String(b.status || "").toUpperCase() === "PENDING");
+      const confirmed = mine.filter(b => String(b.status || "").toUpperCase() === "CONFIRMED");
+
+      const count = (id, value) => { const el = $(id); if (el) el.textContent = String(value); };
+      count("staff-count-available", available.length);
+      count("staff-count-waiting", waiting.length);
+      count("staff-count-confirmed", confirmed.length);
+
+      if (!rows.length) return setEmpty("staff-bookings-list", "No bookings are available or assigned to you right now.");
       $("staff-bookings-list").replaceChildren(...rows.map(b => {
         const status = String(b.status || "pending").toUpperCase();
+        const isMine = b.staff_id === currentStaffMember.id;
+        const isAvailable = b.staff_assignment_mode === "ANY" && ["PENDING", "CONFIRMED"].includes(status);
         const card = h("div", { class: "order-card" });
         card.append(
           h("div", { class: "order-title", text: b.service_items?.title || "Booking" }),
           h("div", { class: "order-time", style: "font-weight:700;color:#0f172a", text: (b.booking_date || "") + " · " + (b.booking_time || "") }),
-          h("div", { class: "order-time", style: "color:#0f172a;font-weight:600", text: (b.customer_name || "Customer") + (b.customer_phone ? " · " + b.customer_phone : "") }),
-          h("div", { class: "order-time", text: "Status: " + status + (Number(b.party_size) > 1 ? " · Guests: " + b.party_size : "") })
+          h("div", { class: "order-time", style: "color:#0f172a;font-weight:600", text: (b.customer_name || "Customer") + (b.customer_phone ? " · " + b.customer_phone : "") })
         );
-        if (b.staff_assignment_mode === "ANY" && (status === "PENDING" || status === "CONFIRMED")) {
-          card.append(h("div", { class: "order-time", style: "font-weight:700;color:#b45309;margin-top:6px", text: "Available for eligible staff — first to accept gets this booking." }));
-          card.append(h("button", { type: "button", class: "btn-primary", style: "margin-top:10px", text: "Accept booking", onclick: () => acceptStaffBooking(b.id) }));
-        } else if (b.staff_members?.full_name) {
-          card.append(h("div", { class: "order-time", style: "font-weight:700", text: "Assigned to: " + b.staff_members.full_name }));
+
+        if (isMine && status === "PENDING") {
+          card.append(h("div", { class: "order-time", style: "font-weight:700;color:#b45309;margin-top:7px", text: "Accepted by you · Waiting for owner confirmation" }));
+        } else if (isMine && status === "CONFIRMED") {
+          card.append(h("div", { class: "order-time", style: "font-weight:700;color:#15803d;margin-top:7px", text: "Confirmed by owner · You're assigned to this booking" }));
+        } else if (isMine && status === "COMPLETED") {
+          card.append(h("div", { class: "order-time", style: "font-weight:700;color:#15803d;margin-top:7px", text: "Completed" }));
+        } else if (isMine && status === "CANCELLED") {
+          card.append(h("div", { class: "order-time", style: "font-weight:700;color:#b91c1c;margin-top:7px", text: "Cancelled by the shop" }));
+        } else if (isAvailable) {
+          card.append(h("div", { class: "order-time", style: "font-weight:700;color:#b45309;margin-top:7px", text: "Available · First eligible staff member to accept gets this booking" }));
+        }
+
+        if (Number(b.party_size) > 1) {
+          card.append(h("div", { class: "order-time", text: "Guests: " + b.party_size }));
+        }
+        if (b.is_takeaway) {
+          card.append(h("div", { class: "order-time", text: "Takeaway collection" }));
+        }
+        if (isAvailable) {
+          const acceptButton = h("button", { type: "button", class: "btn-primary", style: "margin-top:10px", text: "Accept booking" });
+          acceptButton.addEventListener("click", () => acceptStaffBooking(b.id, acceptButton));
+          card.append(acceptButton);
         }
         return card;
       }));
@@ -1687,15 +1725,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     }
   }
 
-  async function acceptStaffBooking(bookingId) {
+  async function acceptStaffBooking(bookingId, button) {
+    if (button) { button.disabled = true; button.textContent = "Accepting..."; }
     try {
       const { error } = await db.rpc("accept_staff_booking", { p_booking_id: bookingId });
       if (error) throw error;
-      alert("Booking accepted and assigned to you.");
       await loadStaffBookings();
+      alert("Booking accepted and assigned to you. It is now waiting for the shop owner to confirm it. You do not need to accept it again.");
     } catch (err) {
-      alert(err.message || "This booking may already have been accepted by another worker.");
+      alert(err.message || "This booking may already have been taken by another worker.");
       await loadStaffBookings();
+    } finally {
+      if (button) { button.disabled = false; button.textContent = "Accept booking"; }
     }
   }
 
