@@ -862,6 +862,31 @@
       $("lightbox-modal").style.display = "none";
     }
 
+
+    async function downloadBookingReceiptImage(details) {
+      if (!details || !details.bookingId || !window.BNQR) return;
+      const btn = $("download-booking-receipt");
+      if (btn) { btn.disabled = true; btn.textContent = "Preparing image..."; }
+      try {
+        const W=900,H=1040,canvas=document.createElement("canvas"); canvas.width=W; canvas.height=H;
+        const c=canvas.getContext("2d"); c.fillStyle="#fff"; c.fillRect(0,0,W,H);
+        c.textAlign="center"; c.fillStyle="#0f172a"; c.font="800 48px Arial"; c.fillText("BOOK.NOW",W/2,82);
+        c.fillStyle="#2563eb"; c.font="700 25px Arial"; c.fillText("BOOKING RECEIPT",W/2,126);
+        c.strokeStyle="#e2e8f0"; c.lineWidth=2; c.beginPath(); c.moveTo(70,160); c.lineTo(830,160); c.stroke();
+        const rows=[["Shop",details.shop],["Service",details.service],["Customer",details.name],["Appointment",details.appointment],["Status","Waiting for shop confirmation"],["Price",details.price],["Payment reference",details.reference]];
+        let y=220; c.textAlign="left";
+        for(const [label,value] of rows){c.fillStyle="#64748b";c.font="600 20px Arial";c.fillText(label.toUpperCase(),85,y);c.fillStyle="#0f172a";c.font="700 25px Arial";const t=String(value||"");c.fillText(t.length>38?t.slice(0,35)+"...":t,85,y+32);y+=88;}
+        const svg=BNQR.svg(details.bookingId,{margin:3}),img=new Image();
+        await new Promise((ok,bad)=>{img.onload=ok;img.onerror=bad;img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);});
+        const q=270;c.drawImage(img,(W-q)/2,y+2,q,q);
+        c.textAlign="center";c.fillStyle="#64748b";c.font="600 18px Arial";c.fillText("Show this QR code at the shop for scanning.",W/2,y+q+38);
+        const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));if(!blob)throw new Error("Image creation failed");
+        const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="BOOK-NOW-receipt-"+String(details.reference||"booking").replace(/[^A-Za-z0-9-]/g,"")+".png";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+        const note=$("receipt-image-note");if(note)note.textContent="Receipt image saved. Keep it in your phone gallery.";
+      } catch(err){console.error("Receipt image error:",err);alert("We couldn't create the receipt image. You can still show the QR code on screen.");}
+      finally{if(btn){btn.disabled=false;btn.textContent="Save receipt as image";}}
+    }
+
     async function confirmBooking() {
       const name = $("customer-name").value.trim();
       const phone = $("customer-phone").value.trim();
@@ -1016,6 +1041,7 @@
               <div style="font-size:10px;font-weight:800;color:var(--danger);margin-top:4px;text-transform:uppercase;">Unpaid. Ref: ${esc(paymentRef)}</div>
             </div>
 
+            ${bookingId ? `<button id="download-booking-receipt" type="button" style="display:block;width:100%;margin:0 0 8px;padding:12px;border-radius:10px;border:0;background:#0f172a;color:#fff;font-size:13px;font-weight:800;cursor:pointer;">Save receipt as image</button><div id="receipt-image-note" style="font-size:11px;color:var(--muted);margin-bottom:10px;"></div>` : ""}
             ${waUrl ? `<a href="${esc(waUrl)}" target="_blank" rel="noopener" class="btn-book" style="display:block;width:100%;text-decoration:none;padding:12px;font-size:13px;background:#25d366;border-radius:10px;margin-bottom:8px;">
               <i class="ph ph-whatsapp-logo" style="font-size:16px;vertical-align:middle;"></i> Send booking to the shop on WhatsApp
             </a>` : `<p style="font-size:12px;color:var(--muted);">This shop hasn't added a WhatsApp number. Screenshot this screen and show it at the shop.</p>`}
@@ -1027,6 +1053,9 @@
         $("booking-modal").querySelector(".modal-sheet").style.display = "none";
         confirmation.style.display = "block";
         $("done-btn").addEventListener("click", () => location.reload());
+        if (bookingId && $("download-booking-receipt")) {
+          $("download-booking-receipt").addEventListener("click", () => downloadBookingReceiptImage({ bookingId, shop: shopName, service: selectedService.title, name, appointment: apptText, price: money(price), reference: paymentRef }));
+        }
         if (bookingId) {
           $("alerts-btn").addEventListener("click", () => enableCustomerAlerts(bookingId, paymentRef, phone, $("alerts-btn"), $("alerts-note")));
         } else {
