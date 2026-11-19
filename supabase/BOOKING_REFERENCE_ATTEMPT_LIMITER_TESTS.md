@@ -4,7 +4,7 @@ This change is proposed on `security/booking-reference-attempt-limiter` only. It
 
 ## Intended behaviour
 
-- Repeated failed reference/phone matches for an **existing** booking reference cause an escalating delay on later attempts, capped at 3 seconds. A correct phone/reference pair is still allowed through and clears the counter; there is no hard lockout.
+- Repeated failed reference/phone matches for an **existing** booking reference cause an escalating delay on later attempts. Including the fixed 0.4-second failed-match response delay, the total added delay is capped at 3 seconds. A correct phone/reference pair is still allowed through and clears the counter; there is no hard lockout.
 - The limiter is shared across booking lookup, receipt retrieval, EFT-detail retrieval, cancellation, rescheduling, review submission, and customer push registration. This prevents switching RPCs to bypass the same reference's limit.
 - Successful reference/phone verification clears that reference's failed-attempt counter.
 - Business-rule failures after identity is verified (for example, a paid booking cannot be rescheduled) do not count as failed identity attempts.
@@ -18,7 +18,7 @@ This change is proposed on `security/booking-reference-attempt-limiter` only. It
 Run only against a disposable local database or isolated Supabase development branch with synthetic test bookings. Do not use real customer bookings.
 
 1. **Successful lookup:** correct reference + correct phone returns the existing booking fields and clears prior failures.
-2. **Escalating delay:** issue repeated wrong-phone attempts against one synthetic existing reference and verify the delay increases but never exceeds 3 seconds.
+2. **Escalating delay:** issue repeated wrong-phone attempts against one synthetic existing reference and verify the throttle delay plus the fixed 0.4-second failed-match delay increases but never exceeds 3 seconds in total.
 3. **No lockout:** after many failed matches, a correct phone/reference pair must still succeed and clear the counter.
 4. **Shared limiter:** verify the same reference's recent failure count affects lookup, receipt, EFT details, cancellation, rescheduling, review, and push registration consistently; correct identity must still pass.
 5. **Window expiry:** after 15 minutes without further failures, the delay returns to its baseline.
