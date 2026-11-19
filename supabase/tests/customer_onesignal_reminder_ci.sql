@@ -35,7 +35,7 @@ CREATE TABLE public.bookings (
 CREATE TABLE public.customer_push_subscriptions(booking_id uuid NOT NULL);
 CREATE TABLE public.customer_onesignal_subscriptions(booking_id uuid NOT NULL);
 
-\ir ../migrations/20261119203000_native_customer_reminder_scheduler.sql
+\ir ../migrations/20261119192341_native_customer_reminder_scheduler.sql
 
 DO $$
 DECLARE
