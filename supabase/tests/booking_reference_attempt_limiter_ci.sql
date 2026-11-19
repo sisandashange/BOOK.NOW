@@ -232,6 +232,18 @@ BEGIN
     RAISE EXCEPTION 'Throttle cap outside expected range: % seconds', v_elapsed;
   END IF;
 
+  -- Failure counts remain bounded and a genuine customer is never locked out,
+  -- even after the counter reaches its configured maximum.
+  PERFORM private.booking_reference_record_failure('BN-CITEST1');
+  SELECT failures INTO v_count FROM private.booking_reference_attempts
+  WHERE ref_fingerprint = private.booking_reference_fingerprint('BN-CITEST1');
+  IF v_count <> 1000 THEN RAISE EXCEPTION 'Failure counter exceeded its maximum: %', v_count; END IF;
+  SELECT count(*) INTO v_found FROM public.find_my_booking('BN-CITEST1', '0821234567');
+  IF v_found <> 1 THEN RAISE EXCEPTION 'Correct customer was blocked after repeated failures'; END IF;
+  SELECT count(*) INTO v_count FROM private.booking_reference_attempts
+  WHERE ref_fingerprint = private.booking_reference_fingerprint('BN-CITEST1');
+  IF v_count <> 0 THEN RAISE EXCEPTION 'Successful lookup after repeated failures did not clear counter'; END IF;
+
   -- Existing public RPC remains callable by anon; private objects/helpers do not.
   IF NOT has_schema_privilege('anon', 'private', 'USAGE') THEN
     NULL;
