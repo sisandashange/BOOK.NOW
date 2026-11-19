@@ -542,12 +542,32 @@ footer a{color:var(--muted);font-weight:600}
   // Phone alerts for this booking: a message when the shop confirms, and a reminder 2 hours before
   async function enableAlerts() {
     const btn = $("alerts-btn"), note = $("alerts-note");
-    if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
-      note.textContent = "This phone can't receive alerts when the page is closed. On an iPhone, add BOOK.NOW to your Home Screen first.";
-      return;
-    }
     btn.disabled = true;
     try {
+      // Median APK: use native OneSignal, not browser Web Push inside the WebView.
+      if (window.median?.onesignal?.register && window.median?.onesignal?.onesignalInfo) {
+        await window.median.onesignal.register();
+        const info = await window.median.onesignal.onesignalInfo();
+        const subscriptionId = info?.subscription?.id;
+        if (!info?.subscription?.optedIn || !subscriptionId) {
+          throw new Error("Native notifications are not enabled on this device.");
+        }
+        const { data, error } = await db.rpc("save_my_booking_onesignal", {
+          p_ref: lookup.ref, p_phone: lookup.phone, p_subscription_id: subscriptionId,
+          p_user_agent: navigator.userAgent
+        });
+        if (error || !data || data.success === false) throw new Error((data && data.message) || "save failed");
+        btn.textContent = "Alerts are on";
+        note.textContent = "You'll get a notification when the shop confirms, and a reminder 2 hours before.";
+        return;
+      }
+
+      // Chrome/browser fallback: keep the existing Web Push flow unchanged.
+      if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+        note.textContent = "This browser can't receive alerts. Please use Chrome or enable notifications in the BOOK.NOW app.";
+        btn.disabled = false;
+        return;
+      }
       if (Notification.permission === "default") await Notification.requestPermission();
       if (Notification.permission !== "granted") {
         note.textContent = "Notifications are blocked. Allow them for this site in your phone settings, then try again.";
@@ -569,7 +589,7 @@ footer a{color:var(--muted);font-weight:600}
     } catch (e) {
       console.warn("Alerts could not be set up:", e);
       btn.disabled = false;
-      note.textContent = "We couldn't turn alerts on. Try again later.";
+      note.textContent = e?.message || "We couldn't turn alerts on. Try again later.";
     }
   }
 
