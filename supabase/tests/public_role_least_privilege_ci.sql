@@ -61,7 +61,7 @@ GRANT INSERT (
 GRANT REFERENCES,TRIGGER ON TABLE public.bookings TO anon;
 GRANT SELECT,UPDATE ON TABLE public.bookings TO authenticated;
 
-\ir ../migrations/20261119210000_public_role_least_privilege.sql
+\ir ../migrations/20261119192942_public_role_least_privilege.sql
 
 DO $$
 BEGIN
