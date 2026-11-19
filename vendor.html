@@ -1700,10 +1700,34 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   }
 
   async function showDashboard() {
-    $("auth-screen").style.display = "none";
-    $("dashboard-screen").style.display = "block";
-    await initDashboard();
-    syncPushSubscription().then(state => { if (state === "on") showPushStatus("on"); });
+    // Keep every dashboard hidden until the signed-in account's role is verified.
+    // The login screen doubles as a neutral verification screen during this check.
+    $("auth-screen").style.display = "flex";
+    $("dashboard-screen").style.display = "none";
+    $("staff-dashboard-screen").style.display = "none";
+    $("subscription-gate").style.display = "none";
+    $("auth-heading").textContent = "Verifying account";
+    $("auth-subheading").textContent = "Checking your secure BOOK.NOW access...";
+    $("auth-submit-btn").disabled = true;
+
+    try {
+      await initDashboard();
+      $("auth-screen").style.display = "none";
+      // initDashboard displays the restricted staff screen for staff accounts.
+      // Only reveal the owner dashboard after role verification has completed.
+      if (!currentStaffMember) $("dashboard-screen").style.display = "block";
+      syncPushSubscription().then(state => { if (state === "on") showPushStatus("on"); });
+    } catch (err) {
+      $("dashboard-screen").style.display = "none";
+      $("staff-dashboard-screen").style.display = "none";
+      $("subscription-gate").style.display = "none";
+      $("auth-screen").style.display = "flex";
+      $("auth-heading").textContent = "Account verification failed";
+      $("auth-subheading").textContent = "Your dashboards are protected. Please try again.";
+      $("auth-submit-btn").disabled = false;
+      console.error("Account verification failed:", err);
+      alert("Could not verify your account: " + (err.message || "Please try again."));
+    }
   }
 
   async function initDashboard(preferredId = null) {
@@ -1760,8 +1784,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       await loadPlatformBank();
       await checkSubscriptionAndRender();
     } catch (err) {
-      console.error("Dashboard error:", err);
-      alert("Could not load your dashboard: " + err.message);
+      console.error("Dashboard role verification/load error:", err);
+      // Do not swallow verification errors: showDashboard must keep both dashboards hidden.
+      throw err;
     }
   }
 
