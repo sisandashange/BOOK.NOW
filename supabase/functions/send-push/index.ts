@@ -180,7 +180,12 @@ Deno.serve(async (req) => {
             headings: { en: title },
             contents: { en: text },
             url: new URL(url, "https://getbooknow.co.za/").toString(),
-            data: { kind, store_id: body.store_id ?? null, booking_id: body.booking_id ?? null },
+            data: {
+              kind,
+              store_id: body.store_id ?? null,
+              booking_id: body.booking_id ?? null,
+              targetUrl: new URL(url, "https://getbooknow.co.za/").toString(),
+            },
           }),
         });
         const osBody = await osResponse.json().catch(() => ({}));
@@ -222,7 +227,11 @@ Deno.serve(async (req) => {
               headings: { en: title },
               contents: { en: text },
               url: new URL(url, "https://getbooknow.co.za/").toString(),
-              data: { kind, booking_id: ownerId },
+              data: {
+                kind,
+                booking_id: ownerId,
+                targetUrl: new URL(url, "https://getbooknow.co.za/").toString(),
+              },
             }),
           });
           const osBody = await osResponse.json().catch(() => ({}));
