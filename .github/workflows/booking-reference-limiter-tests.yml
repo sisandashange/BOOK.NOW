@@ -44,3 +44,33 @@ jobs:
           psql "postgresql://postgres@localhost:5432/booknow_ci" \
             --set ON_ERROR_STOP=1 \
             --file supabase/tests/booking_reference_attempt_limiter_ci.sql
+      - name: Verify concurrent attempts serialize per booking reference
+        env:
+          PGPASSWORD: postgres
+        shell: bash
+        run: |
+          DB="postgresql://postgres@localhost:5432/booknow_ci"
+          psql "$DB" --set ON_ERROR_STOP=1 --command "
+            INSERT INTO private.booking_reference_attempts(ref_fingerprint, window_started, failures)
+            VALUES (private.booking_reference_fingerprint('BN-CITEST1'), now(), 1)
+            ON CONFLICT (ref_fingerprint) DO UPDATE
+            SET window_started = now(), failures = 1;
+          "
+          # Session one acquires the limiter's advisory transaction lock and
+          # deliberately holds its transaction open for three seconds.
+          psql "$DB" --set ON_ERROR_STOP=1 --command "
+            BEGIN;
+            SELECT private.booking_reference_throttle('BN-CITEST1');
+            SELECT pg_sleep(3);
+            COMMIT;
+          " &
+          HOLDER_PID=$!
+          sleep 1
+          START_NS=$(date +%s%N)
+          psql "$DB" --set ON_ERROR_STOP=1 --command \
+            "SELECT private.booking_reference_throttle('BN-CITEST1');"
+          END_NS=$(date +%s%N)
+          wait "$HOLDER_PID"
+          ELAPSED=$(awk -v s="$START_NS" -v e="$END_NS" 'BEGIN { printf "%.2f", (e-s)/1000000000 }')
+          echo "Second request waited ${ELAPSED}s for the first transaction."
+          awk -v elapsed="$ELAPSED" 'BEGIN { if (elapsed < 1.5) exit 1 }'
