@@ -863,6 +863,37 @@
     }
 
 
+
+  async function saveReceiptBlob(blob, filename, noteEl) {
+    // Median's native downloader needs a real HTTPS URL, not a temporary blob: URL.
+    if (window.median && window.median.share && typeof window.median.share.downloadFile === "function") {
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error("Could not prepare receipt image"));
+        reader.readAsDataURL(blob);
+      });
+      const response = await fetch(SUPABASE_URL + "/functions/v1/receipt-download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": SUPABASE_KEY },
+        body: JSON.stringify({ imageBase64: String(dataUrl).split(",")[1] })
+      });
+      if (!response.ok) throw new Error("Secure receipt download could not be prepared");
+      const result = await response.json();
+      if (!result || !result.url || !/^https:\/\//i.test(result.url)) throw new Error("Invalid receipt download URL");
+      await window.median.share.downloadFile({ url: result.url, open: false });
+      if (noteEl) noteEl.textContent = "Receipt download started. Check your phone's Downloads folder.";
+      return;
+    }
+
+    // Normal browsers keep the existing direct PNG download behavior.
+    const url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    if (noteEl) noteEl.textContent = "Receipt image download started.";
+  }
+
     async function downloadBookingReceiptImage(details) {
       if (!details || !details.bookingId || !window.BNQR) return;
       const btn = $("download-booking-receipt");
@@ -881,8 +912,9 @@
         const q=270;c.drawImage(img,(W-q)/2,y+2,q,q);
         c.textAlign="center";c.fillStyle="#64748b";c.font="600 18px Arial";c.fillText("Show this QR code at the shop for scanning.",W/2,y+q+38);
         const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));if(!blob)throw new Error("Image creation failed");
-        const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="BOOK-NOW-receipt-"+String(details.reference||"booking").replace(/[^A-Za-z0-9-]/g,"")+".png";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
-        const note=$("receipt-image-note");if(note)note.textContent="Receipt image saved. Keep it in your phone gallery.";
+        const filename="BOOK-NOW-receipt-"+String(details.reference||"booking").replace(/[^A-Za-z0-9-]/g,"")+".png";
+        const note=$("receipt-image-note");
+        await saveReceiptBlob(blob, filename, note);
       } catch(err){console.error("Receipt image error:",err);alert("We couldn't create the receipt image. You can still show the QR code on screen.");}
       finally{if(btn){btn.disabled=false;btn.textContent="Save receipt as image";}}
     }
