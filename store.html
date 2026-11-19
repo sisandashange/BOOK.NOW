@@ -868,7 +868,7 @@
       const btn = $("download-booking-receipt");
       if (btn) { btn.disabled = true; btn.textContent = "Preparing image..."; }
       try {
-        const W=900,H=1040,canvas=document.createElement("canvas"); canvas.width=W; canvas.height=H;
+        const W=900,H=1250,canvas=document.createElement("canvas"); canvas.width=W; canvas.height=H;
         const c=canvas.getContext("2d"); c.fillStyle="#fff"; c.fillRect(0,0,W,H);
         c.textAlign="center"; c.fillStyle="#0f172a"; c.font="800 48px Arial"; c.fillText("BOOK.NOW",W/2,82);
         c.fillStyle="#2563eb"; c.font="700 25px Arial"; c.fillText("BOOKING RECEIPT",W/2,126);
