@@ -25,7 +25,7 @@ Run only against a disposable local database or isolated Supabase development br
 6. **Unknown references:** repeated random/nonexistent references do not create rows in `private.booking_reference_attempts`.
 7. **Valid identity, no bank details:** a valid reference/phone with no configured EFT details must not increment the failure counter.
 8. **Valid identity, business-rule rejection:** paid, cancelled, too-close-to-appointment, already-reviewed, or non-completed bookings must not increment the identity failure counter after the correct phone is supplied.
-9. **Concurrent attempts:** send simultaneous failed attempts against one synthetic reference; verify the threshold is enforced without a race.
+9. **Concurrent attempts:** send simultaneous failed attempts against one synthetic reference; verify the escalating delay is consistent and concurrent calls cannot bypass serialization.
 10. **Permissions:** `anon` and `authenticated` cannot use the private schema, read the secret, or execute private helper functions. Existing public RPC execute grants remain unchanged.
 11. **Regression:** verify normal booking receipt, manage-my-booking lookup, EFT details, cancel/reschedule, review, and push setup all retain their current response shapes and behaviour.
 
