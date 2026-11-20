@@ -100,6 +100,10 @@ $$;
 
 \ir ../migrations/20261120095000_fix_overnight_staff_availability_and_reminders.sql
 
+CREATE TRIGGER booking_push_after_insert
+AFTER INSERT ON public.bookings
+FOR EACH ROW EXECUTE FUNCTION public.push_notify_booking();
+
 DO $$
 DECLARE
   v_store uuid := '10000000-0000-0000-0000-000000000001';
@@ -225,10 +229,6 @@ BEGIN
   v_due_business_date := (v_due_at AT TIME ZONE 'Africa/Johannesburg')::date - 1;
   v_due_time := (v_due_at AT TIME ZONE 'Africa/Johannesburg')::time;
   -- Owner booking alerts must also receive the resolved appointment instant.
-  CREATE TRIGGER booking_push_after_insert
-  AFTER INSERT ON public.bookings
-  FOR EACH ROW EXECUTE FUNCTION public.push_notify_booking();
-
   INSERT INTO public.bookings(
     id, store_id, service_id, booking_date, booking_time, appointment_at,
     duration_minutes, status
