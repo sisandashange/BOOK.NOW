@@ -181,7 +181,7 @@ BEGIN
 
   -- Install the authoritative trigger after the manually inserted fixture bookings.
   CREATE TRIGGER zz_assign_validate_booking_staff
-  BEFORE INSERT OR UPDATE OF booking_date, booking_time, appointment_at, staff_id, staff_assignment_mode, duration_minutes, status
+  BEFORE INSERT OR UPDATE OF booking_date, booking_time, appointment_at, staff_id, staff_assignment_mode, duration_minutes, status, is_takeaway
   ON public.bookings
   FOR EACH ROW EXECUTE FUNCTION public.assign_and_validate_booking_staff();
 
@@ -221,6 +221,16 @@ BEGIN
     public.compute_appointment_at(v_store, v_business_date, time '01:45'),
     30, 'NONE', 'pending'
   );
+
+  BEGIN
+    UPDATE public.bookings SET is_takeaway = false
+    WHERE id = '40000000-0000-0000-0000-000000000008';
+    RAISE EXCEPTION 'Expected takeaway-to-dine-in conversion to require staff';
+  EXCEPTION WHEN OTHERS THEN
+    GET STACKED DIAGNOSTICS v_conflict_message = MESSAGE_TEXT;
+    IF position('Choose a staff member' IN v_conflict_message) = 0 THEN RAISE; END IF;
+  END;
+
   UPDATE public.bookings
   SET booking_time = time '01:30',
       appointment_at = public.compute_appointment_at(v_store, v_business_date, time '01:30')
