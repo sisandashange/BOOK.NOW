@@ -3,7 +3,12 @@
 BEGIN;
 
 CREATE TABLE public.stores (id uuid PRIMARY KEY, created_at timestamptz DEFAULT now(), status text, is_hidden boolean DEFAULT false);
-CREATE TABLE public.subscription_payment_requests (id uuid PRIMARY KEY, created_at timestamptz DEFAULT now());
+CREATE TABLE public.subscription_payment_requests (
+  id uuid PRIMARY KEY, store_id uuid, owner_id uuid, amount numeric,
+  payment_reference text, payment_type text, receipt_path text,
+  status text, created_at timestamptz DEFAULT now(), updated_at timestamptz
+);
+CREATE FUNCTION public.is_founder_mfa() RETURNS boolean LANGUAGE sql AS 'SELECT true';
 CREATE TABLE public.service_items (id uuid PRIMARY KEY, store_id uuid, created_at timestamptz DEFAULT now());
 
 CREATE TABLE public.bookings (
@@ -43,6 +48,7 @@ INSERT INTO public.bookings (
 \ir ../migrations/20261120130000_add_booking_change_tracking.sql
 \ir ../migrations/20261120130500_add_dashboard_pagination_indexes.sql
 \ir ../migrations/20261120131000_require_booking_reference.sql
+\ir ../migrations/20261120132500_stabilize_founder_payment_request_pagination.sql
 
 DO $$
 DECLARE
@@ -81,6 +87,24 @@ BEGIN
 
   IF after_change IS DISTINCT FROM before_change THEN
     RAISE EXCEPTION 'Reminder-only metadata update should not advance updated_at.';
+  END IF;
+
+  INSERT INTO public.subscription_payment_requests (id,created_at,status) VALUES
+    ('40000000-0000-0000-0000-000000000001','2026-11-20 10:00:00+00','APPROVED'),
+    ('40000000-0000-0000-0000-000000000002','2026-11-20 10:00:00+00','APPROVED'),
+    ('40000000-0000-0000-0000-000000000003','2026-11-20 10:00:00+00','APPROVED');
+  IF (
+    SELECT array_agg(id ORDER BY ord)
+    FROM (
+      SELECT id,row_number() OVER () AS ord
+      FROM public.founder_list_subscription_payment_requests()
+    ) ordered_requests
+  ) IS DISTINCT FROM ARRAY[
+    '40000000-0000-0000-0000-000000000003'::uuid,
+    '40000000-0000-0000-0000-000000000002'::uuid,
+    '40000000-0000-0000-0000-000000000001'::uuid
+  ]::uuid[] THEN
+    RAISE EXCEPTION 'Founder payment request pagination is not stable for tied timestamps.';
   END IF;
 
   IF NOT EXISTS (
