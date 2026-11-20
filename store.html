@@ -1015,10 +1015,13 @@
       if (!bookingOpen) return;
       const old = shisaCart.get(service.id);
       if (old) old.quantity = Math.min(50, old.quantity + 1);
-      else shisaCart.set(service.id, {
+      else {
+        if (shisaCart.size >= 25) return alert("You can add up to 25 different menu items to one order.");
+        shisaCart.set(service.id, {
         id: service.id, title: String(service.title || "Menu item"),
         price: Number(price), quantity: 1, duration: Number(service.duration_minutes) || 30
-      });
+        });
+      }
       renderShisaCart();
     }
 
