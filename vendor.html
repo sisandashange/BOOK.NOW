@@ -1672,7 +1672,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         .order("booking_time", { ascending: true });
       if (error) throw error;
       const rows = data || [];
-      const mine = rows.filter(b => b.staff_id === currentStaffMember.id);
+      // ANY rows reserve a worker provisionally but are still awaiting a staff member's acceptance.
+      const mine = rows.filter(b => b.staff_id === currentStaffMember.id && b.staff_assignment_mode !== "ANY");
       const available = rows.filter(b => b.staff_assignment_mode === "ANY" && ["PENDING", "CONFIRMED"].includes(String(b.status || "").toUpperCase()));
       const waiting = mine.filter(b => String(b.status || "").toUpperCase() === "PENDING");
       const confirmed = mine.filter(b => String(b.status || "").toUpperCase() === "CONFIRMED");
@@ -1694,16 +1695,16 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
           h("div", { class: "order-time", style: "color:#0f172a;font-weight:600", text: (b.customer_name || "Customer") + (b.customer_phone ? " · " + b.customer_phone : "") })
         );
 
-        if (isMine && status === "PENDING") {
-          card.append(h("div", { class: "order-time", style: "font-weight:700;color:#b45309;margin-top:7px", text: "Accepted by you · Waiting for owner confirmation" }));
+        if (isAvailable) {
+          card.append(h("div", { class: "order-time", style: "font-weight:700;color:#b45309;margin-top:7px", text: "Available · First eligible staff member to accept gets this booking" }));
+        } else if (isMine && status === "PENDING") {
+          card.append(h("div", { class: "order-time", style: "font-weight:700;color:#b45309;margin-top:7px", text: "Assigned to you · Waiting for owner confirmation" }));
         } else if (isMine && status === "CONFIRMED") {
           card.append(h("div", { class: "order-time", style: "font-weight:700;color:#15803d;margin-top:7px", text: "Confirmed by owner · You're assigned to this booking" }));
         } else if (isMine && status === "COMPLETED") {
           card.append(h("div", { class: "order-time", style: "font-weight:700;color:#15803d;margin-top:7px", text: "Completed" }));
         } else if (isMine && status === "CANCELLED") {
           card.append(h("div", { class: "order-time", style: "font-weight:700;color:#b91c1c;margin-top:7px", text: "Cancelled by the shop" }));
-        } else if (isAvailable) {
-          card.append(h("div", { class: "order-time", style: "font-weight:700;color:#b45309;margin-top:7px", text: "Available · First eligible staff member to accept gets this booking" }));
         }
 
         if (Number(b.party_size) > 1) {
