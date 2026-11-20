@@ -1,0 +1,44 @@
+name: Booking change tracking regression tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "vendor.html"
+      - "supabase/migrations/*booking_change_tracking*"
+      - "supabase/tests/booking_change_tracking_ci.sql"
+      - ".github/workflows/booking-change-tracking.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  booking-change-tracking:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: booknow_change_tracking_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d booknow_change_tracking_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Run booking change tracking regression test
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql "postgresql://postgres@localhost:5432/booknow_change_tracking_ci" \
+            --set ON_ERROR_STOP=1 \
+            --file supabase/tests/booking_change_tracking_ci.sql
