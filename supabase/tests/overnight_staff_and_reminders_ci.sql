@@ -224,6 +224,11 @@ BEGIN
   v_due_at := now() + interval '100 minutes';
   v_due_business_date := (v_due_at AT TIME ZONE 'Africa/Johannesburg')::date - 1;
   v_due_time := (v_due_at AT TIME ZONE 'Africa/Johannesburg')::time;
+  -- Owner booking alerts must also receive the resolved appointment instant.
+  CREATE TRIGGER booking_push_after_insert
+  AFTER INSERT ON public.bookings
+  FOR EACH ROW EXECUTE FUNCTION public.push_notify_booking();
+
   INSERT INTO public.bookings(
     id, store_id, service_id, booking_date, booking_time, appointment_at,
     duration_minutes, status
@@ -231,10 +236,6 @@ BEGIN
     v_reminder_booking, v_store, v_service, v_due_business_date, v_due_time,
     v_due_at, 30, 'confirmed'
   );
-  -- Owner booking alerts must also receive the resolved appointment instant.
-  CREATE TRIGGER booking_push_after_insert
-  AFTER INSERT ON public.bookings
-  FOR EACH ROW EXECUTE FUNCTION public.push_notify_booking();
 
   INSERT INTO public.customer_onesignal_subscriptions(booking_id) VALUES (v_reminder_booking);
 
