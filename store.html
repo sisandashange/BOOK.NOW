@@ -286,6 +286,7 @@
     let lastCustomerStoreSnapshot = null;
     let lastCustomerServicesSnapshot = null;
     let shisaCart = new Map();
+    let shisaCheckoutActive = false;
 
     const FALLBACK_IMAGES = {
       BARBER: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=70",
@@ -1030,7 +1031,7 @@
       const floatingMeta = $("shisa-floating-order-meta");
       if (floatingBar && floatingMeta) {
         const itemCount = Array.from(shisaCart.values()).reduce((sum, item) => sum + item.quantity, 0);
-        const showFloatingBar = isShisanyamaStore() && itemCount > 0;
+        const showFloatingBar = isShisanyamaStore() && itemCount > 0 && !shisaCheckoutActive;
         floatingBar.hidden = !showFloatingBar;
         floatingBar.style.display = showFloatingBar ? "flex" : "none";
         floatingMeta.textContent = itemCount + (itemCount === 1 ? " item · " : " items · ") + money(shisaCartTotal());
@@ -1101,9 +1102,10 @@
     function openShisaReservation(isTakeaway = false) {
       if (!shisaCart.size) return alert("Add at least one food or drink item first.");
       const first = shisaCart.values().next().value;
-      openBookingModal(first.id, first.title, first.price, first.duration);
-      // Keep the floating basket shortcut out of the way throughout checkout and confirmation.
+      // Set the checkout state before opening the modal so any cart refresh cannot show the shortcut.
+      shisaCheckoutActive = true;
       document.body.classList.add("shisa-checkout-active");
+      openBookingModal(first.id, first.title, first.price, first.duration);
       selectedService.isShisanyamaOrder = true;
       $("takeaway-field").style.display = "block";
       $("is-takeaway").checked = isTakeaway === true;
@@ -1177,6 +1179,7 @@
 
     function closeModals() {
       refreshToken++;
+      shisaCheckoutActive = false;
       document.body.classList.remove("shisa-checkout-active");
       $("report-modal").style.display = "none";
       $("booking-modal").style.display = "none";
