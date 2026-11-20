@@ -14,7 +14,7 @@ BEGIN
 END
 $$;
 
-DO $
+DO $required_fields$
 BEGIN
   IF EXISTS (
     SELECT 1 FROM public.subscription_payment_requests
@@ -24,7 +24,7 @@ BEGIN
     RAISE EXCEPTION 'Cannot require subscription request ownership/status/timestamps while existing rows are incomplete.';
   END IF;
 END
-$;
+$required_fields$;
 
 ALTER TABLE public.subscription_payment_requests
   ALTER COLUMN store_id SET NOT NULL,
