@@ -80,6 +80,8 @@ GRANT SELECT,UPDATE ON TABLE public.bookings TO authenticated;
 \ir ../migrations/20261119192942_public_role_least_privilege.sql
 \ir ../migrations/20261120122138_restrict_public_service_items_to_visible_stores.sql
 \ir ../migrations/20261120131500_restrict_public_takeaway_insert.sql
+\ir ../migrations/20261120132000_one_pending_subscription_request_per_store.sql
+\ir ../migrations/20261120131500_restrict_public_takeaway_insert.sql
 
 INSERT INTO public.stores (id, store_name, status, subscription_expires_at, is_hidden) VALUES
   ('00000000-0000-4000-8000-000000000001', 'Visible test shop', 'active', now() + interval '30 days', false),
@@ -158,6 +160,19 @@ BEGIN
      OR has_table_privilege('anon','public.bookings','TRIGGER') THEN
     RAISE EXCEPTION 'Customer booking column-level INSERT was broken or broadened';
   END IF;
+
+  -- Concurrent proof submissions cannot create duplicate pending requests for one shop.
+  INSERT INTO public.subscription_payment_requests (id,store_id,status)
+  VALUES ('30000000-0000-0000-0000-000000000001','00000000-0000-4000-8000-000000000001','PENDING');
+  BEGIN
+    INSERT INTO public.subscription_payment_requests (id,store_id,status)
+    VALUES ('30000000-0000-0000-0000-000000000002','00000000-0000-4000-8000-000000000001','PENDING');
+    RAISE EXCEPTION 'A second pending payment request for the same shop was accepted.';
+  EXCEPTION WHEN unique_violation THEN
+    NULL;
+  END;
+  INSERT INTO public.subscription_payment_requests (id,store_id,status)
+  VALUES ('30000000-0000-0000-0000-000000000003','00000000-0000-4000-8000-000000000001','APPROVED');
 
   -- Vendor and founder permissions remain unchanged.
   IF NOT has_table_privilege('authenticated','public.stores','SELECT')
