@@ -149,7 +149,8 @@ BEGIN
        AND coalesce(OLD.staff_assignment_mode, 'NONE') = 'NONE'
        AND OLD.staff_id IS NULL
        AND NEW.store_id IS NOT DISTINCT FROM OLD.store_id
-       AND NEW.service_id IS NOT DISTINCT FROM OLD.service_id THEN
+       AND NEW.service_id IS NOT DISTINCT FROM OLD.service_id
+       AND NEW.is_takeaway IS NOT DISTINCT FROM OLD.is_takeaway THEN
       NEW.staff_id := NULL;
       RETURN NEW;
     END IF;
