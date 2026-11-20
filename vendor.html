@@ -2308,7 +2308,15 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
           console.warn("Could not remove unused payment proof:", cleanupError);
         }
       }
-      if (err.code === "23505") {
+      if (requestSaved) {
+        if (activeVendor && activeVendor.id === requestStoreId) {
+          activeVendor.status = "pending_approval";
+          try { await checkSubscriptionAndRender(); } catch (refreshError) {
+            console.warn("Payment proof saved; subscription screen refresh will retry:", refreshError);
+          }
+        }
+        alert("Your proof of payment was received and is awaiting founder review.");
+      } else if (err.code === "23505") {
         alert("A payment proof for this shop is already waiting for review. Please wait for the founder's decision.");
       } else {
         alert("Could not submit proof of payment: " + (err.message || "Unexpected error."));
