@@ -361,6 +361,20 @@
       }
     }
 
+    function addSlotRetry(hint) {
+      const retry = document.createElement("button");
+      retry.type = "button";
+      retry.textContent = "Retry availability";
+      retry.style.cssText = "margin-top:8px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font-weight:700;";
+      retry.addEventListener("click", () => {
+        retry.disabled = true;
+        retry.textContent = "Retrying...";
+        refreshSlots();
+      });
+      hint.appendChild(document.createTextNode(" "));
+      hint.appendChild(retry);
+    }
+
     // Builds the 30-minute time slots for the chosen date and greys out booked ones
     async function refreshSlots() {
       const requestToken = ++refreshToken;
@@ -422,6 +436,7 @@
         chosenTime = "";
         sel.replaceChildren(mk("", "Availability unavailable — try again"));
         hint.textContent = "We couldn't check this shop's availability. Please try again before choosing a time.";
+        addSlotRetry(hint);
         return;
       }
       const cap = isTakeaway ? dbCapTakeaway : dbCapDineIn;
@@ -445,6 +460,7 @@
           chosenTime = "";
           sel.replaceChildren(mk("", "Worker availability unavailable — try again"));
           hint.textContent = "We couldn't check staff availability. Please try again before choosing a time.";
+          addSlotRetry(hint);
           return;
         }
         staffAvailability = Object.fromEntries(staffSlots.map(slot => [String(slot.slot_time).slice(0,5), Number(slot.available_count) || 0]));
