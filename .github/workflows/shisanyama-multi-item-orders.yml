@@ -49,6 +49,16 @@ jobs:
                   path.write_text(script, encoding="utf-8")
                   subprocess.run(["node", "--check", str(path)], check=True)
           subprocess.run(["node", "--check", "sw.js"], check=True)
+          # The checkout modal must always stack above the floating order shortcut.
+          css = re.search(r"\\.modal\\s*\\{([^}]*)\\}", pathlib.Path("store.html").read_text(encoding="utf-8"), flags=re.S)
+          floating = re.search(r"\\.shisa-floating-order-bar\\s*\\{([^}]*)\\}", pathlib.Path("store.html").read_text(encoding="utf-8"), flags=re.S)
+          if not css or not floating:
+              raise SystemExit("Could not find modal/floating order CSS blocks.")
+          modal_z = re.search(r"z-index\\s*:\\s*(\\d+)", css.group(1))
+          floating_z = re.search(r"z-index\\s*:\\s*(\\d+)", floating.group(1))
+          if not modal_z or not floating_z or int(floating_z.group(1)) >= int(modal_z.group(1)):
+              raise SystemExit("Floating order bar must stack below the booking modal.")
+          print("Checkout modal layering regression check passed.")
           print("Inline customer/vendor scripts and service worker parse successfully.")
           PY
       - name: Install PostgreSQL client
