@@ -88,6 +88,19 @@
     .review-text { font-size:13px; color:#334155; line-height:1.5; margin:0; overflow-wrap:anywhere; }
     .review-date { font-size:11px; color:var(--muted); margin-top:6px; }
     .menu-duration { font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 2px; }
+    .shisa-floating-order-bar {
+      position:fixed; left:12px; right:12px; bottom:calc(12px + env(safe-area-inset-bottom));
+      z-index:1200; display:none; width:auto; max-width:680px; margin:0 auto;
+      padding:13px 16px; border:0; border-radius:16px; background:#0f172a; color:#fff;
+      box-shadow:0 8px 28px rgba(15,23,42,.28); text-align:left; cursor:pointer;
+      align-items:center; justify-content:space-between; gap:12px;
+    }
+    .shisa-floating-order-bar[hidden] { display:none !important; }
+    .shisa-floating-order-bar-main { display:flex; flex-direction:column; gap:3px; min-width:0; }
+    .shisa-floating-order-bar-title { font-size:14px; font-weight:800; }
+    .shisa-floating-order-bar-meta { font-size:12px; color:#cbd5e1; }
+    .shisa-floating-order-bar-icon { font-size:21px; flex-shrink:0; }
+    body.shisa-floating-cart-visible { padding-bottom:92px; }
     .shisa-cart-box { margin:18px 0 24px; background:#fff; border:1px solid var(--border); border-radius:16px; padding:14px; box-shadow:var(--shadow-sm); }
     .shisa-cart-row { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid #f1f5f9; font-size:12px; }
     .shisa-cart-controls { display:flex; align-items:center; gap:8px; flex-shrink:0; }
@@ -129,6 +142,13 @@
         <div style="font-size:11px;color:var(--muted);margin-top:7px">Choose dine-in to reserve seats, or choose takeaway to collect. Add as many menu items as you need before checkout.</div>
       </section>
   </main>
+  <button type="button" id="shisa-floating-order-bar" class="shisa-floating-order-bar" aria-label="View your order" hidden>
+    <span class="shisa-floating-order-bar-main">
+      <span class="shisa-floating-order-bar-title">View Your Order</span>
+      <span class="shisa-floating-order-bar-meta" id="shisa-floating-order-meta">0 items · R0.00</span>
+    </span>
+    <i class="ph ph-shopping-bag shisa-floating-order-bar-icon" aria-hidden="true"></i>
+  </button>
   <div class="legal-foot" style="padding-bottom:0"><button type="button" class="report-link" id="report-open">Report this shop</button></div>
   <div class="legal-foot"><a href="manage.html">Manage my booking</a> &middot; <a href="privacy.html">Privacy Policy</a> &middot; <a href="terms.html">Terms of Use</a></div>
 
@@ -1004,7 +1024,29 @@
       $("shisa-cart-total").textContent = money(shisaCartTotal());
       $("shisa-reserve-btn").disabled = !bookingOpen || !shisaCart.size;
       $("shisa-reserve-btn").style.opacity = (!bookingOpen || !shisaCart.size) ? ".55" : "1";
+      const floatingBar = $("shisa-floating-order-bar");
+      const floatingMeta = $("shisa-floating-order-meta");
+      if (floatingBar && floatingMeta) {
+        const itemCount = Array.from(shisaCart.values()).reduce((sum, item) => sum + item.quantity, 0);
+        const showFloatingBar = isShisanyamaStore() && itemCount > 0;
+        floatingBar.hidden = !showFloatingBar;
+        floatingBar.style.display = showFloatingBar ? "flex" : "none";
+        floatingMeta.textContent = itemCount + (itemCount === 1 ? " item · " : " items · ") + money(shisaCartTotal());
+        document.body.classList.toggle("shisa-floating-cart-visible", showFloatingBar);
+      }
     }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const floatingBar = $("shisa-floating-order-bar");
+      if (!floatingBar) return;
+      floatingBar.addEventListener("click", () => {
+        const orderSection = $("shisa-cart-box");
+        if (!orderSection) return;
+        orderSection.scrollIntoView({ behavior:"smooth", block:"center" });
+        orderSection.setAttribute("tabindex", "-1");
+        orderSection.focus({ preventScroll:true });
+      });
+    });
 
     function addShisaCartItem(service, price) {
       if (!bookingOpen) return;
