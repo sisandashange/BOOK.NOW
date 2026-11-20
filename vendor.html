@@ -278,7 +278,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         <div class="form-field"><label for="store-address-input">Store Physical Location / Address</label><input type="text" id="store-address-input" placeholder="e.g. 12 Fox Street, Maboneng, Johannesburg"></div>
         <div class="form-field"><label for="store-area-input">Area (suburb or town)</label><input type="text" id="store-area-input" maxlength="60" placeholder="e.g. Soweto"><div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">Customers can filter shops by area on the homepage. Use the same spelling as other shops in your area.</div></div>
         <div class="form-field"><label for="store-capacity-mode">How do you count how busy you are?</label><select id="store-capacity-mode"><option value="BOOKINGS">By number of bookings (e.g. barber chairs)</option><option value="GUESTS">By number of guests (e.g. a shisanyama)</option></select></div>
-        <div class="form-field"><label for="store-capacity-input" id="store-capacity-label">Bookings you can accept per hour</label><input type="number" id="store-capacity-input" min="1" max="100" step="1" value="1" inputmode="numeric"><div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">Set the maximum number of bookings or guests you can handle in each clock hour. Choose bookings for appointments, or guests for Shisanyama seating. Customers choose their group size when guest capacity is enabled.</div></div>
+        <div class="form-field"><label for="store-capacity-input" id="store-capacity-label">Bookings you can accept per hour</label><input type="number" id="store-capacity-input" min="1" max="100" step="1" value="1" inputmode="numeric"><div id="store-capacity-help" style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">Set the maximum number of bookings you can handle in each clock hour.</div></div>
+        <div class="form-field" id="store-seats-per-table-field" style="display:none;"><label for="store-seats-per-table">Seats at each table</label><input type="number" id="store-seats-per-table" min="1" max="20" step="1" value="4" inputmode="numeric"><div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">Customers' groups use whole tables. A group of 5 needs 2 tables when each table seats 4.</div></div>
         <div class="form-field" id="store-takeaway-capacity-field" style="display:none;"><label for="store-takeaway-capacity">Takeaway orders per 30 minutes</label><input type="number" id="store-takeaway-capacity" min="1" max="100" step="1" value="5" inputmode="numeric"><div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">Maximum collection orders your kitchen can handle in each 30-minute time slot.</div></div>
         <div class="operating-hours-box">
           <div class="operating-title"><i class="ph ph-clock" style="color:var(--accent)"></i> Store Schedule &amp; Closure Controls</div>
@@ -1263,6 +1264,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     $("refresh-settlement-btn").addEventListener("click", loadOrders);
 
     $("store-capacity-mode").addEventListener("change", updateCapacityLabel);
+    $("store-category-input").addEventListener("change", updateCapacityLabel);
     $("save-profile-btn").addEventListener("click", saveStoreProfile);
     $("save-bank-btn").addEventListener("click", saveBankDetails);
     $("bank-select").addEventListener("change", () => {
@@ -1401,9 +1403,16 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   }
 
   function updateCapacityLabel() {
-    $("store-capacity-label").textContent = $("store-capacity-mode").value === "GUESTS"
-      ? "Seats / guests you can host per hour"
-      : "Bookings you can accept per hour";
+    const isShisanyama = /shisanyama|braai/i.test(String($("store-category-input").value || ""));
+    $("store-capacity-mode").disabled = isShisanyama;
+    if (isShisanyama) $("store-capacity-mode").value = "GUESTS";
+    $("store-capacity-label").textContent = isShisanyama ? "Number of tables available per hour" :
+      ($("store-capacity-mode").value === "GUESTS" ? "Seats / guests you can host per hour" : "Bookings you can accept per hour");
+    $("store-capacity-help").textContent = isShisanyama
+      ? "Set how many tables are available for dine-in reservations in each clock hour. Each group reserves enough whole tables."
+      : "Set the maximum number of bookings or guests you can handle in each clock hour.";
+    $("store-seats-per-table-field").style.display = isShisanyama ? "block" : "none";
+    $("store-takeaway-capacity-field").style.display = isShisanyama ? "block" : "none";
   }
 
   function populateProfileForm() {
@@ -1413,10 +1422,13 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     $("store-phone-input").value = activeVendor.phone_number || "";
     $("store-address-input").value = activeVendor.address || "";
     $("store-area-input").value = activeVendor.area || "";
-    $("store-capacity-input").value = activeVendor.hourly_capacity || activeVendor.slot_capacity || 1;
+    const isShisanyama = /shisanyama|braai/i.test(String(activeVendor.category || ""));
+    $("store-capacity-input").value = isShisanyama
+      ? (activeVendor.table_count || Math.max(1, Math.ceil(Number(activeVendor.hourly_capacity || activeVendor.slot_capacity || 4) / 4)))
+      : (activeVendor.hourly_capacity || activeVendor.slot_capacity || 1);
+    $("store-seats-per-table").value = activeVendor.seats_per_table || 4;
     $("store-takeaway-capacity").value = activeVendor.takeaway_slot_capacity || 5;
-    $("store-takeaway-capacity-field").style.display = /shisanyama|braai/i.test(String(activeVendor.category || "")) ? "block" : "none";
-    $("store-capacity-mode").value = activeVendor.capacity_mode || "BOOKINGS";
+    $("store-capacity-mode").value = isShisanyama ? "GUESTS" : (activeVendor.capacity_mode || "BOOKINGS");
     updateCapacityLabel();
     $("opening-time").value = String(activeVendor.opening_time || "08:00").slice(0, 5);
     $("closing-time").value = String(activeVendor.closing_time || "17:00").slice(0, 5);
@@ -1435,7 +1447,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     const capacity = Math.floor(Number($("store-capacity-input").value));
     const isShisanyama = /shisanyama|braai/i.test(String($("store-category-input").value || ""));
     const takeawayCapacity = Math.floor(Number($("store-takeaway-capacity").value));
-    if (!Number.isFinite(capacity) || capacity < 1 || capacity > 100) return alert("Bookings or guests per hour must be a number from 1 to 100.");
+    const seatsPerTable = Math.floor(Number($("store-seats-per-table").value));
+    if (!Number.isFinite(capacity) || capacity < 1 || capacity > 100) return alert(isShisanyama ? "Number of tables must be from 1 to 100." : "Bookings or guests per hour must be a number from 1 to 100.");
+    if (isShisanyama && (!Number.isFinite(seatsPerTable) || seatsPerTable < 1 || seatsPerTable > 20)) return alert("Seats per table must be a number from 1 to 20.");
     if (isShisanyama && (!Number.isFinite(takeawayCapacity) || takeawayCapacity < 1 || takeawayCapacity > 100)) return alert("Takeaway capacity must be a number from 1 to 100 orders per 30 minutes.");
     if (hs && he && he < hs) return alert("Holiday end date cannot be before the start date.");
 
@@ -1449,8 +1463,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         area: $("store-area-input").value.trim() || null,
         slot_capacity: capacity,
         hourly_capacity: capacity,
+        table_count: isShisanyama ? capacity : (Number(activeVendor.table_count) || 1),
+        seats_per_table: isShisanyama ? seatsPerTable : (Number(activeVendor.seats_per_table) || 4),
         takeaway_slot_capacity: isShisanyama ? takeawayCapacity : (Number(activeVendor.takeaway_slot_capacity) || 5),
-        capacity_mode: $("store-capacity-mode").value,
+        capacity_mode: isShisanyama ? "GUESTS" : $("store-capacity-mode").value,
         opening_time: $("opening-time").value,
         closing_time: $("closing-time").value,
         manual_status: $("manual-store-status").value,
