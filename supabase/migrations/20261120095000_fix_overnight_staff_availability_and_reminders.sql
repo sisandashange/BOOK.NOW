@@ -17,14 +17,15 @@ SET search_path TO 'public', 'pg_temp'
 AS $function$
   WITH shop AS (
     SELECT
-      extract(hour FROM opening_time)::integer * 60
-        + extract(minute FROM opening_time)::integer AS open_min,
+      extract(hour FROM coalesce(opening_time::text, '08:00')::time)::integer * 60
+        + extract(minute FROM coalesce(opening_time::text, '08:00')::time)::integer AS open_min,
       CASE
-        WHEN closing_time <= opening_time
-          THEN extract(hour FROM closing_time)::integer * 60
-            + extract(minute FROM closing_time)::integer + 1440
-        ELSE extract(hour FROM closing_time)::integer * 60
-          + extract(minute FROM closing_time)::integer
+        WHEN coalesce(closing_time::text, '17:00')::time
+             <= coalesce(opening_time::text, '08:00')::time
+          THEN extract(hour FROM coalesce(closing_time::text, '17:00')::time)::integer * 60
+            + extract(minute FROM coalesce(closing_time::text, '17:00')::time)::integer + 1440
+        ELSE extract(hour FROM coalesce(closing_time::text, '17:00')::time)::integer * 60
+          + extract(minute FROM coalesce(closing_time::text, '17:00')::time)::integer
       END AS close_min
     FROM public.stores
     WHERE id = p_store_id
