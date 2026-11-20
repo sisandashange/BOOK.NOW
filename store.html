@@ -458,7 +458,9 @@
       const shisanyamaTables = normalizeCategory(storeData.category) === "SHISANYAMA";
       $("party-field").style.display = (!isTakeaway && guestsShop) ? "block" : "none";
       let usedDineIn = {}, usedTakeaway = {};
-      let dbCapDineIn = Number(storeData.hourly_capacity || storeData.slot_capacity) || 1;
+      let dbCapDineIn = shisanyamaTables
+        ? (Number(storeData.table_count) || 1)
+        : (Number(storeData.hourly_capacity || storeData.slot_capacity) || 1);
       let dbCapTakeaway = Number(storeData.takeaway_slot_capacity) || 5;
       try {
         const { data, error } = await db.rpc("get_taken_slots", { p_store_id: requestStoreId, p_date: date });
@@ -467,9 +469,12 @@
         if (!Array.isArray(data)) throw new Error("Availability response was invalid");
         data.forEach(r => {
           const hourKey = fmtMin(Math.floor(toMin(r.booking_time) / 60) * 60);
-          usedDineIn[hourKey] = Number(r.hourly_booked != null ? r.hourly_booked : r.booked) || 0;
+          usedDineIn[hourKey] = shisanyamaTables
+            ? (Number(r.tables_booked) || 0)
+            : (Number(r.hourly_booked != null ? r.hourly_booked : r.booked) || 0);
           usedTakeaway[r.booking_time] = Number(r.takeaway_booked) || 0;
-          if (r.hourly_capacity != null) dbCapDineIn = Number(r.hourly_capacity);
+          if (shisanyamaTables && r.table_capacity != null) dbCapDineIn = Number(r.table_capacity);
+          else if (!shisanyamaTables && r.hourly_capacity != null) dbCapDineIn = Number(r.hourly_capacity);
           if (r.takeaway_capacity != null) dbCapTakeaway = Number(r.takeaway_capacity);
         });
       } catch (e) {
@@ -1138,7 +1143,7 @@
       const shisanyamaTables = normalizeCategory(storeData.category) === "SHISANYAMA";
       const seatsPerTable = Math.max(1, Math.min(20, Number(storeData.seats_per_table) || 4));
       const seats = shisanyamaTables
-        ? Math.min(500, (Number(storeData.table_count) || 1) * seatsPerTable)
+        ? Math.min(50, (Number(storeData.table_count) || 1) * seatsPerTable)
         : Math.min(50, Number(storeData.hourly_capacity || storeData.slot_capacity) || 50);
       $("party-field").style.display = guestsShop ? "block" : "none";
       $("party-size").max = seats;

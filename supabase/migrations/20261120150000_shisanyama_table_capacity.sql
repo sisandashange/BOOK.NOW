@@ -10,8 +10,6 @@ ALTER TABLE public.stores
 UPDATE public.stores
 SET table_count = GREATEST(1, LEAST(100, CEIL(COALESCE(hourly_capacity, slot_capacity, 4)::numeric / 4)::integer)),
     seats_per_table = 4,
-    hourly_capacity = GREATEST(1, LEAST(100, CEIL(COALESCE(hourly_capacity, slot_capacity, 4)::numeric / 4)::integer)),
-    slot_capacity = GREATEST(1, LEAST(100, CEIL(COALESCE(hourly_capacity, slot_capacity, 4)::numeric / 4)::integer)),
     capacity_mode = 'GUESTS'
 WHERE lower(coalesce(category,'')) LIKE '%shisanyama%'
    OR lower(coalesce(category,'')) LIKE '%braai%';
@@ -78,7 +76,8 @@ BEFORE INSERT OR UPDATE OF store_id, booking_date, booking_time, appointment_at,
 ON public.bookings
 FOR EACH ROW EXECUTE FUNCTION public.enforce_shisanyama_table_capacity();
 
-CREATE OR REPLACE FUNCTION public.get_taken_slots(p_store_id uuid, p_date date)
+DROP FUNCTION IF EXISTS public.get_taken_slots(uuid,date);
+CREATE FUNCTION public.get_taken_slots(p_store_id uuid, p_date date)
 RETURNS TABLE(
   booking_time text,
   booked integer,
@@ -86,7 +85,9 @@ RETURNS TABLE(
   hourly_booked integer,
   hourly_capacity integer,
   takeaway_booked integer,
-  takeaway_capacity integer
+  takeaway_capacity integer,
+  tables_booked integer,
+  table_capacity integer
 )
 LANGUAGE sql
 SECURITY DEFINER
@@ -121,12 +122,8 @@ slots AS (
 hour_usage AS (
   SELECT
     date_trunc('hour', b.appointment_at AT TIME ZONE 'Africa/Johannesburg') hour_start,
-    sum(CASE
-      WHEN lower(coalesce(st.category,'')) LIKE '%shisanyama%' OR lower(coalesce(st.category,'')) LIKE '%braai%'
-        THEN ceil(greatest(1,b.party_size)::numeric / greatest(1,st.seats_per_table))
-      WHEN st.capacity_mode='GUESTS' THEN b.party_size
-      ELSE 1
-    END)::integer used
+    sum(CASE WHEN st.capacity_mode='GUESTS' THEN b.party_size ELSE 1 END)::integer guest_used,
+    sum(ceil(greatest(1,b.party_size)::numeric / greatest(1,st.seats_per_table)))::integer tables_used
   FROM public.bookings b
   JOIN public.stores st ON st.id=b.store_id
   WHERE b.store_id=p_store_id AND b.booking_date=p_date
@@ -138,17 +135,16 @@ hour_usage AS (
 SELECT
   to_char(time '00:00'+(sl.m%1440)*interval '1 minute','HH24:MI'),
   coalesce(sum(CASE
-    WHEN b.id IS NOT NULL AND coalesce(b.is_takeaway,false)=false
-      THEN CASE WHEN sw.is_shisa
-        THEN ceil(greatest(1,b.party_size)::numeric / greatest(1,sw.seats_per_table))::integer
-        WHEN lower(coalesce(sw.capacity_mode,''))='GUESTS' THEN b.party_size
-        ELSE 1 END
+    WHEN b.id IS NOT NULL AND coalesce(b.is_takeaway,false)=false AND sw.capacity_mode='GUESTS' THEN b.party_size
+    WHEN b.id IS NOT NULL AND coalesce(b.is_takeaway,false)=false THEN 1
     ELSE 0 END),0)::integer,
-  CASE WHEN sw.is_shisa THEN sw.table_count ELSE sw.slot_capacity END,
-  coalesce(hu.used,0)::integer,
-  CASE WHEN sw.is_shisa THEN sw.table_count ELSE sw.hourly_capacity END,
+  sw.slot_capacity,
+  coalesce(hu.guest_used,0)::integer,
+  sw.hourly_capacity,
   coalesce(sum(CASE WHEN b.id IS NOT NULL AND b.is_takeaway IS TRUE THEN 1 ELSE 0 END),0)::integer,
-  sw.takeaway_slot_capacity
+  sw.takeaway_slot_capacity,
+  coalesce(hu.tables_used,0)::integer,
+  sw.table_count
 FROM slots sl
 CROSS JOIN store_window sw
 LEFT JOIN public.bookings b
@@ -159,7 +155,7 @@ LEFT JOIN public.bookings b
 LEFT JOIN hour_usage hu
   ON hu.hour_start=date_trunc('hour',sl.slot_start AT TIME ZONE 'Africa/Johannesburg')
 GROUP BY sl.m,sw.slot_capacity,sw.hourly_capacity,sw.takeaway_slot_capacity,sw.capacity_mode,
-  sw.table_count,sw.seats_per_table,sw.is_shisa,hu.used
+  sw.table_count,sw.seats_per_table,sw.is_shisa,hu.guest_used,hu.tables_used
 ORDER BY sl.m;
 $$;
 
