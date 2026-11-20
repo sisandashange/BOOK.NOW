@@ -1309,10 +1309,18 @@
         const price = receipt && receipt.booked_price != null ? receipt.booked_price : (selectedService.isShisanyamaOrder ? shisaCartTotal() : selectedService.price);
         let savedFoodItems = [];
         if (selectedService.isShisanyamaOrder) {
-          const { data: foodRows, error: foodError } = await db.rpc("get_shisanyama_booking_items", { p_ref: paymentRef, p_phone: phone });
-          if (foodError) throw foodError;
-          if (!Array.isArray(foodRows) || !foodRows.length) throw new Error("Your reservation was saved, but we couldn't verify the food-order receipt. Keep your reference and contact the shop before trying again.");
-          savedFoodItems = foodRows;
+          const localFoodFallback = Array.from(shisaCart.values()).map(item => ({
+            item_title: item.title, quantity: item.quantity, unit_price: item.price,
+            line_total: item.price * item.quantity
+          }));
+          try {
+            const { data: foodRows, error: foodError } = await db.rpc("get_shisanyama_booking_items", { p_ref: paymentRef, p_phone: phone });
+            if (foodError) throw foodError;
+            savedFoodItems = Array.isArray(foodRows) && foodRows.length ? foodRows : localFoodFallback;
+          } catch (foodReceiptError) {
+            console.warn("Could not reload itemised food receipt; using the submitted basket snapshot:", foodReceiptError);
+            savedFoodItems = localFoodFallback;
+          }
           shisaCart.clear();
           renderShisaCart();
         }
