@@ -10,7 +10,7 @@ BEGIN
   v_definition := replace(
     v_definition,
     'p_staff_assignment_mode text DEFAULT ''NONE''::text, p_staff_id uuid DEFAULT NULL::uuid)',
-    'p_staff_assignment_mode text, p_staff_id uuid, p_is_takeaway boolean'
+    'p_staff_assignment_mode text, p_staff_id uuid, p_is_takeaway boolean)'
   );
   v_definition := replace(
     v_definition,
@@ -19,7 +19,7 @@ BEGIN
   );
   IF v_definition NOT LIKE '%p_is_takeaway%'
      OR v_definition NOT LIKE '%coalesce(p_is_takeaway, false)%'
-     OR v_definition NOT LIKE '%p_staff_assignment_mode text, p_staff_id uuid, p_is_takeaway boolean%' THEN
+     OR v_definition NOT LIKE '%p_staff_assignment_mode text, p_staff_id uuid, p_is_takeaway boolean)%' THEN
     RAISE EXCEPTION 'Could not safely build the unambiguous multi-item takeaway RPC';
   END IF;
   EXECUTE v_definition;
