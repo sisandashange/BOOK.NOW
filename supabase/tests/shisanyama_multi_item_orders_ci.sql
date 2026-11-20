@@ -72,9 +72,9 @@ LANGUAGE sql IMMUTABLE AS $$
   SELECT regexp_replace(coalesce(p_saved,''),'[^0-9]','','g')
        = regexp_replace(coalesce(p_input,''),'[^0-9]','','g')
 $$;
-CREATE FUNCTION private.booking_reference_throttle(text) RETURNS void LANGUAGE plpgsql AS $ BEGIN RETURN; END $;
-CREATE FUNCTION private.booking_reference_record_failure(text) RETURNS void LANGUAGE plpgsql AS $ BEGIN RETURN; END $;
-CREATE FUNCTION private.booking_reference_clear(text) RETURNS void LANGUAGE plpgsql AS $ BEGIN RETURN; END $;
+CREATE FUNCTION private.booking_reference_throttle(text) RETURNS void LANGUAGE plpgsql AS $stub$ BEGIN RETURN; END $stub$;
+CREATE FUNCTION private.booking_reference_record_failure(text) RETURNS void LANGUAGE plpgsql AS $stub$ BEGIN RETURN; END $stub$;
+CREATE FUNCTION private.booking_reference_clear(text) RETURNS void LANGUAGE plpgsql AS $stub$ BEGIN RETURN; END $stub$;
 
 \ir ../migrations/20261120084428_add_shisanyama_multi_item_orders.sql
 \ir ../migrations/20261120084838_fix_shisanyama_order_json_validation.sql
