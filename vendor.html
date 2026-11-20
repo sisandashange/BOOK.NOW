@@ -2258,9 +2258,14 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
   async function submitSubscriptionProof() {
     if (!activeVendor) return alert("Please sign in and select your business.");
+    const requestStoreId = activeVendor.id;
+    const requestStore = activeVendor;
+    const requestReference = subRef(requestStore);
     const input = $("subscription-proof-file");
     const button = $("subscription-submit-btn");
     const file = input.files && input.files[0];
+    let uploadedPath = null;
+    let requestSaved = false;
 
     if (!file) return alert("Please select your proof of payment file first.");
     if (![...IMAGE_TYPES, "application/pdf"].includes(file.type)) return alert("Please upload a JPG, PNG, WebP or PDF file.");
@@ -2273,27 +2278,41 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       if (!user) throw new Error("Please sign in again.");
 
       const ext = { "application/pdf": "pdf", "image/png": "png", "image/webp": "webp" }[file.type] || "jpg";
-      const path = `${user.id}/${activeVendor.id}/${Date.now()}.${ext}`;
+      const path = `${user.id}/${requestStoreId}/${Date.now()}.${ext}`;
       const { error: upErr } = await db.storage.from("subscription-proofs").upload(path, file, { contentType: file.type, upsert: false });
       if (upErr) throw upErr;
+      uploadedPath = path;
 
       const { error: reqErr } = await db.from("subscription_payment_requests").insert([{
-        store_id: activeVendor.id, owner_id: user.id,
+        store_id: requestStoreId, owner_id: user.id,
         amount: 149,
-        payment_reference: subRef(activeVendor), receipt_path: path, status: "PENDING"
+        payment_reference: requestReference, receipt_path: path, status: "PENDING"
       }]);
       if (reqErr) throw reqErr;
+      requestSaved = true;
 
-      const { error: statusErr } = await db.from("stores").update({ status: "pending_approval", updated_at: new Date() }).eq("id", activeVendor.id);
+      const { error: statusErr } = await db.from("stores").update({ status: "pending_approval", updated_at: new Date() }).eq("id", requestStoreId);
       if (statusErr) throw statusErr;
 
-      activeVendor.status = "pending_approval";
+      if (activeVendor && activeVendor.id === requestStoreId) activeVendor.status = "pending_approval";
       input.value = "";
       alert("Your application is under review. Your store will be activated within 24 hours once approved by the administrator.");
       await checkSubscriptionAndRender();
     } catch (err) {
       console.error("Subscription submission failed:", err);
-      alert("Could not submit proof of payment: " + (err.message || "Unexpected error."));
+      if (uploadedPath && !requestSaved) {
+        try {
+          const { error: cleanupError } = await db.storage.from("subscription-proofs").remove([uploadedPath]);
+          if (cleanupError) console.warn("Could not remove unused payment proof:", cleanupError.message);
+        } catch (cleanupError) {
+          console.warn("Could not remove unused payment proof:", cleanupError);
+        }
+      }
+      if (err.code === "23505") {
+        alert("A payment proof for this shop is already waiting for review. Please wait for the founder's decision.");
+      } else {
+        alert("Could not submit proof of payment: " + (err.message || "Unexpected error."));
+      }
     } finally {
       setBtn(button, false, "Confirm Payment");
     }
