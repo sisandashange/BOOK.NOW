@@ -374,8 +374,8 @@
       if (closed) { sel.replaceChildren(mk("", "No times available")); hint.textContent = closed; return; }
       const open = toMin(String(storeData.opening_time || "08:00").slice(0, 5));
       let close = toMin(String(storeData.closing_time || "17:00").slice(0, 5));
-      if (open === close) { sel.replaceChildren(mk("", "No times available")); hint.textContent = "This shop's opening hours aren't set up yet."; return; }
-      if (close < open) close += 1440;
+      // Match the database rule: closing at or before opening means a 24-hour/overnight span.
+      if (close <= open) close += 1440;
       const isTakeaway = $("is-takeaway").checked === true;
       if (!isTakeaway && staffLookupState !== "success") {
         chosenTime = "";
