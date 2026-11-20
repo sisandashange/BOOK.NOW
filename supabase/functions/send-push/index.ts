@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
     if (kind === "booking_new" || kind === "booking_cancelled" || kind === "booking_moved") {
       const { data: store } = await admin.from("stores").select("profile_id").eq("id", body.store_id).maybeSingle();
       ownerId = store?.profile_id ?? null;
-      if (kind === "booking_new") { title = "New booking"; text = `${who} · ${when(body.booking_date as string, body.booking_time as string)}${guests}`; }
+      if (kind === "booking_new") { title = "New booking"; text = `${who} · ${whenAppointment(body.appointment_at as string | null, body.booking_date as string, body.booking_time as string)}${guests}`; }
       if (kind === "booking_cancelled") { title = "Booking cancelled"; text = `${who} cancelled ${when(body.booking_date as string, body.booking_time as string)}`; }
       if (kind === "booking_moved") { title = "Booking moved"; text = `${who} moved to ${when(body.booking_date as string, body.booking_time as string)}`; }
     } else if (kind === "payment_proof") {
