@@ -11,7 +11,7 @@ BEGIN
   v_definition := replace(
     v_definition,
     'p_staff_id uuid DEFAULT NULL::uuid)',
-    'p_staff_id uuid DEFAULT NULL::uuid, p_is_takeaway boolean DEFAULT false)'
+    'p_staff_assignment_mode text, p_staff_id uuid, p_is_takeaway boolean)'
   );
 
   v_definition := replace(
