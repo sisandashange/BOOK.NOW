@@ -50,8 +50,8 @@ jobs:
                   subprocess.run(["node", "--check", str(path)], check=True)
           subprocess.run(["node", "--check", "sw.js"], check=True)
           # The checkout modal must always stack above the floating order shortcut.
-          css = re.search(r"\\.modal\\s*\\{([^}]*)\\}", pathlib.Path("store.html").read_text(encoding="utf-8"), flags=re.S)
-          floating = re.search(r"\\.shisa-floating-order-bar\\s*\\{([^}]*)\\}", pathlib.Path("store.html").read_text(encoding="utf-8"), flags=re.S)
+          css = re.search(r"\.modal\s*\{([^}]*)\}", pathlib.Path("store.html").read_text(encoding="utf-8"), flags=re.S)
+          floating = re.search(r"\.shisa-floating-order-bar\s*\{([^}]*)\}", pathlib.Path("store.html").read_text(encoding="utf-8"), flags=re.S)
           if not css or not floating:
               raise SystemExit("Could not find modal/floating order CSS blocks.")
           modal_z = re.search(r"z-index\\s*:\\s*(\\d+)", css.group(1))
