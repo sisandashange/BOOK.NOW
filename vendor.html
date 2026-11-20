@@ -1097,15 +1097,21 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       // A short overlap protects against a transaction that updates a row
       // before this check but commits just after its database snapshot.
       const overlapStart = new Date(Date.parse(bookingChangeCursor) - 60000).toISOString();
-      const { data, error } = await db.from("bookings")
-        .select("id, updated_at")
-        .eq("store_id", activeVendor.id)
-        .gt("updated_at", overlapStart)
-        .order("updated_at", { ascending: false })
-        .limit(1000);
-      if (error) throw error;
+      const changedRows = [];
+      for (let offset = 0; ; offset += 500) {
+        const { data: page, error } = await db.from("bookings")
+          .select("id, updated_at")
+          .eq("store_id", activeVendor.id)
+          .gt("updated_at", overlapStart)
+          .order("updated_at", { ascending: false })
+          .order("id", { ascending: true })
+          .range(offset, offset + 499);
+        if (error) throw error;
+        changedRows.push(...(page || []));
+        if (!page || page.length < 500) break;
+      }
 
-      const unseen = (data || []).filter(row => bookingChangeSeen.get(row.id) !== row.updated_at);
+      const unseen = changedRows.filter(row => bookingChangeSeen.get(row.id) !== row.updated_at);
       if (unseen.length) {
         return await loadOrders();
       }
