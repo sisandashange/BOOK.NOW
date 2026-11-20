@@ -21,6 +21,22 @@ CREATE TABLE public.service_items (
   image_urls text[], sale_price numeric, sale_start_date date, sale_end_date date,
   store_id uuid, duration_minutes integer
 );
+ALTER TABLE public.stores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.service_items ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public can view active stores only" ON public.stores
+  FOR SELECT TO public
+  USING (
+    status = 'active'
+    AND subscription_expires_at IS NOT NULL
+    AND subscription_expires_at > now()
+    AND NOT is_hidden
+  );
+
+CREATE POLICY "Allow public read access to service items" ON public.service_items
+  FOR SELECT TO public
+  USING (true);
+
 CREATE TABLE public.platform_settings (
   id integer, bank_name text, account_name text, account_number text,
   branch_code text, updated_at timestamptz
@@ -62,6 +78,17 @@ GRANT REFERENCES,TRIGGER ON TABLE public.bookings TO anon;
 GRANT SELECT,UPDATE ON TABLE public.bookings TO authenticated;
 
 \ir ../migrations/20261119192942_public_role_least_privilege.sql
+\ir ../migrations/20261120122138_restrict_public_service_items_to_visible_stores.sql
+
+INSERT INTO public.stores (id, store_name, status, subscription_expires_at, is_hidden) VALUES
+  ('00000000-0000-4000-8000-000000000001', 'Visible test shop', 'active', now() + interval '30 days', false),
+  ('00000000-0000-4000-8000-000000000002', 'Pending test shop', 'pending', now() + interval '30 days', false),
+  ('00000000-0000-4000-8000-000000000003', 'Hidden test shop', 'active', now() + interval '30 days', true);
+
+INSERT INTO public.service_items (id, store_id, title, price) VALUES
+  ('00000000-0000-4000-8000-000000000011', '00000000-0000-4000-8000-000000000001', 'Visible menu item', 10),
+  ('00000000-0000-4000-8000-000000000012', '00000000-0000-4000-8000-000000000002', 'Pending menu item', 10),
+  ('00000000-0000-4000-8000-000000000013', '00000000-0000-4000-8000-000000000003', 'Hidden menu item', 10);
 
 DO $$
 BEGIN
@@ -139,3 +166,19 @@ BEGIN
   END IF;
 END
 $$;
+
+
+-- Anonymous visitors may read catalogue items only for stores visible through
+-- the public stores policy; pending and hidden stores stay private.
+SET ROLE anon;
+DO $$
+DECLARE
+  visible_count integer;
+BEGIN
+  SELECT count(id) INTO visible_count FROM public.service_items;
+  IF visible_count <> 1 THEN
+    RAISE EXCEPTION 'Anonymous catalogue returned % rows; expected only the visible store item.', visible_count;
+  END IF;
+END
+$$;
+RESET ROLE;
