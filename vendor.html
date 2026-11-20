@@ -2066,9 +2066,16 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         const st = String(b.status || "pending").toUpperCase();
         const isShisaShop = /shisanyama|braai/i.test(String(activeVendor.category || ""));
         const hasFoodItems = Array.isArray(b.booking_items) && b.booking_items.length > 0;
+        // Before multi-item ordering was introduced, a Shisanyama booking stored
+        // its single selected menu item in bookings.service_id and its final
+        // amount in booked_price. Render that legacy item without fabricating
+        // item snapshots or changing the original booking record.
+        const hasLegacyFoodItem = !hasFoodItems && isShisaShop && Boolean(b.service_items?.title);
         const serviceTitle = hasFoodItems
           ? (b.is_takeaway ? "Shisanyama takeaway order" : "Shisanyama seat reservation + food order")
-          : (isShisaShop ? (b.is_takeaway ? "Shisanyama takeaway order" : "Shisanyama booking — food details not loaded") : (b.service_items?.title || "Service Appointment"));
+          : (isShisaShop
+              ? (b.is_takeaway ? "Shisanyama takeaway order" : (hasLegacyFoodItem ? "Shisanyama booking + food order" : "Shisanyama booking — food details unavailable"))
+              : (b.service_items?.title || "Service Appointment"));
         const when = new Date(b.created_at).toLocaleString("en-ZA", { timeZone: "Africa/Johannesburg", dateStyle: "medium", timeStyle: "short" });
 
         const left = h("div", {},
@@ -2080,7 +2087,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
             hasFoodItems ? h("div", { style:"margin:8px 0;padding:9px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px" },
               h("div", { style:"font-size:11px;font-weight:800;margin-bottom:5px", text:"FOOD ORDER · " + b.booking_items.length + " MENU LINES" }),
               ...b.booking_items.map(item => h("div", { style:"font-size:12px;line-height:1.6", text: item.quantity + " × " + item.item_title + " — " + money(item.line_total) }))) :
-              (isShisaShop ? h("div", { style:"margin:8px 0;padding:9px;background:#fff7ed;border:1px solid #fed7aa;border-radius:9px;font-size:11px;color:#9a3412", text:"Food item details have not loaded. Refresh the partner portal; if they remain missing, check shop access to order details." }) : null),
+              (hasLegacyFoodItem ? h("div", { style:"margin:8px 0;padding:9px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px" },
+                h("div", { style:"font-size:11px;font-weight:800;margin-bottom:5px", text:"FOOD ORDER · LEGACY SINGLE ITEM" }),
+                h("div", { style:"font-size:12px;line-height:1.6", text:"1 × " + b.service_items.title + " — " + money(bookingPrice(b)) })) :
+                (isShisaShop ? h("div", { style:"margin:8px 0;padding:9px;background:#fff7ed;border:1px solid #fed7aa;border-radius:9px;font-size:11px;color:#9a3412", text:"This older booking has no saved menu-item reference, so its food items cannot be identified." }) : null)),
             h("div", {}, h("span", { class: "order-meta-label", text: "Booked on: " }), h("span", { class: "order-meta-value", text: when }))),
           h("div", { class: "order-status status-" + st.toLowerCase(), text: st }),
           b.staff_assignment_mode === "ANY" && (st === "PENDING" || st === "CONFIRMED") ? h("div", { class: "order-time", style:"font-weight:700;color:#b45309", text: "Awaiting staff acceptance" }) : (b.staff_members?.full_name ? h("div", { class: "order-time", style:"font-weight:700;color:#0f172a", text: "Staff: "+b.staff_members.full_name }) : null),
