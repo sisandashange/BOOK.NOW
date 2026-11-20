@@ -29,6 +29,9 @@ BEFORE UPDATE OF
   status,
   booking_date,
   booking_time,
+  appointment_at,
+  duration_minutes,
+  comment,
   payment_status,
   payment_method,
   staff_id,
@@ -45,13 +48,13 @@ ON public.bookings
 FOR EACH ROW
 WHEN (
   ROW(
-    NEW.status, NEW.booking_date, NEW.booking_time, NEW.payment_status,
-    NEW.payment_method, NEW.staff_id, NEW.staff_assignment_mode, NEW.is_takeaway,
+    NEW.status, NEW.booking_date, NEW.booking_time, NEW.appointment_at,
+    NEW.duration_minutes, NEW.comment, NEW.payment_status, NEW.payment_method, NEW.staff_id, NEW.staff_assignment_mode, NEW.is_takeaway,
     NEW.party_size, NEW.customer_name, NEW.customer_phone, NEW.service_id,
     NEW.store_id, NEW.booked_price, NEW.queue_number
   ) IS DISTINCT FROM ROW(
-    OLD.status, OLD.booking_date, OLD.booking_time, OLD.payment_status,
-    OLD.payment_method, OLD.staff_id, OLD.staff_assignment_mode, OLD.is_takeaway,
+    OLD.status, OLD.booking_date, OLD.booking_time, OLD.appointment_at,
+    OLD.duration_minutes, OLD.comment, OLD.payment_status, OLD.payment_method, OLD.staff_id, OLD.staff_assignment_mode, OLD.is_takeaway,
     OLD.party_size, OLD.customer_name, OLD.customer_phone, OLD.service_id,
     OLD.store_id, OLD.booked_price, OLD.queue_number
   )
