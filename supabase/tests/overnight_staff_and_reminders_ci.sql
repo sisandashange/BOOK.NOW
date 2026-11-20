@@ -65,6 +65,8 @@ CREATE TABLE public.bookings (
   booking_date date NOT NULL,
   booking_time time NOT NULL,
   appointment_at timestamptz,
+  customer_name text,
+  party_size integer,
   duration_minutes integer NOT NULL DEFAULT 30,
   staff_id uuid REFERENCES public.staff_members(id),
   staff_assignment_mode text NOT NULL DEFAULT 'NONE',
@@ -229,7 +231,20 @@ BEGIN
     v_reminder_booking, v_store, v_service, v_due_business_date, v_due_time,
     v_due_at, 30, 'confirmed'
   );
+  -- Owner booking alerts must also receive the resolved appointment instant.
+  CREATE TRIGGER booking_push_after_insert
+  AFTER INSERT ON public.bookings
+  FOR EACH ROW EXECUTE FUNCTION public.push_notify_booking();
+
   INSERT INTO public.customer_onesignal_subscriptions(booking_id) VALUES (v_reminder_booking);
+
+  IF NOT EXISTS (
+    SELECT 1 FROM net.mock_calls
+    WHERE request_body ->> 'kind' = 'booking_new'
+      AND request_body ->> 'appointment_at' IS NOT NULL
+  ) THEN
+    RAISE EXCEPTION 'Owner booking push did not include appointment_at';
+  END IF;
 
   v_count := public.send_booking_reminders();
   IF v_count <> 1 THEN
