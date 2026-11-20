@@ -62,6 +62,9 @@ jobs:
           marketplace = pathlib.Path("index.html").read_text(encoding="utf-8")
           if '.in("store_id", pageData.map(store => store.id))' not in marketplace:
               raise SystemExit("Marketplace ratings must be scoped to the current paginated shop page.")
+          store_source = pathlib.Path("store.html").read_text(encoding="utf-8")
+          if "is_takeaway: isTakeaway" in store_source or "p_is_takeaway" not in store_source:
+              raise SystemExit("Takeaway must be set only through the validated multi-item booking RPC.")
           print("Marketplace page-scoped rating query regression check passed.")
           print("Checkout modal layering regression check passed.")
           print("Inline customer/vendor scripts and service worker parse successfully.")
