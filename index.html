@@ -231,7 +231,6 @@
     // Returns true (open), false (closed) or null (unknown), always using South African business time.
     function isOpenNow(s) {
       if (String(s.manual_status || "").toUpperCase() === "CLOSED") return false;
-      if (!s.opening_time || !s.closing_time) return null;
 
       const parts = Object.fromEntries(new Intl.DateTimeFormat("en-GB", {
         timeZone: "Africa/Johannesburg",
@@ -240,21 +239,24 @@
       }).formatToParts(new Date()).filter(p => p.type !== "literal").map(p => [p.type, p.value]));
       const today = parts.year + "-" + parts.month + "-" + parts.day;
       const minuteNow = Number(parts.hour) * 60 + Number(parts.minute);
-      const opening = Number(String(s.opening_time).slice(0, 2)) * 60 + Number(String(s.opening_time).slice(3, 5));
-      const closing = Number(String(s.closing_time).slice(0, 2)) * 60 + Number(String(s.closing_time).slice(3, 5));
-      const overnight = closing <= opening;
-
-      // After midnight, an overnight shop still belongs to the previous business date.
-      let businessDate = today;
-      if (overnight && minuteNow < closing) {
-        const previous = new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day) - 1));
-        businessDate = previous.toISOString().slice(0, 10);
+      const hasHours = Boolean(s.opening_time && s.closing_time);
+      let opening = 0, closing = 0, overnight = false, businessDate = today;
+      if (hasHours) {
+        opening = Number(String(s.opening_time).slice(0, 2)) * 60 + Number(String(s.opening_time).slice(3, 5));
+        closing = Number(String(s.closing_time).slice(0, 2)) * 60 + Number(String(s.closing_time).slice(3, 5));
+        overnight = closing <= opening;
+        // After midnight, an overnight shop still belongs to the previous business date.
+        if (overnight && minuteNow < closing) {
+          const previous = new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day) - 1));
+          businessDate = previous.toISOString().slice(0, 10);
+        }
       }
       const holidayStart = s.holiday_start_date ? String(s.holiday_start_date).slice(0, 10) : "";
       const holidayEnd = s.holiday_end_date ? String(s.holiday_end_date).slice(0, 10) : "";
       if ((holidayStart && holidayEnd && businessDate >= holidayStart && businessDate <= holidayEnd)
         || (holidayStart && !holidayEnd && businessDate >= holidayStart)
         || (!holidayStart && holidayEnd && businessDate === holidayEnd)) return false;
+      if (!hasHours) return null;
 
       // "OPEN" means normal scheduled operation, not an override of hours or holidays.
       if (overnight) return minuteNow >= opening || minuteNow < closing;
