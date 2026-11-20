@@ -4,9 +4,9 @@ BEGIN;
 
 CREATE TABLE public.stores (id uuid PRIMARY KEY, created_at timestamptz DEFAULT now(), status text, is_hidden boolean DEFAULT false);
 CREATE TABLE public.subscription_payment_requests (
-  id uuid PRIMARY KEY, store_id uuid, owner_id uuid, amount numeric,
-  payment_reference text, payment_type text, receipt_path text,
-  status text, created_at timestamptz DEFAULT now(), updated_at timestamptz
+  id uuid PRIMARY KEY, store_id uuid, owner_id uuid, amount numeric NOT NULL,
+  payment_reference text NOT NULL, payment_type text, receipt_path text NOT NULL,
+  status text, created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now()
 );
 CREATE FUNCTION public.is_founder_mfa() RETURNS boolean LANGUAGE sql AS 'SELECT true';
 CREATE TABLE public.service_items (id uuid PRIMARY KEY, store_id uuid, created_at timestamptz DEFAULT now());
