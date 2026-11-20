@@ -98,7 +98,7 @@ BEGIN
 END
 $$;
 
-\ir ../migrations/20261120095000_fix_overnight_staff_availability_and_reminders.sql
+\ir ../migrations/20261120080029_fix_overnight_staff_availability_and_reminders.sql
 
 CREATE TRIGGER booking_push_after_insert
 AFTER INSERT ON public.bookings
