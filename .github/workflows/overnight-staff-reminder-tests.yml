@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "supabase/migrations/20261120095000_fix_overnight_staff_availability_and_reminders.sql"
+      - "supabase/migrations/20261120080029_fix_overnight_staff_availability_and_reminders.sql"
       - "supabase/tests/overnight_staff_and_reminders_ci.sql"
       - ".github/workflows/overnight-staff-reminder-tests.yml"
 
