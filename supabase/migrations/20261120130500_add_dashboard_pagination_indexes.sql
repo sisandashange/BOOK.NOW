@@ -1,3 +1,16 @@
+-- Stable keyset cursors require non-null creation timestamps.
+DO $created_at_required$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.bookings WHERE created_at IS NULL)
+     OR EXISTS (SELECT 1 FROM public.stores WHERE created_at IS NULL) THEN
+    RAISE EXCEPTION 'Cannot require creation timestamps while existing bookings or shops are missing them.';
+  END IF;
+END
+$created_at_required$;
+
+ALTER TABLE public.bookings ALTER COLUMN created_at SET NOT NULL;
+ALTER TABLE public.stores ALTER COLUMN created_at SET NOT NULL;
+
 -- Support stable, bounded pagination in the Founder Dashboard, vendor portal and customer shop pages.
 CREATE INDEX IF NOT EXISTS idx_bookings_created_at_id
   ON public.bookings (created_at DESC, id DESC);
