@@ -1338,6 +1338,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       try {
         const { data, error } = await db.from("stores").select("*").eq("id", id).single();
         if (error) throw error;
+        if (!activeVendor || activeVendor.id !== data.id) bookingChangeCursor = null;
         activeVendor = data;
         updateHeader();
         await checkSubscriptionAndRender();
