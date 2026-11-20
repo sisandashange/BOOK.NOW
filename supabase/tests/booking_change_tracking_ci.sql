@@ -2,6 +2,10 @@
 -- Runs only in the dedicated GitHub Actions PostgreSQL database.
 BEGIN;
 
+CREATE TABLE public.stores (id uuid PRIMARY KEY, created_at timestamptz DEFAULT now(), status text, is_hidden boolean DEFAULT false);
+CREATE TABLE public.subscription_payment_requests (id uuid PRIMARY KEY, created_at timestamptz DEFAULT now());
+CREATE TABLE public.service_items (id uuid PRIMARY KEY, store_id uuid, created_at timestamptz DEFAULT now());
+
 CREATE TABLE public.bookings (
   id uuid PRIMARY KEY,
   store_id uuid NOT NULL,
@@ -36,6 +40,7 @@ INSERT INTO public.bookings (
 );
 
 \ir ../migrations/20261120130000_add_booking_change_tracking.sql
+\ir ../migrations/20261120130500_add_dashboard_pagination_indexes.sql
 
 DO $$
 DECLARE
@@ -79,9 +84,32 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_indexes
     WHERE schemaname='public' AND tablename='bookings'
-      AND indexname='idx_bookings_store_updated_at'
+      AND indexname IN (
+        'idx_bookings_store_updated_at',
+        'idx_bookings_created_at_id',
+        'idx_bookings_store_created_at_id',
+        'idx_stores_created_at_id',
+        'idx_stores_active_created_at_id',
+        'idx_subscription_payment_requests_created_at_id',
+        'idx_service_items_store_created_at_id'
+      )
   ) THEN
-    RAISE EXCEPTION 'Missing store/updated_at polling index.';
+    RAISE EXCEPTION 'Missing a required BOOK.NOW pagination/change-tracking index.';
+  END IF;
+
+  IF (
+    SELECT count(*) FROM pg_indexes
+    WHERE schemaname='public' AND indexname IN (
+      'idx_bookings_store_updated_at',
+      'idx_bookings_created_at_id',
+      'idx_bookings_store_created_at_id',
+      'idx_stores_created_at_id',
+      'idx_stores_active_created_at_id',
+      'idx_subscription_payment_requests_created_at_id',
+      'idx_service_items_store_created_at_id'
+    )
+  ) <> 7 THEN
+    RAISE EXCEPTION 'One or more BOOK.NOW pagination/change-tracking indexes are missing.';
   END IF;
 END
 $$;
