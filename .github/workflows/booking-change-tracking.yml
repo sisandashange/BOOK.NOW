@@ -8,6 +8,7 @@ on:
       - "supabase/migrations/*booking_change_tracking*"
       - "supabase/migrations/*dashboard_pagination*"
       - "supabase/migrations/*require_booking_reference*"
+      - "supabase/migrations/*stabilize_founder_payment_request_pagination*"
       - "supabase/tests/booking_change_tracking_ci.sql"
       - ".github/workflows/booking-change-tracking.yml"
 
