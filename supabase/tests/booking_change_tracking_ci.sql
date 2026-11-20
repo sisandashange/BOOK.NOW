@@ -12,6 +12,7 @@ CREATE TABLE public.bookings (
   service_id uuid,
   customer_name text NOT NULL,
   customer_phone text NOT NULL,
+  payment_ref text,
   booking_date date,
   booking_time text,
   appointment_at timestamptz,
@@ -32,15 +33,16 @@ CREATE TABLE public.bookings (
 );
 
 INSERT INTO public.bookings (
-  id, store_id, customer_name, customer_phone, status, created_at
+  id, store_id, customer_name, customer_phone, payment_ref, status, created_at
 ) VALUES (
   '10000000-0000-0000-0000-000000000001',
   '20000000-0000-0000-0000-000000000001',
-  'Existing customer', '0821234567', 'pending', now() - interval '3 days'
+  'Existing customer', '0821234567', 'BN-ABC234', 'pending', now() - interval '3 days'
 );
 
 \ir ../migrations/20261120130000_add_booking_change_tracking.sql
 \ir ../migrations/20261120130500_add_dashboard_pagination_indexes.sql
+\ir ../migrations/20261120131000_require_booking_reference.sql
 
 DO $$
 DECLARE
@@ -96,6 +98,16 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'Missing a required BOOK.NOW pagination/change-tracking index.';
   END IF;
+
+  BEGIN
+    INSERT INTO public.bookings (id, store_id, customer_name, customer_phone, payment_ref)
+    VALUES ('10000000-0000-0000-0000-000000000002',
+            '20000000-0000-0000-0000-000000000001',
+            'Missing reference', '0821234567', NULL);
+    RAISE EXCEPTION 'Booking without a payment reference was accepted.';
+  EXCEPTION WHEN not_null_violation THEN
+    NULL;
+  END;
 
   IF (
     SELECT count(*) FROM pg_indexes
