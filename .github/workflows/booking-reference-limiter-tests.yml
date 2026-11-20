@@ -1,0 +1,84 @@
+name: Booking reference limiter tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "supabase/migrations/20261119074731_booking_reference_attempt_limiter.sql"
+      - "supabase/tests/booking_reference_attempt_limiter_ci.sql"
+      - ".github/workflows/booking-reference-limiter-tests.yml"
+  push:
+    branches: ["security/booking-reference-attempt-limiter"]
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-regression:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: booknow_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d booknow_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - name: Check out PR
+        uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Run isolated migration and regression tests
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql "postgresql://postgres@localhost:5432/booknow_ci" \
+            --set ON_ERROR_STOP=1 \
+            --file supabase/tests/booking_reference_attempt_limiter_ci.sql
+      - name: Verify concurrent customer RPC attempts serialize and count correctly
+        env:
+          PGPASSWORD: postgres
+        shell: bash
+        run: |
+          DB="postgresql://postgres@localhost:5432/booknow_ci"
+          psql "$DB" --set ON_ERROR_STOP=1 --command "
+            INSERT INTO private.booking_reference_attempts(ref_fingerprint, window_started, failures)
+            VALUES (private.booking_reference_fingerprint('BN-CITEST1'), now(), 1)
+            ON CONFLICT (ref_fingerprint) DO UPDATE
+            SET window_started = now(), failures = 1;
+          "
+          # Session one makes a real failed customer RPC, then deliberately
+          # keeps its transaction open so session two must wait on the same
+          # reference-scoped advisory lock before checking and recording.
+          psql "$DB" --set ON_ERROR_STOP=1 --command "
+            BEGIN;
+            SELECT count(*) FROM public.find_my_booking('BN-CITEST1', '0829999999');
+            SELECT pg_sleep(3);
+            COMMIT;
+          " &
+          HOLDER_PID=$!
+          sleep 1
+          START_NS=$(date +%s%N)
+          psql "$DB" --set ON_ERROR_STOP=1 --command \
+            "SELECT count(*) FROM public.find_my_booking('BN-CITEST1', '0829999999');"
+          END_NS=$(date +%s%N)
+          wait "$HOLDER_PID"
+          ELAPSED=$(awk -v s="$START_NS" -v e="$END_NS" 'BEGIN { printf "%.2f", (e-s)/1000000000 }')
+          echo "Second customer RPC waited ${ELAPSED}s for the first transaction."
+          awk -v elapsed="$ELAPSED" 'BEGIN { if (elapsed < 1.5) exit 1 }'
+          FAILURES=$(psql "$DB" --tuples-only --no-align --set ON_ERROR_STOP=1 --command "
+            SELECT failures
+            FROM private.booking_reference_attempts
+            WHERE ref_fingerprint = private.booking_reference_fingerprint('BN-CITEST1');
+          ")
+          echo "Final shared failure count: $FAILURES"
+          test "$FAILURES" = "3"
