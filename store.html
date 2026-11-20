@@ -855,6 +855,7 @@
           const durEl = document.createElement("div");
           durEl.className = "menu-duration";
           durEl.textContent = "Takes " + fmtDur(s.duration_minutes);
+          if (cat === "SHISANYAMA") durEl.style.display = "none";
 
           const priceBox = document.createElement("div");
           priceBox.className = "price-container";
