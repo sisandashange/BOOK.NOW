@@ -6,6 +6,8 @@ on:
     paths:
       - "supabase/migrations/20261119192942_public_role_least_privilege.sql"
       - "supabase/migrations/20261120131500_restrict_public_takeaway_insert.sql"
+      - "supabase/migrations/20261120132000_one_pending_subscription_request_per_store.sql"
+      - "vendor.html"
       - "store.html"
       - "supabase/tests/public_role_least_privilege_ci.sql"
       - ".github/workflows/public-role-least-privilege-tests.yml"
