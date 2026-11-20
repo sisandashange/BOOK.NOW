@@ -260,7 +260,6 @@
       if ((holidayStart && holidayEnd && businessDate >= holidayStart && businessDate <= holidayEnd)
         || (holidayStart && !holidayEnd && businessDate >= holidayStart)
         || (!holidayStart && holidayEnd && businessDate === holidayEnd)) return false;
-      if (!hasHours) return null;
 
       // "OPEN" means normal scheduled operation, not an override of hours or holidays.
       if (opening === closing) return true; // Same opening/closing time means a 24-hour schedule in booking validation.
