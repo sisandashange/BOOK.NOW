@@ -6,6 +6,7 @@ on:
     paths:
       - "store.html"
       - "vendor.html"
+      - "index.html"
       - "sw.js"
       - "supabase/migrations/*shisanyama*"
       - "supabase/tests/shisanyama_multi_item_orders_ci.sql"
@@ -38,7 +39,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import pathlib, re, subprocess, tempfile
-          files = ["store.html", "vendor.html"]
+          files = ["index.html", "store.html", "vendor.html"]
           for filename in files:
               source = pathlib.Path(filename).read_text(encoding="utf-8")
               scripts = re.findall(r"<script\b[^>]*>(.*?)</script\s*>", source, flags=re.I | re.S)
@@ -58,6 +59,10 @@ jobs:
           floating_z = re.search(r"z-index\s*:\s*(\d+)", floating.group(1))
           if not modal_z or not floating_z or int(floating_z.group(1)) >= int(modal_z.group(1)):
               raise SystemExit("Floating order bar must stack below the booking modal.")
+          marketplace = pathlib.Path("index.html").read_text(encoding="utf-8")
+          if '.in("store_id", pageData.map(store => store.id))' not in marketplace:
+              raise SystemExit("Marketplace ratings must be scoped to the current paginated shop page.")
+          print("Marketplace page-scoped rating query regression check passed.")
           print("Checkout modal layering regression check passed.")
           print("Inline customer/vendor scripts and service worker parse successfully.")
           PY
