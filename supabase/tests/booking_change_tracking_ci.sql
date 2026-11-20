@@ -98,6 +98,7 @@ BEGIN
     FROM (
       SELECT id,row_number() OVER () AS ord
       FROM public.founder_list_subscription_payment_requests()
+      WHERE status = 'APPROVED'
     ) ordered_requests
   ) IS DISTINCT FROM ARRAY[
     '40000000-0000-0000-0000-000000000003'::uuid,
