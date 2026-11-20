@@ -79,6 +79,7 @@ GRANT SELECT,UPDATE ON TABLE public.bookings TO authenticated;
 
 \ir ../migrations/20261119192942_public_role_least_privilege.sql
 \ir ../migrations/20261120122138_restrict_public_service_items_to_visible_stores.sql
+\ir ../migrations/20261120131500_restrict_public_takeaway_insert.sql
 
 INSERT INTO public.stores (id, store_name, status, subscription_expires_at, is_hidden) VALUES
   ('00000000-0000-4000-8000-000000000001', 'Visible test shop', 'active', now() + interval '30 days', false),
@@ -149,6 +150,8 @@ BEGIN
 
   -- Customer booking INSERT stays column-limited.
   IF NOT has_column_privilege('anon','public.bookings','payment_ref','INSERT')
+     OR has_column_privilege('anon','public.bookings','is_takeaway','INSERT')
+     OR has_column_privilege('authenticated','public.bookings','is_takeaway','INSERT')
      OR has_column_privilege('anon','public.bookings','status','INSERT')
      OR has_table_privilege('anon','public.bookings','INSERT')
      OR has_table_privilege('anon','public.bookings','REFERENCES')
