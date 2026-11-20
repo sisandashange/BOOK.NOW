@@ -532,6 +532,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   const setBtn = (b, loading, text) => { if (b) { b.disabled = loading; b.textContent = text; } };
   let lastBookings = [];
   let bookingChangeCursor = null;
+  const bookingChangeSeen = new Map();
   let bookingLoadBusy = false;
   let bookingLoadStoreId = null;
   let bookingLoadQueued = false;
@@ -1093,21 +1094,28 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     bookingChangeCheckBusy = true;
     const checkedAt = new Date().toISOString();
     try {
+      // A short overlap protects against a transaction that updates a row
+      // before this check but commits just after its database snapshot.
+      const overlapStart = new Date(Date.parse(bookingChangeCursor) - 60000).toISOString();
       const { data, error } = await db.from("bookings")
-        .select("id")
+        .select("id, updated_at")
         .eq("store_id", activeVendor.id)
-        .gt("updated_at", bookingChangeCursor)
-        .limit(1);
+        .gt("updated_at", overlapStart)
+        .order("updated_at", { ascending: false })
+        .limit(1000);
       if (error) throw error;
 
-      if (data && data.length) {
+      const unseen = (data || []).filter(row => bookingChangeSeen.get(row.id) !== row.updated_at);
+      if (unseen.length) {
         return await loadOrders();
-      } else {
-        // Any write occurring during this query is newer than checkedAt and
-        // will be picked up on the next poll.
-        bookingChangeCursor = checkedAt;
-        return false;
       }
+
+      const pruneBefore = Date.parse(checkedAt) - 60000;
+      for (const [id, updatedAt] of bookingChangeSeen) {
+        if (Date.parse(updatedAt) < pruneBefore) bookingChangeSeen.delete(id);
+      }
+      bookingChangeCursor = checkedAt;
+      return false;
     } catch (err) {
       console.warn("Booking change check failed; it will retry:", err);
       return false;
@@ -1338,7 +1346,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       try {
         const { data, error } = await db.from("stores").select("*").eq("id", id).single();
         if (error) throw error;
-        if (!activeVendor || activeVendor.id !== data.id) bookingChangeCursor = null;
+        if (!activeVendor || activeVendor.id !== data.id) {
+          bookingChangeCursor = null;
+          bookingChangeSeen.clear();
+        }
         activeVendor = data;
         updateHeader();
         await checkSubscriptionAndRender();
@@ -2098,6 +2109,13 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       // Capture the query start, not completion: updates committed during the
       // full read are picked up by the next indexed change check.
       bookingChangeCursor = syncStartedAt;
+      bookingChangeSeen.clear();
+      const recentChangeCutoff = Date.parse(syncStartedAt) - 60000;
+      all.forEach(b => {
+        if (b.updated_at && Date.parse(b.updated_at) >= recentChangeCutoff) {
+          bookingChangeSeen.set(b.id, b.updated_at);
+        }
+      });
 
       // Alert the shop when a booking arrives that it has not seen before
       if (knownBookingIds && knownFor === activeVendor.id) {
