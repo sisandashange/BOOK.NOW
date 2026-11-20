@@ -123,7 +123,8 @@
         <div id="shisa-cart-items"></div>
         <div class="shisa-cart-total"><span>Order total</span><span id="shisa-cart-total">R0.00</span></div>
         <button type="button" id="shisa-reserve-btn" class="shisa-reserve-btn">Reserve seats &amp; order</button>
-        <div style="font-size:11px;color:var(--muted);margin-top:7px">Choose your group size and time in the next step. Your food and seat reservation are submitted together.</div>
+        <button type="button" id="shisa-takeaway-btn" class="shisa-reserve-btn" style="margin-top:8px;background:#475569">Order takeaway</button>
+        <div style="font-size:11px;color:var(--muted);margin-top:7px">Choose dine-in to reserve seats, or choose takeaway to collect. Add as many menu items as you need before checkout.</div>
       </section>
     </div>
   </main>
@@ -846,16 +847,9 @@
           if (cat === "SHISANYAMA") {
             btn.textContent = "Add to order";
             btn.addEventListener("click", () => addShisaCartItem(s, activePrice));
-            const takeawayBtn = document.createElement("button");
-            takeawayBtn.type = "button";
-            takeawayBtn.className = "btn-book";
-            takeawayBtn.textContent = "Takeaway";
-            takeawayBtn.style.background = "#475569";
-            takeawayBtn.disabled = !bookingOpen;
-            takeawayBtn.addEventListener("click", () => openBookingModal(s.id, s.title, activePrice, s.duration_minutes));
             const actions = document.createElement("div");
             actions.style.cssText = "display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end";
-            actions.append(btn, takeawayBtn);
+            actions.append(btn);
             const footer = document.createElement("div");
             footer.className = "menu-footer";
             footer.append(priceBox, actions);
@@ -1059,16 +1053,19 @@
       box.appendChild(total);
     }
 
-    function openShisaReservation() {
+    function openShisaReservation(isTakeaway = false) {
       if (!shisaCart.size) return alert("Add at least one food or drink item first.");
       const first = shisaCart.values().next().value;
       openBookingModal(first.id, first.title, first.price, first.duration);
       selectedService.isShisanyamaOrder = true;
-      $("modal-service-title").textContent = "Reserve seats & order";
-      $("takeaway-field").style.display = "none";
-      $("is-takeaway").checked = false;
-      $("confirm-booking-btn").textContent = "Confirm seats & food order";
+      $("takeaway-field").style.display = "block";
+      $("is-takeaway").checked = isTakeaway === true;
+      $("party-field").style.display = (!isTakeaway && storeData.capacity_mode === "GUESTS") ? "block" : "none";
+      $("staff-choice-field").style.display = isTakeaway ? "none" : (bookableStaff.length ? "block" : "none");
+      $("modal-service-title").textContent = isTakeaway ? "Place takeaway order" : "Reserve seats & order";
+      $("confirm-booking-btn").textContent = isTakeaway ? "Confirm takeaway order" : "Confirm seats & food order";
       renderShisaModalCart();
+      refreshSlots();
     }
 
     function openBookingModal(serviceId, title, price, duration) {
@@ -1266,7 +1263,8 @@
             p_payment_ref: paymentRef,
             p_items: submittedShisaItems,
             p_staff_assignment_mode: (!isTakeaway && bookableStaff.length) ? ($("booking-staff").value === "ANY" ? "ANY" : "SPECIFIC") : "NONE",
-            p_staff_id: !isTakeaway && bookableStaff.length && $("booking-staff").value !== "ANY" ? $("booking-staff").value : null
+            p_staff_id: !isTakeaway && bookableStaff.length && $("booking-staff").value !== "ANY" ? $("booking-staff").value : null,
+            p_is_takeaway: isTakeaway
           });
           if (createError) throw createError;
           if (!created || !(Array.isArray(created) ? created.length : created.id)) throw new Error("The shop did not return a booking confirmation. Please check Manage my booking before trying again.");
@@ -1354,12 +1352,12 @@
           ? "Food order:\n" + savedFoodItems.map(item => `${item.quantity} × ${item.item_title} — ${item.line_total == null ? "included in order total" : money(item.line_total)}`).join("\n") + "\n"
           : "";
         const message = encodeURIComponent(
-          (savedFoodItems.length ? `Hi ${shopName}! I just reserved seats and placed a food order (${money(price)}) on BOOK.NOW.\n\n` : `Hi ${shopName}! I just booked "${selectedService.title}" (${money(price)}) on BOOK.NOW.\n\n`) +
+          (savedFoodItems.length ? `Hi ${shopName}! I just placed a ${isTakeaway ? "takeaway" : "seat reservation and food"} order (${money(price)}) on BOOK.NOW.\n\n` : `Hi ${shopName}! I just booked "${selectedService.title}" (${money(price)}) on BOOK.NOW.\n\n`) +
           `Name: ${name}\nPhone: ${phone}\nAppointment: ${apptText} (South African time)\n` + foodOrderText +
           (isTakeaway ? "Order type: Takeaway\n" : (guestsMode ? `Guests: ${guests}\n` : "")) +
           `Payment ref: ${paymentRef}\nPayment: ${payNote}\n` +
           (queueNumber ? `Booking number for that day: #${queueNumber}\n` : "") +
-          `\nPlease confirm my appointment.`
+          `\nPlease confirm my ${isTakeaway ? "takeaway order" : "appointment"}.`
         );
         const waUrl = waPhone ? `https://wa.me/${waPhone}?text=${message}` : "";
 
@@ -1371,7 +1369,7 @@
             </div>
 
             <div class="info-box">
-              <div style="margin-bottom:3px;"><strong>${savedFoodItems.length ? "Seat reservation + food order total" : "Service"}:</strong> ${esc(savedFoodItems.length ? money(price) : selectedService.title + " (" + money(price) + ")")}</div>
+              <div style="margin-bottom:3px;"><strong>${savedFoodItems.length ? (isTakeaway ? "Takeaway order total" : "Seat reservation + food order total") : "Service"}:</strong> ${esc(savedFoodItems.length ? money(price) : selectedService.title + " (" + money(price) + ")")}</div>
               ${savedFoodItems.length ? `<div style="margin:8px 0;padding-top:7px;border-top:1px solid var(--border);"><strong>Food order</strong>${savedFoodItems.map(item => `<div>${esc(item.quantity)} × ${esc(item.item_title)} — ${esc(item.line_total == null ? "included in order total" : money(item.line_total))}</div>`).join("")}</div>` : ""}
               <div style="margin-bottom:3px;"><strong>Appointment:</strong> ${esc(apptText)} (SAST)</div>
               ${guestsMode ? `<div style="margin-bottom:3px;"><strong>Guests:</strong> ${esc(guests)}</div>` : ""}
@@ -1443,7 +1441,8 @@
       $("report-done-btn").addEventListener("click", closeModals);
       $("report-submit").addEventListener("click", submitReport);
       $("confirm-booking-btn").addEventListener("click", confirmBooking);
-      $("shisa-reserve-btn").addEventListener("click", openShisaReservation);
+      $("shisa-reserve-btn").addEventListener("click", () => openShisaReservation(false));
+      $("shisa-takeaway-btn").addEventListener("click", () => openShisaReservation(true));
       $("close-lightbox").addEventListener("click", closeModals);
       $("lightbox-modal").addEventListener("click", e => { if (e.target === $("lightbox-modal")) closeModals(); });
       $("booking-date").addEventListener("change", refreshSlots);

@@ -80,6 +80,9 @@ CREATE FUNCTION private.booking_reference_clear(text) RETURNS void LANGUAGE plpg
 \ir ../migrations/20261120084838_fix_shisanyama_order_json_validation.sql
 \ir ../migrations/20261120084859_fix_shisanyama_order_store_lookup.sql
 \ir ../migrations/20261120085330_index_shisanyama_booking_item_service_fk.sql
+\ir ../migrations/20261120111014_add_multi_item_shisanyama_takeaway.sql
+\ir ../migrations/20261120111413_fix_multi_item_takeaway_rpc_overload.sql
+\ir ../migrations/20261120111551_secure_multi_item_takeaway_rpc_permissions.sql
 
 BEGIN;
 DO $$
@@ -90,6 +93,7 @@ DECLARE
   v_item2 uuid := gen_random_uuid();
   v_other_item uuid := gen_random_uuid();
   v_booking record;
+  v_takeaway record;
   v_count integer;
   v_total numeric;
   v_receipt_count integer;
@@ -125,6 +129,29 @@ BEGIN
   FROM public.booking_items WHERE booking_id=v_booking.id;
   IF v_count<>2 OR v_total<>375 THEN
     RAISE EXCEPTION 'Expected two item snapshots totalling R375; got %, %.',v_count,v_total;
+  END IF;
+
+  -- The new overload must save the same multi-item basket as takeaway,
+  -- while the legacy 11-argument dine-in function above remains compatible.
+  SELECT * INTO v_takeaway
+  FROM public.create_shisanyama_booking_with_items(
+    v_store,'CI Takeaway Customer','0821234567',v_date,'15:30',1,'CASH','BN-ABC237',
+    jsonb_build_array(
+      jsonb_build_object('service_item_id',v_item1,'quantity',2),
+      jsonb_build_object('service_item_id',v_item2,'quantity',1)
+    ),
+    'NONE',NULL,true
+  );
+
+  IF v_takeaway.id IS NULL OR v_takeaway.booked_price <> 285 THEN
+    RAISE EXCEPTION 'Multi-item takeaway did not calculate the expected R285 total.';
+  END IF;
+
+  SELECT count(*),sum(bi.line_total) INTO v_count,v_total
+  FROM public.booking_items bi
+  WHERE bi.booking_id=v_takeaway.id;
+  IF v_count<>2 OR v_total<>285 OR NOT (SELECT b.is_takeaway FROM public.bookings b WHERE b.id=v_takeaway.id) THEN
+    RAISE EXCEPTION 'Takeaway basket must preserve two item lines and is_takeaway=true.';
   END IF;
 
   SELECT count(*) INTO v_receipt_count
