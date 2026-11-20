@@ -1,1 +1,0 @@
-CREATE INDEX IF NOT EXISTS booking_items_service_item_id_idx ON public.booking_items (service_item_id);
