@@ -2,6 +2,9 @@
 -- Runs only in the dedicated GitHub Actions PostgreSQL database.
 BEGIN;
 
+CREATE ROLE anon;
+CREATE ROLE authenticated;
+
 CREATE TABLE public.stores (id uuid PRIMARY KEY, created_at timestamptz DEFAULT now(), status text, is_hidden boolean DEFAULT false);
 CREATE TABLE public.subscription_payment_requests (
   id uuid PRIMARY KEY, store_id uuid, owner_id uuid, amount numeric NOT NULL,
@@ -48,6 +51,9 @@ INSERT INTO public.bookings (
 \ir ../migrations/20261120130000_add_booking_change_tracking.sql
 \ir ../migrations/20261120130500_add_dashboard_pagination_indexes.sql
 \ir ../migrations/20261120131000_require_booking_reference.sql
+GRANT INSERT (is_takeaway) ON public.bookings TO anon, authenticated;
+\ir ../migrations/20261120131500_restrict_public_takeaway_insert.sql
+\ir ../migrations/20261120132000_one_pending_subscription_request_per_store.sql
 \ir ../migrations/20261120132500_stabilize_founder_payment_request_pagination.sql
 
 DO $$
@@ -106,6 +112,11 @@ BEGIN
     '40000000-0000-0000-0000-000000000001'::uuid
   ]::uuid[] THEN
     RAISE EXCEPTION 'Founder payment request pagination is not stable for tied timestamps.';
+  END IF;
+
+  IF has_column_privilege('anon','public.bookings','is_takeaway','INSERT')
+     OR has_column_privilege('authenticated','public.bookings','is_takeaway','INSERT') THEN
+    RAISE EXCEPTION 'Direct client INSERT privilege on bookings.is_takeaway was not revoked.';
   END IF;
 
   IF NOT EXISTS (
