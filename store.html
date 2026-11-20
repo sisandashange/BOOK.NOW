@@ -237,6 +237,7 @@
     let payMethod = "EFT";
     let chosenTime = "";
     let bookableStaff = [];
+    let staffLookupState = "idle"; // success includes a valid empty list; errors must never fall through to NONE.
     let slotPollBusy = false;
     let refreshToken = 0;
     let statusPollBusy = false;
@@ -314,21 +315,39 @@
 
     async function loadBookableStaff() {
       bookableStaff = [];
+      staffLookupState = "loading";
       const field = $("staff-choice-field"), select = $("booking-staff");
-      if (!field || !select || !selectedService) return;
+      if (!field || !select || !selectedService || !db) {
+        staffLookupState = "error";
+        return false;
+      }
       field.style.display = "none";
       select.replaceChildren(new Option("Any available worker", "ANY"));
       try {
-        const {data,error}=await db.rpc("get_bookable_staff",{p_store_id:selectedService.storeId,p_service_id:selectedService.serviceId});
-        if(error) throw error;
-        if(Array.isArray(data)) bookableStaff=data;
-        if(bookableStaff.length) {
-          bookableStaff.forEach(person=>select.append(new Option(person.staff_name+" · "+person.job_title,person.staff_id)));
-          select.value="ANY";
-          field.style.display="block";
+        const { data, error } = await db.rpc("get_bookable_staff", {
+          p_store_id: selectedService.storeId,
+          p_service_id: selectedService.serviceId
+        });
+        if (error) throw error;
+        if (!Array.isArray(data) || data.some(person => !person || !person.staff_id)) {
+          throw new Error("Staff lookup returned an invalid response");
         }
-      } catch(err) {
-        console.warn("Staff list unavailable; keeping standard booking flow:",err);
+        // An empty array is a successful result and preserves the existing NONE workflow.
+        bookableStaff = data;
+        if (bookableStaff.length) {
+          bookableStaff.forEach(person => select.append(new Option(
+            (person.staff_name || "Staff member") + (person.job_title ? " · " + person.job_title : ""),
+            person.staff_id
+          )));
+          select.value = "ANY";
+          field.style.display = "block";
+        }
+        staffLookupState = "success";
+        return true;
+      } catch (err) {
+        staffLookupState = "error";
+        console.warn("Staff lookup failed; blocking appointment bookings until it succeeds:", err);
+        return false;
       }
     }
 
@@ -348,6 +367,28 @@
       if (open === close) { sel.replaceChildren(mk("", "No times available")); hint.textContent = "This shop's opening hours aren't set up yet."; return; }
       if (close < open) close += 1440;
       const isTakeaway = $("is-takeaway").checked === true;
+      if (!isTakeaway && staffLookupState !== "success") {
+        chosenTime = "";
+        sel.replaceChildren(mk("", staffLookupState === "loading" ? "Checking worker availability..." : "Worker availability unavailable — retry"));
+        hint.textContent = staffLookupState === "loading"
+          ? "Checking whether this shop has staff scheduling..."
+          : "We couldn't verify staff availability. Retry the staff check before booking.";
+        if (staffLookupState === "error") {
+          const retry = document.createElement("button");
+          retry.type = "button";
+          retry.textContent = "Retry staff check";
+          retry.style.cssText = "margin-top:8px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font-weight:700;";
+          retry.addEventListener("click", async () => {
+            retry.disabled = true;
+            retry.textContent = "Retrying...";
+            await loadBookableStaff();
+            refreshSlots();
+          });
+          hint.appendChild(document.createTextNode(" "));
+          hint.appendChild(retry);
+        }
+        return;
+      }
       const guestsShop = storeData.capacity_mode === "GUESTS";
       $("party-field").style.display = (!isTakeaway && guestsShop) ? "block" : "none";
       let usedDineIn = {}, usedTakeaway = {};
@@ -1002,6 +1043,10 @@
       }
       if (!time) { errorBox.textContent = "Choose your appointment time."; return; }
       if (!selectedService) return;
+      if (!isTakeaway && staffLookupState !== "success") {
+        errorBox.textContent = "We couldn't verify worker availability. Retry the staff check before booking.";
+        return;
+      }
       let appointmentMinutes = toMin(time);
       const openingMinutes = toMin(String(storeData.opening_time || "08:00").slice(0, 5));
       if (appointmentMinutes < openingMinutes) appointmentMinutes += 1440;
