@@ -454,8 +454,8 @@
         }
         return;
       }
-      const guestsShop = storeData.capacity_mode === "GUESTS";
       const shisanyamaTables = normalizeCategory(storeData.category) === "SHISANYAMA";
+      const guestsShop = storeData.capacity_mode === "GUESTS" || shisanyamaTables;
       $("party-field").style.display = (!isTakeaway && guestsShop) ? "block" : "none";
       let usedDineIn = {}, usedTakeaway = {};
       let dbCapDineIn = shisanyamaTables
@@ -1139,8 +1139,8 @@
       $("booking-date").min = today;
       $("booking-date").max = addDays(today, 60);
       $("booking-date").value = "";
-      const guestsShop = storeData.capacity_mode === "GUESTS";
       const shisanyamaTables = normalizeCategory(storeData.category) === "SHISANYAMA";
+      const guestsShop = storeData.capacity_mode === "GUESTS" || shisanyamaTables;
       const seatsPerTable = Math.max(1, Math.min(20, Number(storeData.seats_per_table) || 4));
       const seats = shisanyamaTables
         ? Math.min(50, (Number(storeData.table_count) || 1) * seatsPerTable)
