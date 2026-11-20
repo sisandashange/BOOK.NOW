@@ -17,3 +17,9 @@ CREATE INDEX IF NOT EXISTS idx_subscription_payment_requests_created_at_id
 
 CREATE INDEX IF NOT EXISTS idx_service_items_store_created_at_id
   ON public.service_items (store_id, created_at DESC, id DESC);
+
+CREATE INDEX IF NOT EXISTS idx_bookings_store_date_appointment
+  ON public.bookings (store_id, booking_date, appointment_at);
+
+CREATE INDEX IF NOT EXISTS idx_bookings_store_booking_schedule
+  ON public.bookings (store_id, booking_date, booking_time, id);
