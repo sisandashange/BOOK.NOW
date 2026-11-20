@@ -118,7 +118,9 @@ BEGIN
         'idx_stores_created_at_id',
         'idx_stores_active_created_at_id',
         'idx_subscription_payment_requests_created_at_id',
-        'idx_service_items_store_created_at_id'
+        'idx_service_items_store_created_at_id',
+        'idx_bookings_store_date_appointment',
+        'idx_bookings_store_booking_schedule'
       )
   ) THEN
     RAISE EXCEPTION 'Missing a required BOOK.NOW pagination/change-tracking index.';
@@ -143,9 +145,11 @@ BEGIN
       'idx_stores_created_at_id',
       'idx_stores_active_created_at_id',
       'idx_subscription_payment_requests_created_at_id',
-      'idx_service_items_store_created_at_id'
+      'idx_service_items_store_created_at_id',
+      'idx_bookings_store_date_appointment',
+      'idx_bookings_store_booking_schedule'
     )
-  ) <> 7 THEN
+  ) <> 9 THEN
     RAISE EXCEPTION 'One or more BOOK.NOW pagination/change-tracking indexes are missing.';
   END IF;
 END
