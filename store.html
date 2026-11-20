@@ -88,6 +88,13 @@
     .review-text { font-size:13px; color:#334155; line-height:1.5; margin:0; overflow-wrap:anywhere; }
     .review-date { font-size:11px; color:var(--muted); margin-top:6px; }
     .menu-duration { font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 2px; }
+    .shisa-cart-box { margin:18px 0 24px; background:#fff; border:1px solid var(--border); border-radius:16px; padding:14px; box-shadow:var(--shadow-sm); }
+    .shisa-cart-row { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid #f1f5f9; font-size:12px; }
+    .shisa-cart-controls { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+    .shisa-cart-controls button { width:30px; height:30px; border:1px solid var(--border); background:#f8fafc; border-radius:8px; font-weight:800; }
+    .shisa-cart-total { display:flex; justify-content:space-between; padding:12px 0; font-size:14px; font-weight:800; }
+    .shisa-reserve-btn { width:100%; padding:13px; border:0; border-radius:10px; background:#0f172a; color:#fff; font-size:13px; font-weight:800; }
+    .shisa-modal-order { background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:10px; margin:12px 0; font-size:12px; line-height:1.6; }
     .empty-box { text-align:center; padding:36px 12px; background:var(--surface); border-radius:14px; border:1px dashed var(--border); color:var(--muted); font-size:13px; grid-column:1/-1; }
   </style>
 <script src="booking-utils.js"></script>
@@ -111,6 +118,13 @@
     <div id="services-section-container">
       <div class="section-title"><i class="ph ph-squares-four" style="color:var(--accent);"></i> Services & Menu</div>
       <div id="services-menu-box" class="menu-grid"><div class="empty-box">Loading menu items...</div></div>
+      <section id="shisa-cart-box" class="shisa-cart-box" style="display:none" aria-label="Your food order">
+        <h3 style="font-size:15px;margin:0 0 6px">Your food order</h3>
+        <div id="shisa-cart-items"></div>
+        <div class="shisa-cart-total"><span>Order total</span><span id="shisa-cart-total">R0.00</span></div>
+        <button type="button" id="shisa-reserve-btn" class="shisa-reserve-btn">Reserve seats &amp; order</button>
+        <div style="font-size:11px;color:var(--muted);margin-top:7px">Choose your group size and time in the next step. Your food and seat reservation are submitted together.</div>
+      </section>
     </div>
   </main>
   <div class="legal-foot" style="padding-bottom:0"><button type="button" class="report-link" id="report-open">Report this shop</button></div>
@@ -164,6 +178,7 @@
           <span style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;">Book your appointment</span>
           <h3 id="modal-service-title" style="margin:2px 0 0;font-size:16px;font-weight:800;">Service</h3>
         </div>
+        <div id="shisa-modal-order" class="shisa-modal-order" style="display:none"></div>
         <button id="close-modal-btn" aria-label="Close booking form" style="background:none;border:0;cursor:pointer;"><i class="ph ph-x-circle" style="font-size:24px;color:var(--muted);"></i></button>
       </div>
 
@@ -246,6 +261,7 @@
     let customerDataPollBusy = false;
     let lastCustomerStoreSnapshot = null;
     let lastCustomerServicesSnapshot = null;
+    let shisaCart = new Map();
 
     const FALLBACK_IMAGES = {
       BARBER: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=70",
@@ -826,8 +842,30 @@
 
           const btn = document.createElement("button");
           btn.className = "btn-book";
-          btn.textContent = bookingOpen ? "Book" : "Closed";
           btn.disabled = !bookingOpen;
+          if (cat === "SHISANYAMA") {
+            btn.textContent = "Add to order";
+            btn.addEventListener("click", () => addShisaCartItem(s, activePrice));
+            const takeawayBtn = document.createElement("button");
+            takeawayBtn.type = "button";
+            takeawayBtn.className = "btn-book";
+            takeawayBtn.textContent = "Takeaway";
+            takeawayBtn.style.background = "#475569";
+            takeawayBtn.disabled = !bookingOpen;
+            takeawayBtn.addEventListener("click", () => openBookingModal(s.id, s.title, activePrice, s.duration_minutes));
+            const actions = document.createElement("div");
+            actions.style.cssText = "display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end";
+            actions.append(btn, takeawayBtn);
+            const footer = document.createElement("div");
+            footer.className = "menu-footer";
+            footer.append(priceBox, actions);
+            const body = document.createElement("div");
+            body.className = "menu-body";
+            body.append(title, durEl, footer);
+            card.appendChild(body);
+            return card;
+          }
+          btn.textContent = bookingOpen ? "Book" : "Closed";
           btn.addEventListener("click", () => openBookingModal(s.id, s.title, activePrice, s.duration_minutes));
 
           const footer = document.createElement("div");
@@ -842,6 +880,9 @@
         });
 
         menuBox.replaceChildren(...cards);
+        $("shisa-cart-box").style.display = cat === "SHISANYAMA" ? "block" : "none";
+        if (cat !== "SHISANYAMA") shisaCart.clear();
+        renderShisaCart();
       } catch (err) {
         console.error("Store load error:", err);
         showStoreMessage('<div class="empty-box">We couldn\'t load this shop. Refresh the page to try again.</div>');
@@ -921,9 +962,117 @@
       $("lightbox-modal").style.display = "flex";
     }
 
+
+    function isShisanyamaStore() {
+      return normalizeCategory(storeData && storeData.category) === "SHISANYAMA";
+    }
+
+    function shisaCartTotal() {
+      return Array.from(shisaCart.values()).reduce((sum, item) => sum + item.price * item.quantity, 0);
+    }
+
+    function renderShisaCart() {
+      const box = $("shisa-cart-box"), list = $("shisa-cart-items");
+      if (!box || !list) return;
+      box.style.display = isShisanyamaStore() ? "block" : "none";
+      list.replaceChildren();
+      if (!shisaCart.size) {
+        const empty = document.createElement("div");
+        empty.style.cssText = "font-size:12px;color:var(--muted);padding:8px 0";
+        empty.textContent = "Your basket is empty. Add meat, sides and drinks from the menu.";
+        list.appendChild(empty);
+      } else {
+        shisaCart.forEach(item => {
+          const row = document.createElement("div");
+          row.className = "shisa-cart-row";
+          const info = document.createElement("div");
+          const name = document.createElement("strong");
+          name.textContent = item.title;
+          const line = document.createElement("div");
+          line.style.color = "var(--muted)";
+          line.textContent = money(item.price) + " each · " + money(item.price * item.quantity);
+          info.append(name, line);
+          const controls = document.createElement("div");
+          controls.className = "shisa-cart-controls";
+          const minus = document.createElement("button");
+          minus.type = "button"; minus.textContent = "−"; minus.setAttribute("aria-label", "Remove one " + item.title);
+          minus.addEventListener("click", () => changeShisaCartQty(item.id, -1));
+          const qty = document.createElement("strong"); qty.textContent = String(item.quantity);
+          const plus = document.createElement("button");
+          plus.type = "button"; plus.textContent = "+"; plus.setAttribute("aria-label", "Add one " + item.title);
+          plus.addEventListener("click", () => changeShisaCartQty(item.id, 1));
+          controls.append(minus, qty, plus);
+          row.append(info, controls);
+          list.appendChild(row);
+        });
+      }
+      $("shisa-cart-total").textContent = money(shisaCartTotal());
+      $("shisa-reserve-btn").disabled = !bookingOpen || !shisaCart.size;
+      $("shisa-reserve-btn").style.opacity = (!bookingOpen || !shisaCart.size) ? ".55" : "1";
+    }
+
+    function addShisaCartItem(service, price) {
+      if (!bookingOpen) return;
+      const old = shisaCart.get(service.id);
+      if (old) old.quantity = Math.min(50, old.quantity + 1);
+      else shisaCart.set(service.id, {
+        id: service.id, title: String(service.title || "Menu item"),
+        price: Number(price), quantity: 1, duration: Number(service.duration_minutes) || 30
+      });
+      renderShisaCart();
+    }
+
+    function changeShisaCartQty(id, delta) {
+      const item = shisaCart.get(id);
+      if (!item) return;
+      item.quantity += delta;
+      if (item.quantity <= 0) shisaCart.delete(id);
+      else if (item.quantity > 50) item.quantity = 50;
+      renderShisaCart();
+      if ($("shisa-modal-order").style.display !== "none") renderShisaModalCart();
+    }
+
+    function renderShisaModalCart() {
+      const box = $("shisa-modal-order");
+      if (!selectedService || !selectedService.isShisanyamaOrder) {
+        box.style.display = "none";
+        box.textContent = "";
+        return;
+      }
+      box.style.display = "block";
+      box.replaceChildren();
+      const heading = document.createElement("strong");
+      heading.textContent = "Food order";
+      box.appendChild(heading);
+      shisaCart.forEach(item => {
+        const line = document.createElement("div");
+        line.textContent = item.quantity + " × " + item.title + " — " + money(item.price * item.quantity);
+        box.appendChild(line);
+      });
+      const total = document.createElement("strong");
+      total.style.display = "block";
+      total.style.marginTop = "6px";
+      total.textContent = "Food total: " + money(shisaCartTotal());
+      box.appendChild(total);
+    }
+
+    function openShisaReservation() {
+      if (!shisaCart.size) return alert("Add at least one food or drink item first.");
+      const first = shisaCart.values().next().value;
+      openBookingModal(first.id, first.title, first.price, first.duration);
+      selectedService.isShisanyamaOrder = true;
+      $("modal-service-title").textContent = "Reserve seats & order";
+      $("takeaway-field").style.display = "none";
+      $("is-takeaway").checked = false;
+      $("confirm-booking-btn").textContent = "Confirm seats & food order";
+      renderShisaModalCart();
+    }
+
     function openBookingModal(serviceId, title, price, duration) {
       selectedService = { storeId: storeData.id, serviceId, title, price, duration: Number(duration) || 30 };
       $("modal-service-title").textContent = `${title} (${money(price)})` + (selectedService.duration > 30 ? ` · ${fmtDur(selectedService.duration)}` : "");
+      $("shisa-modal-order").style.display = "none";
+      $("confirm-booking-btn").textContent = "Confirm Appointment";
       $("modal-error").textContent = "";
       const confirmation = $("booking-confirmation");
       confirmation.style.display = "none";
@@ -985,6 +1134,7 @@
       $("booking-modal").style.display = "none";
       $("booking-confirmation").style.display = "none";
       $("booking-modal").querySelector(".modal-sheet").style.display = "block";
+      $("shisa-modal-order").style.display = "none";
       $("booking-date").value = "";
       chosenTime = "";
       $("lightbox-modal").style.display = "none";
@@ -1098,31 +1248,52 @@
         }
 
         let paymentRef = generatePaymentRef();
-        let insertError = null;
-        for (let attempt = 0; attempt < 2; attempt++) {
-          const result = await db.from("bookings").insert([{
-            store_id: selectedService.storeId,
-            service_id: selectedService.serviceId,
-            customer_name: name,
-            customer_phone: phone,
-            booking_date: date,
-            booking_time: time,
-            party_size: guests,
-            payment_method: payMethod,
-            payment_ref: paymentRef,
-            is_takeaway: isTakeaway,
-            staff_assignment_mode: (!isTakeaway && bookableStaff.length) ? ($("booking-staff").value === "ANY" ? "ANY" : "SPECIFIC") : "NONE",
-            staff_id: !isTakeaway && bookableStaff.length && $("booking-staff").value !== "ANY" ? $("booking-staff").value : null
-          }]);
-          insertError = result.error;
-          if (!insertError) break;
-          if (insertError.code === "23505" && attempt === 0) {
-            paymentRef = generatePaymentRef();
-            continue;
+        let submittedShisaItems = [];
+        if (selectedService.isShisanyamaOrder) {
+          if (!shisaCart.size) throw new Error("Your food order is empty. Add menu items and try again.");
+          submittedShisaItems = Array.from(shisaCart.values()).map(item => ({ service_item_id: item.id, quantity: item.quantity }));
+          const { data: created, error: createError } = await db.rpc("create_shisanyama_booking_with_items", {
+            p_store_id: selectedService.storeId,
+            p_customer_name: name,
+            p_customer_phone: phone,
+            p_booking_date: date,
+            p_booking_time: time,
+            p_party_size: guests,
+            p_payment_method: payMethod,
+            p_payment_ref: paymentRef,
+            p_items: submittedShisaItems,
+            p_staff_assignment_mode: (!isTakeaway && bookableStaff.length) ? ($("booking-staff").value === "ANY" ? "ANY" : "SPECIFIC") : "NONE",
+            p_staff_id: !isTakeaway && bookableStaff.length && $("booking-staff").value !== "ANY" ? $("booking-staff").value : null
+          });
+          if (createError) throw createError;
+          if (!created || !(Array.isArray(created) ? created.length : created.id)) throw new Error("The shop did not return a booking confirmation. Please check Manage my booking before trying again.");
+        } else {
+          let insertError = null;
+          for (let attempt = 0; attempt < 2; attempt++) {
+            const result = await db.from("bookings").insert([{
+              store_id: selectedService.storeId,
+              service_id: selectedService.serviceId,
+              customer_name: name,
+              customer_phone: phone,
+              booking_date: date,
+              booking_time: time,
+              party_size: guests,
+              payment_method: payMethod,
+              payment_ref: paymentRef,
+              is_takeaway: isTakeaway,
+              staff_assignment_mode: (!isTakeaway && bookableStaff.length) ? ($("booking-staff").value === "ANY" ? "ANY" : "SPECIFIC") : "NONE",
+              staff_id: !isTakeaway && bookableStaff.length && $("booking-staff").value !== "ANY" ? $("booking-staff").value : null
+            }]);
+            insertError = result.error;
+            if (!insertError) break;
+            if (insertError.code === "23505" && attempt === 0) {
+              paymentRef = generatePaymentRef();
+              continue;
+            }
+            throw insertError;
           }
-          throw insertError;
+          if (insertError) throw insertError;
         }
-        if (insertError) throw insertError;
 
         // Read back the database-generated booking ID and receipt details.
         // This RPC verifies both the payment reference and customer's phone.
@@ -1135,7 +1306,16 @@
 
         const bookingId = receipt && receipt.id ? receipt.id : null;
         const queueNumber = receipt && receipt.queue_number ? receipt.queue_number : null;
-        const price = receipt && receipt.booked_price != null ? receipt.booked_price : selectedService.price;
+        const price = receipt && receipt.booked_price != null ? receipt.booked_price : (selectedService.isShisanyamaOrder ? shisaCartTotal() : selectedService.price);
+        let savedFoodItems = [];
+        if (selectedService.isShisanyamaOrder) {
+          const { data: foodRows, error: foodError } = await db.rpc("get_shisanyama_booking_items", { p_ref: paymentRef, p_phone: phone });
+          if (foodError) throw foodError;
+          if (!Array.isArray(foodRows) || !foodRows.length) throw new Error("Your reservation was saved, but we couldn't verify the food-order receipt. Keep your reference and contact the shop before trying again.");
+          savedFoodItems = foodRows;
+          shisaCart.clear();
+          renderShisaCart();
+        }
         const when = new Date(receipt && receipt.created_at ? receipt.created_at : Date.now()).toLocaleString("en-ZA", {
           timeZone: "Africa/Johannesburg", dateStyle: "medium", timeStyle: "short"
         });
@@ -1159,9 +1339,12 @@
         const payNote = payMethod === "EFT" ? `Instant EFT (Ref: ${paymentRef})` : `Cash at the shop (Ref: ${paymentRef})`;
 
         const waPhone = waNumber(storeData.phone_number);
+        const foodOrderText = savedFoodItems.length
+          ? "Food order:\n" + savedFoodItems.map(item => `${item.quantity} × ${item.item_title} — ${money(item.line_total)}`).join("\n") + "\n"
+          : "";
         const message = encodeURIComponent(
-          `Hi ${shopName}! I just booked "${selectedService.title}" (${money(price)}) on BOOK.NOW.\n\n` +
-          `Name: ${name}\nPhone: ${phone}\nAppointment: ${apptText} (South African time)\n` +
+          (savedFoodItems.length ? `Hi ${shopName}! I just reserved seats and placed a food order (${money(price)}) on BOOK.NOW.\n\n` : `Hi ${shopName}! I just booked "${selectedService.title}" (${money(price)}) on BOOK.NOW.\n\n`) +
+          `Name: ${name}\nPhone: ${phone}\nAppointment: ${apptText} (South African time)\n` + foodOrderText +
           (isTakeaway ? "Order type: Takeaway\n" : (guestsMode ? `Guests: ${guests}\n` : "")) +
           `Payment ref: ${paymentRef}\nPayment: ${payNote}\n` +
           (queueNumber ? `Booking number for that day: #${queueNumber}\n` : "") +
@@ -1177,7 +1360,8 @@
             </div>
 
             <div class="info-box">
-              <div style="margin-bottom:3px;"><strong>Service:</strong> ${esc(selectedService.title)} (${esc(money(price))})</div>
+              <div style="margin-bottom:3px;"><strong>${savedFoodItems.length ? "Seat reservation + food order total" : "Service"}:</strong> ${esc(savedFoodItems.length ? money(price) : selectedService.title + " (" + money(price) + ")")}</div>
+              ${savedFoodItems.length ? `<div style="margin:8px 0;padding-top:7px;border-top:1px solid var(--border);"><strong>Food order</strong>${savedFoodItems.map(item => `<div>${esc(item.quantity)} × ${esc(item.item_title)} — ${esc(money(item.line_total))}</div>`).join("")}</div>` : ""}
               <div style="margin-bottom:3px;"><strong>Appointment:</strong> ${esc(apptText)} (SAST)</div>
               ${guestsMode ? `<div style="margin-bottom:3px;"><strong>Guests:</strong> ${esc(guests)}</div>` : ""}
               <div style="margin-bottom:3px;"><strong>Name:</strong> ${esc(name)}</div>
@@ -1248,6 +1432,7 @@
       $("report-done-btn").addEventListener("click", closeModals);
       $("report-submit").addEventListener("click", submitReport);
       $("confirm-booking-btn").addEventListener("click", confirmBooking);
+      $("shisa-reserve-btn").addEventListener("click", openShisaReservation);
       $("close-lightbox").addEventListener("click", closeModals);
       $("lightbox-modal").addEventListener("click", e => { if (e.target === $("lightbox-modal")) closeModals(); });
       $("booking-date").addEventListener("change", refreshSlots);
