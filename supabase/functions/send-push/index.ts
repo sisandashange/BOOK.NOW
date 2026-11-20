@@ -28,6 +28,22 @@ function when(date?: string, time?: string): string {
   return time ? `${d} at ${time}` : d;
 }
 
+function whenAppointment(appointmentAt?: string | null, fallbackDate?: string, fallbackTime?: string): string {
+  if (!appointmentAt) return when(fallbackDate, fallbackTime);
+  const date = new Date(appointmentAt);
+  if (Number.isNaN(date.getTime())) return when(fallbackDate, fallbackTime);
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-ZA", {
+    timeZone: "Africa/Johannesburg",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date).filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+  return `${parts.weekday} ${parts.day} ${parts.month} at ${parts.hour}:${parts.minute}`;
+}
+
 const clean = (s: unknown, max = 60) => String(s ?? "").replace(/[\r\n]+/g, " ").slice(0, max);
 
 const REPORT_REASONS: Record<string, string> = {
@@ -77,7 +93,7 @@ Deno.serve(async (req) => {
     if (kind === "booking_new" || kind === "booking_cancelled" || kind === "booking_moved") {
       const { data: store } = await admin.from("stores").select("profile_id").eq("id", body.store_id).maybeSingle();
       ownerId = store?.profile_id ?? null;
-      if (kind === "booking_new") { title = "New booking"; text = `${who} · ${when(body.booking_date as string, body.booking_time as string)}${guests}`; }
+      if (kind === "booking_new") { title = "New booking"; text = `${who} · ${whenAppointment(body.appointment_at as string | null, body.booking_date as string, body.booking_time as string)}${guests}`; }
       if (kind === "booking_cancelled") { title = "Booking cancelled"; text = `${who} cancelled ${when(body.booking_date as string, body.booking_time as string)}`; }
       if (kind === "booking_moved") { title = "Booking moved"; text = `${who} moved to ${when(body.booking_date as string, body.booking_time as string)}`; }
     } else if (kind === "payment_proof") {
@@ -95,13 +111,13 @@ Deno.serve(async (req) => {
     } else if (kind === "customer_confirmed" || kind === "customer_reminder" || kind === "customer_completed") {
       // Details come from the database, not from the request
       const { data: bk } = await admin.from("bookings")
-        .select("id, store_id, booking_date, booking_time, payment_ref, status").eq("id", body.booking_id).maybeSingle();
+        .select("id, store_id, booking_date, booking_time, appointment_at, payment_ref, status").eq("id", body.booking_id).maybeSingle();
       if (!bk) return json({ sent: 0, note: "No booking" });
       const status = String(bk.status ?? "").toLowerCase();
       if (kind === "customer_reminder" && status !== "pending" && status !== "confirmed") return json({ sent: 0, note: "Booking no longer active" });
       const { data: store } = await admin.from("stores").select("store_name").eq("id", bk.store_id).maybeSingle();
       const shop = clean(store?.store_name, 50) || "the shop";
-      const slot = when(bk.booking_date, bk.booking_time);
+      const slot = whenAppointment(bk.appointment_at, bk.booking_date, bk.booking_time);
       table = "customer_push_subscriptions";
       ownerColumn = "booking_id";
       ownerId = bk.id;
