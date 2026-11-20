@@ -80,7 +80,7 @@ CREATE FUNCTION private.booking_reference_clear(text) RETURNS void LANGUAGE plpg
 \ir ../migrations/20261120084838_fix_shisanyama_order_json_validation.sql
 \ir ../migrations/20261120084859_fix_shisanyama_order_store_lookup.sql
 \ir ../migrations/20261120085330_index_shisanyama_booking_item_service_fk.sql
-\ir ../migrations/20261120100000_add_multi_item_shisanyama_takeaway.sql
+\ir ../migrations/20261120111014_add_multi_item_shisanyama_takeaway.sql
 
 BEGIN;
 DO $$
