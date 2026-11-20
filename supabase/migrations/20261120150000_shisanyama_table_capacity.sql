@@ -159,7 +159,7 @@ LEFT JOIN public.bookings b
 LEFT JOIN hour_usage hu
   ON hu.hour_start=date_trunc('hour',sl.slot_start AT TIME ZONE 'Africa/Johannesburg')
 GROUP BY sl.m,sw.slot_capacity,sw.hourly_capacity,sw.takeaway_slot_capacity,sw.capacity_mode,
-  sw.table_count,sw.seats_per_table,hu.used
+  sw.table_count,sw.seats_per_table,sw.is_shisa,hu.used
 ORDER BY sl.m;
 $$;
 
