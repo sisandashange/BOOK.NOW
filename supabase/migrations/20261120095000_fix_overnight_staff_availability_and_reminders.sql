@@ -277,6 +277,55 @@ END;
 $function$;
 
 
+-- Include the resolved appointment instant in owner push payloads as well.
+CREATE OR REPLACE FUNCTION public.push_notify_booking()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'extensions'
+AS $function$
+DECLARE
+  v_secret text;
+  v_url text;
+  v_kind text;
+BEGIN
+  BEGIN
+    IF TG_OP = 'INSERT' THEN
+      v_kind := 'booking_new';
+    ELSIF lower(coalesce(NEW.status, '')) = 'cancelled' AND lower(coalesce(OLD.status, '')) <> 'cancelled' THEN
+      v_kind := 'booking_cancelled';
+    ELSIF lower(coalesce(NEW.status, '')) = 'confirmed' AND lower(coalesce(OLD.status, '')) <> 'confirmed' THEN
+      v_kind := 'customer_confirmed';
+    ELSIF lower(coalesce(NEW.status, '')) = 'completed' AND lower(coalesce(OLD.status, '')) <> 'completed' THEN
+      v_kind := 'customer_completed';
+    ELSIF lower(coalesce(NEW.status, '')) <> 'cancelled'
+          AND (OLD.booking_date IS DISTINCT FROM NEW.booking_date OR OLD.booking_time IS DISTINCT FROM NEW.booking_time) THEN
+      v_kind := 'booking_moved';
+    ELSE
+      RETURN NEW;
+    END IF;
+
+    SELECT value INTO v_secret FROM public.push_config WHERE key = 'shared_secret';
+    SELECT value INTO v_url FROM public.push_config WHERE key = 'function_url';
+    IF v_secret IS NULL OR v_url IS NULL THEN RETURN NEW; END IF;
+
+    PERFORM net.http_post(
+      url := v_url,
+      headers := jsonb_build_object('Content-Type', 'application/json', 'x-push-secret', v_secret),
+      body := jsonb_build_object(
+        'kind', v_kind, 'booking_id', NEW.id, 'store_id', NEW.store_id,
+        'customer_name', NEW.customer_name, 'party_size', NEW.party_size,
+        'booking_date', NEW.booking_date, 'booking_time', NEW.booking_time,
+        'appointment_at', NEW.appointment_at)
+    );
+  EXCEPTION WHEN OTHERS THEN
+    NULL;
+  END;
+  RETURN NEW;
+END;
+$function$;
+
+
 CREATE OR REPLACE FUNCTION public.send_booking_reminders()
 RETURNS integer
 LANGUAGE plpgsql
