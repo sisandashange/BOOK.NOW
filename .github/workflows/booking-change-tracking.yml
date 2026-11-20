@@ -48,7 +48,8 @@ jobs:
               path.write_text(script, encoding="utf-8")
               subprocess.run(["node", "--check", str(path)], check=True)
           required = [
-              '.gt("updated_at", bookingChangeCursor)',
+              '.gt("updated_at", overlapStart)',
+              'bookingChangeSeen.get(row.id) !== row.updated_at',
               '.range(offset, offset + 499)',
               'setInterval(check, 15000)',
               'bookingLoadBusy = false'
