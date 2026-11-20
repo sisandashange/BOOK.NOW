@@ -238,6 +238,7 @@
     let chosenTime = "";
     let bookableStaff = [];
     let staffLookupState = "idle"; // success includes a valid empty list; errors must never fall through to NONE.
+    let staffLookupRequestId = 0;
     let slotPollBusy = false;
     let refreshToken = 0;
     let statusPollBusy = false;
@@ -314,20 +315,28 @@
 
 
     async function loadBookableStaff() {
+      const requestId = ++staffLookupRequestId;
+      const requestedStoreId = selectedService && selectedService.storeId;
+      const requestedServiceId = selectedService && selectedService.serviceId;
       bookableStaff = [];
       staffLookupState = "loading";
       const field = $("staff-choice-field"), select = $("booking-staff");
-      if (!field || !select || !selectedService || !db) {
-        staffLookupState = "error";
+      if (!field || !select || !requestedStoreId || !requestedServiceId || !db) {
+        if (requestId === staffLookupRequestId) staffLookupState = "error";
         return false;
       }
       field.style.display = "none";
       select.replaceChildren(new Option("Any available worker", "ANY"));
       try {
         const { data, error } = await db.rpc("get_bookable_staff", {
-          p_store_id: selectedService.storeId,
-          p_service_id: selectedService.serviceId
+          p_store_id: requestedStoreId,
+          p_service_id: requestedServiceId
         });
+        // Ignore late results after the customer has selected a different service.
+        if (requestId !== staffLookupRequestId
+            || !selectedService
+            || selectedService.storeId !== requestedStoreId
+            || selectedService.serviceId !== requestedServiceId) return false;
         if (error) throw error;
         if (!Array.isArray(data) || data.some(person => !person || !person.staff_id)) {
           throw new Error("Staff lookup returned an invalid response");
@@ -345,6 +354,7 @@
         staffLookupState = "success";
         return true;
       } catch (err) {
+        if (requestId !== staffLookupRequestId) return false;
         staffLookupState = "error";
         console.warn("Staff lookup failed; blocking appointment bookings until it succeeds:", err);
         return false;
