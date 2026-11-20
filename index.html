@@ -348,6 +348,7 @@
       const signature = JSON.stringify(stores.map(s => [
         s.id, s.store_name, s.category, s.area, s.store_image_url,
         s.opening_time, s.closing_time, s.manual_status,
+        s.holiday_start_date, s.holiday_end_date, isOpenNow(s),
         s.rating && s.rating.avg_rating, s.rating && s.rating.review_count,
         (s.service_items || []).map(i => [i.id, i.title])
       ]));
