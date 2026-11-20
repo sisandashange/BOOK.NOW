@@ -280,6 +280,17 @@ footer a{color:var(--muted);font-weight:600}
     const row = Array.isArray(data) ? data[0] : data;
     if (!row) return false;
     bk = row;
+    bk.capacityDetailsLoaded = false;
+    try {
+      const { data: capacityDetails, error: capacityError } = await db.from("stores")
+        .select("category, table_count, seats_per_table, hourly_capacity, takeaway_slot_capacity")
+        .eq("id", bk.store_id).maybeSingle();
+      if (capacityError) throw capacityError;
+      if (capacityDetails) Object.assign(bk, capacityDetails);
+      bk.capacityDetailsLoaded = !!capacityDetails;
+    } catch (capacityError) {
+      console.warn("Store seating capacity could not be loaded:", capacityError);
+    }
     bk.staff_name = null;
     bk.staff_job_title = null;
     if (String(bk.status || "").toLowerCase() === "confirmed") {
@@ -411,9 +422,18 @@ footer a{color:var(--muted);font-weight:600}
     if (close < open) close += 1440;
 
     const used = {};
-    let capacity = Number(bk.hourly_capacity || bk.slot_capacity) || 1;
-    const usedHourly = {};
     const isTakeaway = bk.is_takeaway === true;
+    const isShisanyama = /shisanyama|braai/i.test(String(bk.category || ""));
+    if (isShisanyama && !bk.capacityDetailsLoaded) {
+      chosenTime = "";
+      sel.replaceChildren(mk("", "Seating capacity unavailable — retry"));
+      hint.textContent = "We couldn't verify this Shisanyama's table capacity. Please look up the booking again before changing its time.";
+      return;
+    }
+    let capacity = isShisanyama
+      ? (Number(bk.table_count) || 1)
+      : (Number(bk.hourly_capacity || bk.slot_capacity) || 1);
+    const usedHourly = {};
     try {
       const { data, error } = await db.rpc("get_taken_slots", { p_store_id: bk.store_id, p_date: date });
       if (error) throw error;
@@ -421,8 +441,11 @@ footer a{color:var(--muted);font-weight:600}
       if (!Array.isArray(data)) throw new Error("Availability response was invalid");
       data.forEach(r => {
         if (isTakeaway) used[r.booking_time] = Number(r.takeaway_booked) || 0;
-        else usedHourly[fmtMin(Math.floor(toMin(r.booking_time) / 60) * 60)] = Number(r.hourly_booked != null ? r.hourly_booked : r.booked) || 0;
-        const returnedCapacity = isTakeaway ? r.takeaway_capacity : (r.hourly_capacity != null ? r.hourly_capacity : r.capacity);
+        else usedHourly[fmtMin(Math.floor(toMin(r.booking_time) / 60) * 60)] = isShisanyama
+          ? (Number(r.tables_booked) || 0)
+          : (Number(r.hourly_booked != null ? r.hourly_booked : r.booked) || 0);
+        const returnedCapacity = isTakeaway ? r.takeaway_capacity :
+          (isShisanyama ? r.table_capacity : (r.hourly_capacity != null ? r.hourly_capacity : r.capacity));
         if (returnedCapacity != null) capacity = Number(returnedCapacity);
       });
     } catch (e) {
@@ -435,11 +458,14 @@ footer a{color:var(--muted);font-weight:600}
     }
 
     const cap = capacity;
-    const need = isTakeaway ? 1 : (bk.capacity_mode === "GUESTS" ? (Number(bk.party_size) || 1) : 1);
+    const seatsPerTable = Math.max(1, Math.min(20, Number(bk.seats_per_table) || 4));
+    const need = isTakeaway ? 1 : (isShisanyama
+      ? Math.ceil((Number(bk.party_size) || 1) / seatsPerTable)
+      : (bk.capacity_mode === "GUESTS" ? (Number(bk.party_size) || 1) : 1));
 
     const options = [];
     let free = 0;
-    const dur = Number(bk.duration_minutes) || 30;
+    const dur = isShisanyama ? 30 : (Number(bk.duration_minutes) || 30);
     const steps = Math.max(1, Math.ceil(dur / 30));
     // This booking's own slots must not count against it when it is moved on the same day
     if (date === bk.booking_date && bk.booking_time) {
@@ -458,8 +484,8 @@ footer a{color:var(--muted);font-weight:600}
       let text = dur > 30 ? `${label} to ${fmtMin(m + dur)}` : label;
       if (isCurrent) text += " (your current time)";
       else if (left <= 0) text += " (full)";
-      else if (blocked) text += ` (only ${left} left)`;
-      else if (cap > 1) text += ` (${left} left)`;
+      else if (blocked) text += isShisanyama ? ` (only ${left} tables left)` : ` (only ${left} left)`;
+      else if (cap > 1) text += isShisanyama ? ` (${left} tables left)` : ` (${left} left)`;
       options.push(mk(label, text, blocked));
     }
     if (!free) { sel.replaceChildren(mk("", "No times available")); hint.textContent = "No free times on this date. Try another day."; return; }

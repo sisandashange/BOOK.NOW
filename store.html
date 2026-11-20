@@ -267,7 +267,7 @@
     const SUPABASE_URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
     const SUPABASE_KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
 
-    const STORE_COLUMNS = "id, store_name, category, store_image_url, phone_number, address, status, subscription_expires_at, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, slot_capacity, hourly_capacity, takeaway_slot_capacity, capacity_mode, area";
+    const STORE_COLUMNS = "id, store_name, category, store_image_url, phone_number, address, status, subscription_expires_at, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, slot_capacity, hourly_capacity, takeaway_slot_capacity, capacity_mode, table_count, seats_per_table, area";
 
     let db = null;
     let selectedService = null;
@@ -454,10 +454,13 @@
         }
         return;
       }
-      const guestsShop = storeData.capacity_mode === "GUESTS";
+      const shisanyamaTables = normalizeCategory(storeData.category) === "SHISANYAMA";
+      const guestsShop = storeData.capacity_mode === "GUESTS" || shisanyamaTables;
       $("party-field").style.display = (!isTakeaway && guestsShop) ? "block" : "none";
       let usedDineIn = {}, usedTakeaway = {};
-      let dbCapDineIn = Number(storeData.hourly_capacity || storeData.slot_capacity) || 1;
+      let dbCapDineIn = shisanyamaTables
+        ? (Number(storeData.table_count) || 1)
+        : (Number(storeData.hourly_capacity || storeData.slot_capacity) || 1);
       let dbCapTakeaway = Number(storeData.takeaway_slot_capacity) || 5;
       try {
         const { data, error } = await db.rpc("get_taken_slots", { p_store_id: requestStoreId, p_date: date });
@@ -466,9 +469,12 @@
         if (!Array.isArray(data)) throw new Error("Availability response was invalid");
         data.forEach(r => {
           const hourKey = fmtMin(Math.floor(toMin(r.booking_time) / 60) * 60);
-          usedDineIn[hourKey] = Number(r.hourly_booked != null ? r.hourly_booked : r.booked) || 0;
+          usedDineIn[hourKey] = shisanyamaTables
+            ? (Number(r.tables_booked) || 0)
+            : (Number(r.hourly_booked != null ? r.hourly_booked : r.booked) || 0);
           usedTakeaway[r.booking_time] = Number(r.takeaway_booked) || 0;
-          if (r.hourly_capacity != null) dbCapDineIn = Number(r.hourly_capacity);
+          if (shisanyamaTables && r.table_capacity != null) dbCapDineIn = Number(r.table_capacity);
+          else if (!shisanyamaTables && r.hourly_capacity != null) dbCapDineIn = Number(r.hourly_capacity);
           if (r.takeaway_capacity != null) dbCapTakeaway = Number(r.takeaway_capacity);
         });
       } catch (e) {
@@ -481,8 +487,10 @@
         return;
       }
       const cap = isTakeaway ? dbCapTakeaway : dbCapDineIn;
-      const need = (!isTakeaway && guestsShop) ? partySize() : 1;
-      const dur = (selectedService && Number(selectedService.duration)) || 30;
+      const seatsPerTable = Math.max(1, Math.min(20, Number(storeData.seats_per_table) || 4));
+      const need = (!isTakeaway && guestsShop)
+        ? (shisanyamaTables ? Math.ceil(partySize() / seatsPerTable) : partySize()) : 1;
+      const dur = shisanyamaTables ? 30 : ((selectedService && Number(selectedService.duration)) || 30);
       const steps = Math.max(1, Math.ceil(dur / 30));
       const usedMap = isTakeaway ? usedTakeaway : usedDineIn;
       let staffAvailability = null;
@@ -520,8 +528,8 @@
         let text = dur > 30 ? `${label} to ${fmtMin(m + dur)}` : label;
         if (workerBlocked) text += " (no worker available)";
         else if (left <= 0) text += " (full)";
-        else if (blocked) text += ` (only ${left} left)`;
-        else if (cap > 1) text += ` (${left} left)`;
+        else if (blocked) text += shisanyamaTables ? ` (only ${left} tables left)` : ` (only ${left} left)`;
+        else if (cap > 1) text += shisanyamaTables ? ` (${left} tables left)` : ` (${left} left)`;
         options.push(mk(label, text, blocked));
       }
       if (!free) {
@@ -847,6 +855,7 @@
           const durEl = document.createElement("div");
           durEl.className = "menu-duration";
           durEl.textContent = "Takes " + fmtDur(s.duration_minutes);
+          if (cat === "SHISANYAMA") durEl.style.display = "none";
 
           const priceBox = document.createElement("div");
           priceBox.className = "price-container";
@@ -1131,13 +1140,19 @@
       $("booking-date").min = today;
       $("booking-date").max = addDays(today, 60);
       $("booking-date").value = "";
-      const guestsShop = storeData.capacity_mode === "GUESTS";
-      const seats = Math.min(50, Number(storeData.hourly_capacity || storeData.slot_capacity) || 50);
+      const shisanyamaTables = normalizeCategory(storeData.category) === "SHISANYAMA";
+      const guestsShop = storeData.capacity_mode === "GUESTS" || shisanyamaTables;
+      const seatsPerTable = Math.max(1, Math.min(20, Number(storeData.seats_per_table) || 4));
+      const seats = shisanyamaTables
+        ? Math.min(50, (Number(storeData.table_count) || 1) * seatsPerTable)
+        : Math.min(50, Number(storeData.hourly_capacity || storeData.slot_capacity) || 50);
       $("party-field").style.display = guestsShop ? "block" : "none";
       $("party-size").max = seats;
       $("party-size").value = guestsShop ? Math.min(2, seats) : 1;
       chosenTime = "";
-      $("party-hint").textContent = guestsShop ? `This shop can host up to ${seats} guests per hour.` : "";
+      $("party-hint").textContent = shisanyamaTables
+        ? `${Number(storeData.table_count) || 1} tables × ${seatsPerTable} seats = ${seats} seats. Your group reserves ${"a whole table or more"}.`
+        : (guestsShop ? `This shop can host up to ${seats} guests per hour.` : "");
       $("takeaway-field").style.display = normalizeCategory(storeData.category) === "SHISANYAMA" ? "block" : "none";
       $("is-takeaway").checked = false;
       loadBookableStaff().then(() => refreshSlots());
