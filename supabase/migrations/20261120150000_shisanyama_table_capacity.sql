@@ -102,6 +102,7 @@ WITH store_info AS (
     capacity_mode,
     table_count,
     seats_per_table,
+    (lower(coalesce(category,'')) LIKE '%shisanyama%' OR lower(coalesce(category,'')) LIKE '%braai%') AS is_shisa,
     (extract(hour FROM coalesce(opening_time::text,'08:00')::time)::int*60
       +extract(minute FROM coalesce(opening_time::text,'08:00')::time)::int) open_min,
     (extract(hour FROM coalesce(closing_time::text,'17:00')::time)::int*60
@@ -138,18 +139,14 @@ SELECT
   to_char(time '00:00'+(sl.m%1440)*interval '1 minute','HH24:MI'),
   coalesce(sum(CASE
     WHEN b.id IS NOT NULL AND coalesce(b.is_takeaway,false)=false
-      THEN CASE WHEN lower(coalesce(sw.capacity_mode,''))='GUESTS'
-        THEN CASE WHEN lower(coalesce((SELECT category FROM public.stores WHERE id=p_store_id),'')) LIKE '%shisanyama%'
-                   OR lower(coalesce((SELECT category FROM public.stores WHERE id=p_store_id),'')) LIKE '%braai%'
-             THEN ceil(greatest(1,b.party_size)::numeric / greatest(1,sw.seats_per_table))::integer
-             ELSE b.party_size END
+      THEN CASE WHEN sw.is_shisa
+        THEN ceil(greatest(1,b.party_size)::numeric / greatest(1,sw.seats_per_table))::integer
+        WHEN lower(coalesce(sw.capacity_mode,''))='GUESTS' THEN b.party_size
         ELSE 1 END
     ELSE 0 END),0)::integer,
-  CASE WHEN EXISTS (SELECT 1 FROM public.stores st WHERE st.id=p_store_id AND (lower(coalesce(st.category,'')) LIKE '%shisanyama%' OR lower(coalesce(st.category,'')) LIKE '%braai%'))
-    THEN sw.table_count ELSE sw.slot_capacity END,
+  CASE WHEN sw.is_shisa THEN sw.table_count ELSE sw.slot_capacity END,
   coalesce(hu.used,0)::integer,
-  CASE WHEN EXISTS (SELECT 1 FROM public.stores st WHERE st.id=p_store_id AND (lower(coalesce(st.category,'')) LIKE '%shisanyama%' OR lower(coalesce(st.category,'')) LIKE '%braai%'))
-    THEN sw.table_count ELSE sw.hourly_capacity END,
+  CASE WHEN sw.is_shisa THEN sw.table_count ELSE sw.hourly_capacity END,
   coalesce(sum(CASE WHEN b.id IS NOT NULL AND b.is_takeaway IS TRUE THEN 1 ELSE 0 END),0)::integer,
   sw.takeaway_slot_capacity
 FROM slots sl
@@ -157,7 +154,7 @@ CROSS JOIN store_window sw
 LEFT JOIN public.bookings b
   ON b.store_id=p_store_id AND b.booking_date=p_date
   AND coalesce(b.status,'')<>'cancelled' AND b.appointment_at IS NOT NULL
-  AND sl.slot_start<b.appointment_at+(coalesce(b.duration_minutes,30)||' minutes')::interval
+  AND sl.slot_start<b.appointment_at+((CASE WHEN sw.is_shisa THEN 30 ELSE coalesce(b.duration_minutes,30) END)||' minutes')::interval
   AND b.appointment_at<sl.slot_start+interval '30 minutes'
 LEFT JOIN hour_usage hu
   ON hu.hour_start=date_trunc('hour',sl.slot_start AT TIME ZONE 'Africa/Johannesburg')
