@@ -1,5 +1,5 @@
 // BOOK.NOW service worker: fast repeat visits and a cached app shell on weak networks.
-const CACHE = "booknow-shell-v12";
+const CACHE = "booknow-shell-v13";
 const CORE_FILES = [
   "./",
   "./index.html",
