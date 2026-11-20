@@ -1332,7 +1332,6 @@
               party_size: guests,
               payment_method: payMethod,
               payment_ref: paymentRef,
-              is_takeaway: isTakeaway,
               staff_assignment_mode: (!isTakeaway && bookableStaff.length) ? ($("booking-staff").value === "ANY" ? "ANY" : "SPECIFIC") : "NONE",
               staff_id: !isTakeaway && bookableStaff.length && $("booking-staff").value !== "ANY" ? $("booking-staff").value : null
             }]);

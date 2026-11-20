@@ -304,11 +304,14 @@
         const pageData = fetched.slice(0, append ? PAGE_SIZE : targetCount);
 
         const ratings = {};
-        const { data: rs, error: ratingsError } = await db
-          .from("store_ratings")
-          .select("store_id, avg_rating, review_count");
-        if (ratingsError) console.warn("BOOK.NOW ratings unavailable:", ratingsError.message);
-        (rs || []).forEach(r => { ratings[r.store_id] = r; });
+        if (pageData.length) {
+          const { data: rs, error: ratingsError } = await db
+            .from("store_ratings")
+            .select("store_id, avg_rating, review_count")
+            .in("store_id", pageData.map(store => store.id));
+          if (ratingsError) console.warn("BOOK.NOW ratings unavailable:", ratingsError.message);
+          (rs || []).forEach(r => { ratings[r.store_id] = r; });
+        }
 
         const page = pageData.map(s => ({
           ...s,

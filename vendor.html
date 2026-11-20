@@ -531,6 +531,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   const setEmpty = (id, msg) => { const el = $(id); if (el) el.replaceChildren(h("div", { class: "empty-box", text: msg })); };
   const setBtn = (b, loading, text) => { if (b) { b.disabled = loading; b.textContent = text; } };
   let lastBookings = [];
+  let bookingChangeCursor = null;
+  const bookingChangeSeen = new Map();
+  let bookingLoadBusy = false;
+  let bookingLoadStoreId = null;
+  let bookingLoadQueued = false;
+  let bookingChangeCheckBusy = false;
 
   // ---- Stats: simple numbers a shop owner can act on ----
   function renderStats() {
@@ -1079,6 +1085,45 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     document.title = PAGE_TITLE;
   }
 
+  async function checkBookingChanges() {
+    if (!db || !activeVendor || bookingChangeCheckBusy || bookingLoadBusy) return false;
+    if (!bookingChangeCursor) {
+      return await loadOrders();
+    }
+
+    bookingChangeCheckBusy = true;
+    const checkedAt = new Date().toISOString();
+    try {
+      // A short overlap protects against a transaction that updates a row
+      // before this check but commits just after its database snapshot.
+      const overlapStart = new Date(Date.parse(bookingChangeCursor) - 60000).toISOString();
+      const { data, error } = await db.from("bookings")
+        .select("id, updated_at")
+        .eq("store_id", activeVendor.id)
+        .gt("updated_at", overlapStart)
+        .order("updated_at", { ascending: false })
+        .limit(1000);
+      if (error) throw error;
+
+      const unseen = (data || []).filter(row => bookingChangeSeen.get(row.id) !== row.updated_at);
+      if (unseen.length) {
+        return await loadOrders();
+      }
+
+      const pruneBefore = Date.parse(checkedAt) - 60000;
+      for (const [id, updatedAt] of bookingChangeSeen) {
+        if (Date.parse(updatedAt) < pruneBefore) bookingChangeSeen.delete(id);
+      }
+      bookingChangeCursor = checkedAt;
+      return false;
+    } catch (err) {
+      console.warn("Booking change check failed; it will retry:", err);
+      return false;
+    } finally {
+      bookingChangeCheckBusy = false;
+    }
+  }
+
   function startAlertPolling() {
     if (pollTimer) return;
     document.addEventListener("pointerdown", unlockAudio, { once: true });
@@ -1090,19 +1135,16 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       if ($("dashboard-screen").style.display === "none" || $("subscription-gate").style.display === "block") return;
       polling = true;
       try {
-        if ($("tab-services-btn").classList.contains("active")) {
-          await loadServices();
-        } else if ($("tab-moneystore-btn").classList.contains("active")) {
-          await loadWallet();
-        } else {
-          await loadOrders();
-          if ($("tab-stats-btn").classList.contains("active")) renderStats();
-        }
+        if ($("tab-services-btn").classList.contains("active")) return;
+        const changed = await checkBookingChanges();
+        if (changed && $("tab-moneystore-btn").classList.contains("active")) await loadWallet();
+        if (changed && $("tab-stats-btn").classList.contains("active")) renderStats();
       } finally {
         polling = false;
       }
     };
-    pollTimer = setInterval(check, 5000);
+    // Push remains the fast path; this small indexed query is a resilient fallback.
+    pollTimer = setInterval(check, 15000);
     document.addEventListener("visibilitychange", () => { if (!document.hidden) check(); });
   }
 
@@ -1210,7 +1252,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     });
     // When a phone alert arrives while the app is open, refresh straight away
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.addEventListener("message", e => { if (e.data && e.data.type === "push" && activeVendor) loadOrders(); });
+      navigator.serviceWorker.addEventListener("message", e => { if (e.data && e.data.type === "push" && activeVendor) checkBookingChanges(); });
     }
     $("refresh-settlement-btn").addEventListener("click", loadOrders);
 
@@ -1304,6 +1346,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       try {
         const { data, error } = await db.from("stores").select("*").eq("id", id).single();
         if (error) throw error;
+        if (!activeVendor || activeVendor.id !== data.id) {
+          bookingChangeCursor = null;
+          bookingChangeSeen.clear();
+        }
         activeVendor = data;
         updateHeader();
         await checkSubscriptionAndRender();
@@ -1509,10 +1555,16 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       if (error || !booking) { status.textContent = "Invalid receipt or booking."; status.style.color = "var(--danger)"; return; }
       if (booking.status === "completed") { status.textContent = "This booking is already completed."; status.style.color = "var(--warning)"; return; }
 
-      const { data: earlier } = await db.from("bookings").select("created_at")
-        .eq("store_id", activeVendor.id).eq("status", "pending").lt("created_at", booking.created_at);
       const today = saToday();
-      const ahead = (earlier || []).filter(b => saDate(b.created_at) === today).length;
+      const dayStart = new Date(today + "T00:00:00+02:00").toISOString();
+      const { count: aheadCount, error: queueError } = await db.from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("store_id", activeVendor.id)
+        .eq("status", "pending")
+        .gte("created_at", dayStart)
+        .lt("created_at", booking.created_at);
+      if (queueError) throw queueError;
+      const ahead = aheadCount ?? 0;
 
       const complete = h("button", { class: "btn-primary", style: "background:#16a34a;margin-top:10px", text: "Confirm Payment & Complete",
         onclick: () => updateBookingStatus(booking.id, "completed", true) });
@@ -1665,13 +1717,19 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     if (!currentStaffMember) return;
     setEmpty("staff-bookings-list", "Loading your bookings...");
     try {
-      const { data, error } = await db.from("bookings")
-        .select("id, store_id, customer_name, customer_phone, booking_date, booking_time, appointment_at, duration_minutes, status, party_size, staff_id, staff_assignment_mode, is_takeaway, created_at, service_items(title), staff_members(full_name)")
-        .eq("store_id", currentStaffMember.store_id)
-        .order("booking_date", { ascending: true })
-        .order("booking_time", { ascending: true });
-      if (error) throw error;
-      const rows = data || [];
+      const rows = [];
+      for (let offset = 0; ; offset += 500) {
+        const { data: page, error } = await db.from("bookings")
+          .select("id, store_id, customer_name, customer_phone, booking_date, booking_time, appointment_at, duration_minutes, status, party_size, staff_id, staff_assignment_mode, is_takeaway, created_at, service_items(title), staff_members(full_name)")
+          .eq("store_id", currentStaffMember.store_id)
+          .order("booking_date", { ascending: true })
+          .order("booking_time", { ascending: true })
+          .order("id", { ascending: true })
+          .range(offset, offset + 499);
+        if (error) throw error;
+        rows.push(...(page || []));
+        if (!page || page.length < 500) break;
+      }
       // ANY rows reserve a worker provisionally but are still awaiting a staff member's acceptance.
       const mine = rows.filter(b => b.staff_id === currentStaffMember.id && b.staff_assignment_mode !== "ANY");
       const available = rows.filter(b => b.staff_assignment_mode === "ANY" && ["PENDING", "CONFIRMED"].includes(String(b.status || "").toUpperCase()));
@@ -1907,10 +1965,23 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
   async function loadWallet() {
     if (!activeVendor) return;
+    const requestStoreId = activeVendor.id;
     try {
-      const { data, error } = await db.from("bookings").select("booked_price, service_items(price, sale_price)").eq("store_id", activeVendor.id).eq("status", "completed");
-      if (error) throw error;
-      $("wallet-balance").textContent = money((data || []).reduce((sum, b) => sum + bookingPrice(b), 0));
+      const completed = [];
+      for (let offset = 0; ; offset += 500) {
+        const { data: page, error } = await db.from("bookings")
+          .select("booked_price, service_items(price, sale_price)")
+          .eq("store_id", requestStoreId).eq("status", "completed")
+          .order("created_at", { ascending: false }).order("id", { ascending: false })
+          .range(offset, offset + 499);
+        if (error) throw error;
+        if (!activeVendor || activeVendor.id !== requestStoreId) return;
+        completed.push(...(page || []));
+        if (!page || page.length < 500) break;
+      }
+      if (activeVendor && activeVendor.id === requestStoreId) {
+        $("wallet-balance").textContent = money(completed.reduce((sum, b) => sum + bookingPrice(b), 0));
+      }
     } catch (err) {
       console.error("Wallet error:", err);
     }
@@ -1995,28 +2066,56 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   }
 
   async function loadOrders() {
-    if (!activeVendor) return;
+    if (!activeVendor) return false;
+    if (bookingLoadBusy) {
+      if (bookingLoadStoreId !== activeVendor.id) bookingLoadQueued = true;
+      return false;
+    }
+    bookingLoadBusy = true;
+    bookingLoadStoreId = activeVendor.id;
+    const requestStoreId = activeVendor.id;
+    const syncStartedAt = new Date().toISOString();
     try {
-      const { data: bookings, error } = await db.from("bookings").select("*, service_items(title, price, sale_price, duration_minutes), staff_members(full_name)")
-        .eq("store_id", activeVendor.id).order("created_at", { ascending: false });
-      if (error) throw error;
+      const all = [];
+      for (let offset = 0; ; offset += 500) {
+        const { data: page, error } = await db.from("bookings")
+          .select("*, service_items(title, price, sale_price, duration_minutes), staff_members(full_name)")
+          .eq("store_id", requestStoreId)
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(offset, offset + 499);
+        if (error) throw error;
+        if (!activeVendor || activeVendor.id !== requestStoreId) return false;
+        all.push(...(page || []));
+        if (!page || page.length < 500) break;
+      }
 
-      const all = bookings || [];
-      if (all.length) {
+      const foodByBooking = new Map();
+      for (let offset = 0; offset < all.length; offset += 500) {
+        if (!activeVendor || activeVendor.id !== requestStoreId) return false;
+        const ids = all.slice(offset, offset + 500).map(b => b.id);
         const { data: foodRows, error: foodError } = await db.from("booking_items")
           .select("booking_id,item_title,quantity,unit_price,line_total")
-          .in("booking_id", all.map(b => b.id));
+          .in("booking_id", ids);
         if (foodError) throw foodError;
-        const foodByBooking = new Map();
         (foodRows || []).forEach(item => {
           if (!foodByBooking.has(item.booking_id)) foodByBooking.set(item.booking_id, []);
           foodByBooking.get(item.booking_id).push(item);
         });
-        all.forEach(b => { b.booking_items = foodByBooking.get(b.id) || []; });
-      } else {
-        all.forEach(b => { b.booking_items = []; });
       }
+      if (!activeVendor || activeVendor.id !== requestStoreId) return false;
+      all.forEach(b => { b.booking_items = foodByBooking.get(b.id) || []; });
       lastBookings = all;
+      // Capture the query start, not completion: updates committed during the
+      // full read are picked up by the next indexed change check.
+      bookingChangeCursor = syncStartedAt;
+      bookingChangeSeen.clear();
+      const recentChangeCutoff = Date.parse(syncStartedAt) - 60000;
+      all.forEach(b => {
+        if (b.updated_at && Date.parse(b.updated_at) >= recentChangeCutoff) {
+          bookingChangeSeen.set(b.id, b.updated_at);
+        }
+      });
 
       // Alert the shop when a booking arrives that it has not seen before
       if (knownBookingIds && knownFor === activeVendor.id) {
@@ -2125,9 +2224,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       $("ledger-net").textContent = money(revenue);
       $("ledger-eft-balance").textContent = money(eft);
       renderSettlement(all);
+      return true;
     } catch (err) {
       console.error("Load bookings error:", err);
       setEmpty("orders-list", "Could not load bookings. Refresh the page to try again.");
+      return false;
+    } finally {
+      bookingLoadBusy = false;
+      bookingLoadStoreId = null;
+      if (bookingLoadQueued && activeVendor) {
+        bookingLoadQueued = false;
+        Promise.resolve().then(() => loadOrders());
+      }
     }
   }
 
@@ -2143,15 +2251,21 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       if ($("qr-scanner-modal").style.display === "flex") closeQrScanner();
       await loadOrders();
     } catch (err) {
+      ownChanges.delete(bookingId);
       alert("Could not update booking: " + err.message);
     }
   }
 
   async function submitSubscriptionProof() {
     if (!activeVendor) return alert("Please sign in and select your business.");
+    const requestStoreId = activeVendor.id;
+    const requestStore = activeVendor;
+    const requestReference = subRef(requestStore);
     const input = $("subscription-proof-file");
     const button = $("subscription-submit-btn");
     const file = input.files && input.files[0];
+    let uploadedPath = null;
+    let requestSaved = false;
 
     if (!file) return alert("Please select your proof of payment file first.");
     if (![...IMAGE_TYPES, "application/pdf"].includes(file.type)) return alert("Please upload a JPG, PNG, WebP or PDF file.");
@@ -2164,27 +2278,49 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       if (!user) throw new Error("Please sign in again.");
 
       const ext = { "application/pdf": "pdf", "image/png": "png", "image/webp": "webp" }[file.type] || "jpg";
-      const path = `${user.id}/${activeVendor.id}/${Date.now()}.${ext}`;
+      const path = `${user.id}/${requestStoreId}/${Date.now()}.${ext}`;
       const { error: upErr } = await db.storage.from("subscription-proofs").upload(path, file, { contentType: file.type, upsert: false });
       if (upErr) throw upErr;
+      uploadedPath = path;
 
       const { error: reqErr } = await db.from("subscription_payment_requests").insert([{
-        store_id: activeVendor.id, owner_id: user.id,
+        store_id: requestStoreId, owner_id: user.id,
         amount: 149,
-        payment_reference: subRef(activeVendor), receipt_path: path, status: "PENDING"
+        payment_reference: requestReference, receipt_path: path, status: "PENDING"
       }]);
       if (reqErr) throw reqErr;
+      requestSaved = true;
 
-      const { error: statusErr } = await db.from("stores").update({ status: "pending_approval", updated_at: new Date() }).eq("id", activeVendor.id);
+      const { error: statusErr } = await db.from("stores").update({ status: "pending_approval", updated_at: new Date() }).eq("id", requestStoreId);
       if (statusErr) throw statusErr;
 
-      activeVendor.status = "pending_approval";
+      if (activeVendor && activeVendor.id === requestStoreId) activeVendor.status = "pending_approval";
       input.value = "";
       alert("Your application is under review. Your store will be activated within 24 hours once approved by the administrator.");
       await checkSubscriptionAndRender();
     } catch (err) {
       console.error("Subscription submission failed:", err);
-      alert("Could not submit proof of payment: " + (err.message || "Unexpected error."));
+      if (uploadedPath && !requestSaved) {
+        try {
+          const { error: cleanupError } = await db.storage.from("subscription-proofs").remove([uploadedPath]);
+          if (cleanupError) console.warn("Could not remove unused payment proof:", cleanupError.message);
+        } catch (cleanupError) {
+          console.warn("Could not remove unused payment proof:", cleanupError);
+        }
+      }
+      if (requestSaved) {
+        if (activeVendor && activeVendor.id === requestStoreId) {
+          activeVendor.status = "pending_approval";
+          try { await checkSubscriptionAndRender(); } catch (refreshError) {
+            console.warn("Payment proof saved; subscription screen refresh will retry:", refreshError);
+          }
+        }
+        alert("Your proof of payment was received and is awaiting founder review.");
+      } else if (err.code === "23505") {
+        alert("A payment proof for this shop is already waiting for review. Please wait for the founder's decision.");
+      } else {
+        alert("Could not submit proof of payment: " + (err.message || "Unexpected error."));
+      }
     } finally {
       setBtn(button, false, "Confirm Payment");
     }
