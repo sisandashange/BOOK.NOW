@@ -533,6 +533,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   let lastBookings = [];
   let bookingChangeCursor = null;
   let bookingLoadBusy = false;
+  let bookingLoadStoreId = null;
+  let bookingLoadQueued = false;
   let bookingChangeCheckBusy = false;
 
   // ---- Stats: simple numbers a shop owner can act on ----
@@ -1083,10 +1085,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   }
 
   async function checkBookingChanges() {
-    if (!db || !activeVendor || bookingChangeCheckBusy || bookingLoadBusy) return;
+    if (!db || !activeVendor || bookingChangeCheckBusy || bookingLoadBusy) return false;
     if (!bookingChangeCursor) {
-      await loadOrders();
-      return;
+      return await loadOrders();
     }
 
     bookingChangeCheckBusy = true;
@@ -1100,14 +1101,16 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       if (error) throw error;
 
       if (data && data.length) {
-        await loadOrders();
+        return await loadOrders();
       } else {
         // Any write occurring during this query is newer than checkedAt and
         // will be picked up on the next poll.
         bookingChangeCursor = checkedAt;
+        return false;
       }
     } catch (err) {
       console.warn("Booking change check failed; it will retry:", err);
+      return false;
     } finally {
       bookingChangeCheckBusy = false;
     }
@@ -1124,14 +1127,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       if ($("dashboard-screen").style.display === "none" || $("subscription-gate").style.display === "block") return;
       polling = true;
       try {
-        if ($("tab-services-btn").classList.contains("active")) {
-          await loadServices();
-        } else if ($("tab-moneystore-btn").classList.contains("active")) {
-          await loadWallet();
-        } else {
-          await checkBookingChanges();
-          if ($("tab-stats-btn").classList.contains("active")) renderStats();
-        }
+        if ($("tab-services-btn").classList.contains("active")) return;
+        const changed = await checkBookingChanges();
+        if (changed && $("tab-moneystore-btn").classList.contains("active")) await loadWallet();
+        if (changed && $("tab-stats-btn").classList.contains("active")) renderStats();
       } finally {
         polling = false;
       }
@@ -2045,25 +2044,33 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   }
 
   async function loadOrders() {
-    if (!activeVendor || bookingLoadBusy) return false;
+    if (!activeVendor) return false;
+    if (bookingLoadBusy) {
+      if (bookingLoadStoreId !== activeVendor.id) bookingLoadQueued = true;
+      return false;
+    }
     bookingLoadBusy = true;
+    bookingLoadStoreId = activeVendor.id;
+    const requestStoreId = activeVendor.id;
     const syncStartedAt = new Date().toISOString();
     try {
       const all = [];
       for (let offset = 0; ; offset += 500) {
         const { data: page, error } = await db.from("bookings")
           .select("*, service_items(title, price, sale_price, duration_minutes), staff_members(full_name)")
-          .eq("store_id", activeVendor.id)
+          .eq("store_id", requestStoreId)
           .order("created_at", { ascending: false })
           .order("id", { ascending: false })
           .range(offset, offset + 499);
         if (error) throw error;
+        if (!activeVendor || activeVendor.id !== requestStoreId) return false;
         all.push(...(page || []));
         if (!page || page.length < 500) break;
       }
 
       const foodByBooking = new Map();
       for (let offset = 0; offset < all.length; offset += 500) {
+        if (!activeVendor || activeVendor.id !== requestStoreId) return false;
         const ids = all.slice(offset, offset + 500).map(b => b.id);
         const { data: foodRows, error: foodError } = await db.from("booking_items")
           .select("booking_id,item_title,quantity,unit_price,line_total")
@@ -2074,6 +2081,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
           foodByBooking.get(item.booking_id).push(item);
         });
       }
+      if (!activeVendor || activeVendor.id !== requestStoreId) return false;
       all.forEach(b => { b.booking_items = foodByBooking.get(b.id) || []; });
       lastBookings = all;
       // Capture the query start, not completion: updates committed during the
@@ -2194,6 +2202,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       return false;
     } finally {
       bookingLoadBusy = false;
+      bookingLoadStoreId = null;
+      if (bookingLoadQueued && activeVendor) {
+        bookingLoadQueued = false;
+        Promise.resolve().then(() => loadOrders());
+      }
     }
   }
 
