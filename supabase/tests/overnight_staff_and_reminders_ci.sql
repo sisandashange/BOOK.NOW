@@ -108,6 +108,7 @@ DO $$
 DECLARE
   v_store uuid := '10000000-0000-0000-0000-000000000001';
   v_service uuid := '20000000-0000-0000-0000-000000000001';
+  v_unstaffed_service uuid := '20000000-0000-0000-0000-000000000002';
   v_staff uuid := '30000000-0000-0000-0000-000000000001';
   v_wrong_day_staff uuid := '30000000-0000-0000-0000-000000000002';
   v_business_date date := (now() AT TIME ZONE 'Africa/Johannesburg')::date + 2;
@@ -127,7 +128,8 @@ BEGIN
 
   INSERT INTO public.stores(id, opening_time, closing_time, status)
   VALUES (v_store, time '20:00', time '02:00', 'active');
-  INSERT INTO public.service_items(id, store_id) VALUES (v_service, v_store);
+  INSERT INTO public.service_items(id, store_id)
+  VALUES (v_service, v_store), (v_unstaffed_service, v_store);
   INSERT INTO public.staff_members(id, store_id, full_name)
   VALUES
     (v_staff, v_store, 'Overnight Worker'),
@@ -166,11 +168,63 @@ BEGIN
     RAISE EXCEPTION 'An occupied after-midnight slot was still returned as available';
   END IF;
 
-  -- Install the authoritative trigger after the manually inserted fixture booking.
+  -- Existing unassigned bookings are preserved and remain editable.
+  INSERT INTO public.bookings(
+    id, store_id, service_id, booking_date, booking_time, appointment_at,
+    duration_minutes, staff_assignment_mode, status
+  ) VALUES (
+    '40000000-0000-0000-0000-000000000006', v_store, v_service,
+    v_business_date, time '01:45',
+    public.compute_appointment_at(v_store, v_business_date, time '01:45'),
+    30, 'NONE', 'pending'
+  );
+
+  -- Install the authoritative trigger after the manually inserted fixture bookings.
   CREATE TRIGGER zz_assign_validate_booking_staff
-  BEFORE INSERT OR UPDATE OF booking_date, booking_time, staff_id, staff_assignment_mode, duration_minutes, status
+  BEFORE INSERT OR UPDATE OF booking_date, booking_time, appointment_at, staff_id, staff_assignment_mode, duration_minutes, status
   ON public.bookings
   FOR EACH ROW EXECUTE FUNCTION public.assign_and_validate_booking_staff();
+
+  -- New dine-in NONE inserts cannot bypass an active staff roster.
+  BEGIN
+    INSERT INTO public.bookings(
+      id, store_id, service_id, booking_date, booking_time, appointment_at,
+      duration_minutes, staff_assignment_mode, status
+    ) VALUES (
+      '40000000-0000-0000-0000-000000000007', v_store, v_service,
+      v_business_date, time '01:45',
+      public.compute_appointment_at(v_store, v_business_date, time '01:45'),
+      30, 'NONE', 'pending'
+    );
+    RAISE EXCEPTION 'Expected NONE booking with active staff to fail';
+  EXCEPTION WHEN OTHERS THEN
+    GET STACKED DIAGNOSTICS v_conflict_message = MESSAGE_TEXT;
+    IF position('Choose a staff member' IN v_conflict_message) = 0 THEN RAISE; END IF;
+  END;
+
+  -- Takeaway and services with no active roster retain the unassigned workflow.
+  INSERT INTO public.bookings(
+    id, store_id, service_id, booking_date, booking_time, appointment_at,
+    duration_minutes, staff_assignment_mode, is_takeaway, status
+  ) VALUES (
+    '40000000-0000-0000-0000-000000000008', v_store, v_service,
+    v_business_date, time '01:45',
+    public.compute_appointment_at(v_store, v_business_date, time '01:45'),
+    30, 'NONE', true, 'pending'
+  );
+  INSERT INTO public.bookings(
+    id, store_id, service_id, booking_date, booking_time, appointment_at,
+    duration_minutes, staff_assignment_mode, status
+  ) VALUES (
+    '40000000-0000-0000-0000-000000000009', v_store, v_unstaffed_service,
+    v_business_date, time '01:45',
+    public.compute_appointment_at(v_store, v_business_date, time '01:45'),
+    30, 'NONE', 'pending'
+  );
+  UPDATE public.bookings
+  SET booking_time = time '01:30',
+      appointment_at = public.compute_appointment_at(v_store, v_business_date, time '01:30')
+  WHERE id = '40000000-0000-0000-0000-000000000006';
 
   -- A direct insert for the occupied worker/time must be rejected.
   BEGIN
