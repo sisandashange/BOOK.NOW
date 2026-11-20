@@ -31,6 +31,31 @@ jobs:
           --health-retries 12
     steps:
       - uses: actions/checkout@v4
+      - name: Check vendor JavaScript and incremental polling safeguards
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, subprocess, tempfile
+          source = pathlib.Path("vendor.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script\\b[^>]*>(.*?)</script\\s*>", source, flags=re.I | re.S)
+          if not scripts:
+              raise SystemExit("No vendor inline script found.")
+          for index, script in enumerate(scripts):
+              if not script.strip():
+                  continue
+              path = pathlib.Path(tempfile.gettempdir()) / f"vendor-{index}.js"
+              path.write_text(script, encoding="utf-8")
+              subprocess.run(["node", "--check", str(path)], check=True)
+          required = [
+              '.gt("updated_at", bookingChangeCursor)',
+              '.range(offset, offset + 499)',
+              'setInterval(check, 15000)',
+              'bookingLoadBusy = false'
+          ]
+          missing = [item for item in required if item not in source]
+          if missing:
+              raise SystemExit("Incremental polling regression: missing " + ", ".join(missing))
+          print("Vendor syntax and incremental polling checks passed.")
+          PY
       - name: Install PostgreSQL client
         run: |
           sudo apt-get update
