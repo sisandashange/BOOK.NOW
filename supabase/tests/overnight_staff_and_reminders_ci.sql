@@ -287,7 +287,7 @@ BEGIN
     id, store_id, service_id, booking_date, booking_time, appointment_at,
     duration_minutes, status
   ) VALUES (
-    v_reminder_booking, v_store, v_service, v_due_business_date, v_due_time,
+    v_reminder_booking, v_store, v_unstaffed_service, v_due_business_date, v_due_time,
     v_due_at, 30, 'confirmed'
   );
 
