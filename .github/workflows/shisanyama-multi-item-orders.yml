@@ -1,0 +1,64 @@
+name: Shisanyama multi-item order regression tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "store.html"
+      - "vendor.html"
+      - "sw.js"
+      - "supabase/migrations/*shisanyama*"
+      - "supabase/tests/shisanyama_multi_item_orders_ci.sql"
+      - ".github/workflows/shisanyama-multi-item-orders.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  javascript-and-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: booknow_shisa_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d booknow_shisa_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - name: Check out PR
+        uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, subprocess, tempfile
+          files = ["store.html", "vendor.html"]
+          for filename in files:
+              source = pathlib.Path(filename).read_text(encoding="utf-8")
+              scripts = re.findall(r"<script\b[^>]*>(.*?)</script\s*>", source, flags=re.I | re.S)
+              for index, script in enumerate(scripts):
+                  if not script.strip():
+                      continue
+                  path = pathlib.Path(tempfile.gettempdir()) / f"{pathlib.Path(filename).stem}-{index}.js"
+                  path.write_text(script, encoding="utf-8")
+                  subprocess.run(["node", "--check", str(path)], check=True)
+          subprocess.run(["node", "--check", "sw.js"], check=True)
+          print("Inline customer/vendor scripts and service worker parse successfully.")
+          PY
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Run Shisanyama order regression tests
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql "postgresql://postgres@localhost:5432/booknow_shisa_ci" \
+            --set ON_ERROR_STOP=1 \
+            --file supabase/tests/shisanyama_multi_item_orders_ci.sql
