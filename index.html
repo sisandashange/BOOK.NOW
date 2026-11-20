@@ -228,20 +228,37 @@
       return "OTHER";
     }
 
-    // Returns true (open), false (closed) or null (unknown)
+    // Returns true (open), false (closed) or null (unknown), always using South African business time.
     function isOpenNow(s) {
-      if (s.manual_status === "CLOSED") return false;
-      if (s.manual_status === "OPEN") return true;
-      const now = new Date();
-      const today = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
-      if (s.holiday_start_date && s.holiday_end_date && today >= s.holiday_start_date && today <= s.holiday_end_date) return false;
+      if (String(s.manual_status || "").toUpperCase() === "CLOSED") return false;
       if (!s.opening_time || !s.closing_time) return null;
-      const hhmm = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
-      const opening = String(s.opening_time).slice(0, 5);
-      const closing = String(s.closing_time).slice(0, 5);
-      // A closing time at or before opening means the business operates past midnight.
-      if (closing <= opening) return hhmm >= opening || hhmm < closing;
-      return hhmm >= opening && hhmm < closing;
+
+      const parts = Object.fromEntries(new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Africa/Johannesburg",
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+      }).formatToParts(new Date()).filter(p => p.type !== "literal").map(p => [p.type, p.value]));
+      const today = parts.year + "-" + parts.month + "-" + parts.day;
+      const minuteNow = Number(parts.hour) * 60 + Number(parts.minute);
+      const opening = Number(String(s.opening_time).slice(0, 2)) * 60 + Number(String(s.opening_time).slice(3, 5));
+      const closing = Number(String(s.closing_time).slice(0, 2)) * 60 + Number(String(s.closing_time).slice(3, 5));
+      const overnight = closing <= opening;
+
+      // After midnight, an overnight shop still belongs to the previous business date.
+      let businessDate = today;
+      if (overnight && minuteNow < closing) {
+        const previous = new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day) - 1));
+        businessDate = previous.toISOString().slice(0, 10);
+      }
+      const holidayStart = s.holiday_start_date ? String(s.holiday_start_date).slice(0, 10) : "";
+      const holidayEnd = s.holiday_end_date ? String(s.holiday_end_date).slice(0, 10) : "";
+      if ((holidayStart && holidayEnd && businessDate >= holidayStart && businessDate <= holidayEnd)
+        || (holidayStart && !holidayEnd && businessDate >= holidayStart)
+        || (!holidayStart && holidayEnd && businessDate === holidayEnd)) return false;
+
+      // "OPEN" means normal scheduled operation, not an override of hours or holidays.
+      if (overnight) return minuteNow >= opening || minuteNow < closing;
+      return minuteNow >= opening && minuteNow < closing;
     }
 
     function showMessage(text) {
@@ -424,11 +441,13 @@
       const wrap = $("load-more-wrap");
       const button = $("load-more");
       const status = $("marketplace-status");
-      const filtersActive = activeCat !== "ALL" || Boolean(activeArea) || onlyOpen || Boolean($("search-input").value.trim());
-      wrap.style.display = hasMoreStores && !filtersActive ? "" : "none";
+      wrap.style.display = hasMoreStores ? "" : "none";
       button.disabled = marketplaceBusy;
       button.textContent = marketplaceBusy ? "Loading..." : "Load more shops";
-      status.textContent = visibleCount ? "Showing " + visibleCount + " matching shops from " + allStores.length + " loaded." : "";
+      status.textContent = (visibleCount
+        ? "Showing " + visibleCount + " matching shops from " + allStores.length + " loaded."
+        : (hasMoreStores ? "No matches in the shops loaded so far." : ""))
+        + (hasMoreStores ? " More shops may match — load more to continue searching." : "");
     }
 
     // Search and category filter work together
