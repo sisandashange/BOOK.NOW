@@ -1357,7 +1357,7 @@
           (isTakeaway ? "Order type: Takeaway\n" : (guestsMode ? `Guests: ${guests}\n` : "")) +
           `Payment ref: ${paymentRef}\nPayment: ${payNote}\n` +
           (queueNumber ? `Booking number for that day: #${queueNumber}\n` : "") +
-          `\nPlease confirm my appointment.`
+          `\nPlease confirm my ${isTakeaway ? "takeaway order" : "appointment"}.`
         );
         const waUrl = waPhone ? `https://wa.me/${waPhone}?text=${message}` : "";
 
@@ -1369,7 +1369,7 @@
             </div>
 
             <div class="info-box">
-              <div style="margin-bottom:3px;"><strong>${savedFoodItems.length ? "Seat reservation + food order total" : "Service"}:</strong> ${esc(savedFoodItems.length ? money(price) : selectedService.title + " (" + money(price) + ")")}</div>
+              <div style="margin-bottom:3px;"><strong>${savedFoodItems.length ? (isTakeaway ? "Takeaway order total" : "Seat reservation + food order total") : "Service"}:</strong> ${esc(savedFoodItems.length ? money(price) : selectedService.title + " (" + money(price) + ")")}</div>
               ${savedFoodItems.length ? `<div style="margin:8px 0;padding-top:7px;border-top:1px solid var(--border);"><strong>Food order</strong>${savedFoodItems.map(item => `<div>${esc(item.quantity)} × ${esc(item.item_title)} — ${esc(item.line_total == null ? "included in order total" : money(item.line_total))}</div>`).join("")}</div>` : ""}
               <div style="margin-bottom:3px;"><strong>Appointment:</strong> ${esc(apptText)} (SAST)</div>
               ${guestsMode ? `<div style="margin-bottom:3px;"><strong>Guests:</strong> ${esc(guests)}</div>` : ""}
