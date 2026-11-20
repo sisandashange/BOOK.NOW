@@ -6,6 +6,7 @@ on:
     paths:
       - "vendor.html"
       - "supabase/migrations/*booking_change_tracking*"
+      - "supabase/migrations/*dashboard_pagination*"
       - "supabase/tests/booking_change_tracking_ci.sql"
       - ".github/workflows/booking-change-tracking.yml"
 
