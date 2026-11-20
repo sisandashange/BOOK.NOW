@@ -142,6 +142,30 @@ BEGIN
   END IF;
 
   IF coalesce(NEW.staff_assignment_mode, 'NONE') = 'NONE' THEN
+    -- Preserve legacy unassigned bookings when they are edited, and preserve
+    -- takeaway. New dine-in bookings cannot bypass an active staff roster by
+    -- submitting NONE directly to the database.
+    IF TG_OP = 'UPDATE'
+       AND coalesce(OLD.staff_assignment_mode, 'NONE') = 'NONE'
+       AND OLD.staff_id IS NULL THEN
+      NEW.staff_id := NULL;
+      RETURN NEW;
+    END IF;
+
+    IF NEW.is_takeaway IS NOT TRUE
+       AND EXISTS (
+         SELECT 1
+         FROM public.staff_members sm
+         JOIN public.staff_services ss ON ss.staff_id = sm.id
+         JOIN public.service_items si ON si.id = ss.service_id
+         WHERE sm.store_id = NEW.store_id
+           AND ss.service_id = NEW.service_id
+           AND si.store_id = NEW.store_id
+           AND sm.is_active = true
+       ) THEN
+      RAISE EXCEPTION 'Choose a staff member for this service.';
+    END IF;
+
     NEW.staff_id := NULL;
     RETURN NEW;
   END IF;
