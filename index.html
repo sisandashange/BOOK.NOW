@@ -244,7 +244,8 @@
       if (hasHours) {
         opening = Number(String(s.opening_time).slice(0, 2)) * 60 + Number(String(s.opening_time).slice(3, 5));
         closing = Number(String(s.closing_time).slice(0, 2)) * 60 + Number(String(s.closing_time).slice(3, 5));
-        overnight = closing <= opening;
+        if (closing === opening) return null; // Match the booking form: equal hours are not a valid schedule.
+        overnight = closing < opening;
         // After midnight, an overnight shop still belongs to the previous business date.
         if (overnight && minuteNow < closing) {
           const previous = new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day) - 1));
