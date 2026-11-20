@@ -43,8 +43,8 @@ CREATE TABLE public.platform_settings (
 );
 CREATE TABLE public.subscription_payment_requests (
   id uuid, store_id uuid, owner_id uuid, amount numeric, payment_reference text,
-  payment_type text, receipt_path text, status text, created_at timestamptz,
-  updated_at timestamptz
+  payment_type text, receipt_path text, status text,
+  created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now()
 );
 CREATE TABLE public.store_ratings(store_id uuid,avg_rating numeric,review_count integer);
 CREATE TABLE public.vendors(id uuid);
@@ -162,17 +162,23 @@ BEGIN
   END IF;
 
   -- Concurrent proof submissions cannot create duplicate pending requests for one shop.
-  INSERT INTO public.subscription_payment_requests (id,store_id,status)
-  VALUES ('30000000-0000-0000-0000-000000000001','00000000-0000-4000-8000-000000000001','PENDING');
+  INSERT INTO public.subscription_payment_requests
+    (id,store_id,owner_id,amount,payment_reference,payment_type,receipt_path,status)
+  VALUES ('30000000-0000-0000-0000-000000000001','00000000-0000-4000-8000-000000000001',
+          '50000000-0000-0000-0000-000000000001',149,'BN-PEND01','SUBSCRIPTION','proof/pending','PENDING');
   BEGIN
-    INSERT INTO public.subscription_payment_requests (id,store_id,status)
-    VALUES ('30000000-0000-0000-0000-000000000002','00000000-0000-4000-8000-000000000001','PENDING');
+    INSERT INTO public.subscription_payment_requests
+      (id,store_id,owner_id,amount,payment_reference,payment_type,receipt_path,status)
+    VALUES ('30000000-0000-0000-0000-000000000002','00000000-0000-4000-8000-000000000001',
+            '50000000-0000-0000-0000-000000000001',149,'BN-PEND02','SUBSCRIPTION','proof/duplicate','PENDING');
     RAISE EXCEPTION 'A second pending payment request for the same shop was accepted.';
   EXCEPTION WHEN unique_violation THEN
     NULL;
   END;
-  INSERT INTO public.subscription_payment_requests (id,store_id,status)
-  VALUES ('30000000-0000-0000-0000-000000000003','00000000-0000-4000-8000-000000000001','APPROVED');
+  INSERT INTO public.subscription_payment_requests
+    (id,store_id,owner_id,amount,payment_reference,payment_type,receipt_path,status)
+  VALUES ('30000000-0000-0000-0000-000000000003','00000000-0000-4000-8000-000000000001',
+          '50000000-0000-0000-0000-000000000001',149,'BN-APPR01','SUBSCRIPTION','proof/approved','APPROVED');
 
   -- Vendor and founder permissions remain unchanged.
   IF NOT has_table_privilege('authenticated','public.stores','SELECT')
