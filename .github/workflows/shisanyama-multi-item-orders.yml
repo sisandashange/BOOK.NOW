@@ -54,8 +54,8 @@ jobs:
           floating = re.search(r"\.shisa-floating-order-bar\s*\{([^}]*)\}", pathlib.Path("store.html").read_text(encoding="utf-8"), flags=re.S)
           if not css or not floating:
               raise SystemExit("Could not find modal/floating order CSS blocks.")
-          modal_z = re.search(r"z-index\\s*:\\s*(\\d+)", css.group(1))
-          floating_z = re.search(r"z-index\\s*:\\s*(\\d+)", floating.group(1))
+          modal_z = re.search(r"z-index\s*:\s*(\d+)", css.group(1))
+          floating_z = re.search(r"z-index\s*:\s*(\d+)", floating.group(1))
           if not modal_z or not floating_z or int(floating_z.group(1)) >= int(modal_z.group(1)):
               raise SystemExit("Floating order bar must stack below the booking modal.")
           print("Checkout modal layering regression check passed.")
