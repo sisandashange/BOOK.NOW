@@ -833,7 +833,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     $("poster-link").textContent = link.replace(/^https?:\/\//, "");
     const box = $("poster-qr");
     if (window.BNQR) {
-      box.innerHTML = BNQR.svg(link, { margin: 2 });   // generated here in the browser, safe to insert
+      box.innerHTML = BNQR.svg(link, { margin: 2, level: "Q" });   // generated here in the browser, safe to insert
     } else {
       box.replaceChildren(h("div", { class: "small-tip", text: "The QR code could not be created. Refresh the page and try again." }));
     }
@@ -1491,13 +1491,19 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
   async function populateBankForm() {
     if (!activeVendor) return;
-    // Bank details live in their own private table. Older shops may still have them on the store row.
-    let bank = null;
+    // Bank details are read only from the private table; never fall back to public store data.
+    let bank;
     try {
-      const { data } = await db.from("store_bank_details").select("bank_name, account_holder, account_number, branch_code").eq("store_id", activeVendor.id).maybeSingle();
-      bank = data;
-    } catch (_) {}
-    bank = bank || { bank_name: activeVendor.bank_name, account_holder: activeVendor.account_holder, account_number: activeVendor.account_number, branch_code: activeVendor.branch_code };
+      const { data, error } = await db.from("store_bank_details")
+        .select("bank_name, account_holder, account_number, branch_code")
+        .eq("store_id", activeVendor.id).maybeSingle();
+      if (error) throw error;
+      bank = data || {};
+    } catch (err) {
+      console.error("Could not load private bank details:", err);
+      alert("Could not load your private bank details. Please refresh and try again.");
+      return;
+    }
 
     $("account-holder").value = bank.account_holder || "";
     $("account-number").value = bank.account_number || "";
@@ -1526,17 +1532,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     const bank_name = bankVal.split("|")[0];
     setBtn(button, true, "Saving Bank Details...");
     try {
-      let { error } = await db.from("store_bank_details").upsert({
+      const { error } = await db.from("store_bank_details").upsert({
         store_id: activeVendor.id, bank_name, account_holder: holder,
         account_number: number, branch_code: branch, updated_at: new Date().toISOString()
       }, { onConflict: "store_id" });
-      // If the private table has not been set up yet, fall back to the old place so nothing is lost
-      if (error && /store_bank_details|schema cache|does not exist/i.test(error.message || "")) {
-        ({ error } = await db.from("stores").update({
-          bank_name, account_holder: holder, account_name: holder,
-          account_number: number, branch_code: branch, updated_at: new Date()
-        }).eq("id", activeVendor.id));
-      }
       if (error) throw error;
       alert("Bank details saved.");
     } catch (err) {
