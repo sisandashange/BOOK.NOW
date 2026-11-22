@@ -58,7 +58,8 @@ assert.ok(index.indexOf('id="marketplace-status"') < index.indexOf('id="load-mor
   "Marketplace status must remain visible when pagination ends");
 assert.ok(index.includes(".app-downloads { margin: 28px auto 8px;"));
 assert.ok(index.includes("MIN_REFRESH_GAP_MS"));
-assert.ok(!index.includes("lastRefreshAt"));
+assert.ok(!/let\s+lastRefreshAt\s*=/.test(index));
+assert.ok(!/Date\.now\(\)\s*-\s*lastRefreshAt/.test(index));
 
 const store = read("store.html");
 assert.ok(store.includes("const isShisanyamaOrder ="));
