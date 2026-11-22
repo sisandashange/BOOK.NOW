@@ -5,7 +5,7 @@ CREATE SCHEMA private;
 CREATE SCHEMA auth;
 CREATE FUNCTION auth.uid() RETURNS uuid
 LANGUAGE sql STABLE
-AS $ SELECT nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $;
+AS $auth$ SELECT nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $auth$;
 CREATE TABLE net._http_response (
   id bigint PRIMARY KEY,
   status_code integer NOT NULL,
