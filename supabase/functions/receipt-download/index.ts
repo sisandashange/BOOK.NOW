@@ -18,7 +18,7 @@ async function readJsonBody(req: Request, maxBytes: number) {
     if (done) break;
     total += value.byteLength;
     if (total > maxBytes) {
-      await reader.cancel();
+      try { await reader.cancel(); } catch (_) {}
       throw new Error("REQUEST_TOO_LARGE");
     }
     chunks.push(value);
