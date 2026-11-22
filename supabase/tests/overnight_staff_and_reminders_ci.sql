@@ -1,10 +1,11 @@
 -- Disposable PostgreSQL regression fixture for overnight staff and reminder fixes.
 -- Never run this file against production. It creates its own minimal schema.
 CREATE SCHEMA net;
+CREATE SCHEMA private;
 CREATE TABLE net._http_response (
   id bigint PRIMARY KEY,
   status_code integer NOT NULL,
-  content jsonb NOT NULL
+  content text NOT NULL
 );
 CREATE TABLE net.mock_calls (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -33,7 +34,11 @@ CREATE TABLE public.stores (
   opening_time time,
   closing_time time,
   status text NOT NULL,
-  is_hidden boolean NOT NULL DEFAULT false
+  is_hidden boolean NOT NULL DEFAULT false,
+  subscription_expires_at timestamptz,
+  manual_status text NOT NULL DEFAULT 'OPEN',
+  holiday_start_date date,
+  holiday_end_date date
 );
 CREATE TABLE public.service_items (
   id uuid PRIMARY KEY,
@@ -43,6 +48,7 @@ CREATE TABLE public.staff_members (
   id uuid PRIMARY KEY,
   store_id uuid NOT NULL REFERENCES public.stores(id),
   full_name text NOT NULL,
+  job_title text,
   is_active boolean NOT NULL DEFAULT true
 );
 CREATE TABLE public.staff_services (
@@ -99,6 +105,8 @@ END
 $$;
 
 \ir ../migrations/20261120080029_fix_overnight_staff_availability_and_reminders.sql
+\ir ../migrations/20261122212843_restrict_public_staff_lookup_to_visible_shops.sql
+\ir ../migrations/20261122212947_make_booking_reminder_response_parsing_safe.sql
 
 CREATE TRIGGER booking_push_after_insert
 AFTER INSERT ON public.bookings
@@ -126,8 +134,8 @@ BEGIN
   v_actual_weekday := extract(dow FROM (v_business_date + 1))::smallint;
   v_wrong_weekday := extract(dow FROM v_business_date)::smallint;
 
-  INSERT INTO public.stores(id, opening_time, closing_time, status)
-  VALUES (v_store, time '20:00', time '02:00', 'active');
+  INSERT INTO public.stores(id, opening_time, closing_time, status, subscription_expires_at)
+  VALUES (v_store, time '20:00', time '02:00', 'active', now() + interval '30 days');
   INSERT INTO public.service_items(id, store_id)
   VALUES (v_service, v_store), (v_unstaffed_service, v_store);
   INSERT INTO public.staff_members(id, store_id, full_name)
@@ -325,7 +333,7 @@ BEGIN
   END IF;
 
   INSERT INTO net._http_response(id, status_code, content)
-  VALUES (v_request_id, 200, '{"sent":0,"customer_onesignal_sent":1}'::jsonb);
+  VALUES (v_request_id, 200, '{"sent":0,"customer_onesignal_sent":1}');
   IF public.send_booking_reminders() <> 0 THEN
     RAISE EXCEPTION 'Successfully delivered reminder was queued again';
   END IF;
