@@ -4,11 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Find and book local barbershops, beauty salons and shisanyama spots near you.">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#f8fafc">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
   <meta property="og:title" content="BOOK.NOW — Discover & Book Local Shops">
   <meta property="og:description" content="Find and book local barbershops, beauty salons and shisanyama spots.">
+  <meta property="og:image" content="https://getbooknow.co.za/icon-192.png">
   <title>BOOK.NOW — Discover & Book Local Shops</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -41,7 +42,7 @@
     .brand { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; color: var(--primary); letter-spacing: -0.5px; }
     .partner-link { font-size: 12px; font-weight: 700; color: #fff; text-decoration: none; background: var(--accent); padding: 8px 14px; border-radius: 10px; transition: background 0.2s; }
     .partner-link:hover { background: var(--accent-hover); }
-    a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
     .container { padding: 20px 16px; max-width: 850px; margin: 0 auto; }
 
@@ -89,7 +90,7 @@
     @media (max-width: 580px) { .list-cta { flex-direction: column; align-items: stretch; text-align: center; } }
 
 
-    .app-downloads { margin: 28px 0 8px; padding: 22px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+    .app-downloads { margin: 28px auto 8px; padding: 22px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
     .app-downloads h2 { margin: 0 0 6px; font-size: 19px; font-weight: 800; letter-spacing: -0.5px; color: var(--primary); }
     .app-downloads-intro { margin: 0 0 16px; color: var(--muted); font-size: 13px; line-height: 1.5; }
     .app-download-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -112,7 +113,7 @@
 
   <div class="top-nav">
     <div class="brand">
-      <i class="ph ph-calendar-check" style="font-size:24px; color: var(--accent);"></i>
+      <i class="ph ph-calendar-check" aria-hidden="true" style="font-size:24px; color: var(--accent);"></i>
       BOOK.NOW
     </div>
     <a href="vendor.html" class="partner-link">Partner Portal</a>
@@ -120,7 +121,7 @@
 
   <main class="container">
     <div class="hero">
-      <div class="hero-badge"><i class="ph ph-sparkle"></i> Verified Local Vendors</div>
+      <div class="hero-badge"><i class="ph ph-sparkle" aria-hidden="true"></i> Verified Local Vendors</div>
       <h1>Explore Local Spots</h1>
       <p>Find and book barbershops, beauty salons, and braai spots near you.</p>
 
@@ -131,10 +132,10 @@
     </div>
 
     <div class="filter-bar" role="group" aria-label="Filter by category">
-      <button class="filter-chip active" data-cat="ALL" aria-pressed="true"><i class="ph ph-squares-four"></i> All Spots</button>
-      <button class="filter-chip" data-cat="BARBER" aria-pressed="false"><i class="ph ph-scissors"></i> Barbershops</button>
-      <button class="filter-chip" data-cat="SALON" aria-pressed="false"><i class="ph ph-sparkles"></i> Salons</button>
-      <button class="filter-chip" data-cat="SHISANYAMA" aria-pressed="false"><i class="ph ph-fire"></i> Shisanyama</button>
+      <button class="filter-chip active" data-cat="ALL" aria-pressed="true"><i class="ph ph-squares-four" aria-hidden="true"></i> All Spots</button>
+      <button class="filter-chip" data-cat="BARBER" aria-pressed="false"><i class="ph ph-scissors" aria-hidden="true"></i> Barbershops</button>
+      <button class="filter-chip" data-cat="SALON" aria-pressed="false"><i class="ph ph-sparkles" aria-hidden="true"></i> Salons</button>
+      <button class="filter-chip" data-cat="SHISANYAMA" aria-pressed="false"><i class="ph ph-fire" aria-hidden="true"></i> Shisanyama</button>
     </div>
 
     <div class="filter-row">
@@ -147,12 +148,12 @@
       <button class="open-chip" id="open-now-chip" type="button" aria-pressed="false">Open now</button>
     </div>
 
-    <div id="store-grid" class="store-grid" aria-label="Available stores">
-      <div class="empty-box">Loading available stores...</div>
+    <div id="store-grid" class="store-grid" role="region" aria-label="Available stores">
+      <noscript><div class="empty-box">Enable JavaScript to browse and book available shops.</div></noscript>
     </div>
+    <p id="marketplace-status" role="status" aria-live="polite" style="font-size:12px;color:var(--muted);text-align:center;margin:8px 0"></p>
     <div id="load-more-wrap" style="display:none;text-align:center;margin:18px 0">
       <button id="load-more" type="button" class="open-chip">Load more shops</button>
-      <p id="marketplace-status" role="status" aria-live="polite" style="font-size:12px;color:var(--muted);margin:8px 0 0"></p>
     </div>
 
     <div class="list-cta">
@@ -187,7 +188,7 @@
     <p class="app-download-note">Android may ask you to allow installation from your browser. Only install apps you trust, and follow the instructions shown by your device.</p>
   </section>
 
-  <div class="legal-foot"><a href="manage.html">Manage my booking</a> &middot; <a href="privacy.html">Privacy Policy</a> &middot; <a href="terms.html">Terms of Use</a></div>
+  <footer class="legal-foot"><a href="manage.html">Manage my booking</a> &middot; <a href="privacy.html">Privacy Policy</a> &middot; <a href="terms.html">Terms of Use</a></footer>
 
   <script>
   (() => {
@@ -205,8 +206,15 @@
     let hasMoreStores = false;
     let lastRenderedSignature = "";
     const PAGE_SIZE = 100;
-    const REFRESH_INTERVAL_MS = 30000;
-    let lastRefreshAt = 0;
+    const REFRESH_INTERVAL_MS = 60000;
+    const MIN_REFRESH_GAP_MS = 15000;
+    let lastRefreshAttemptAt = 0;
+    let lastVisibleCount = 0;
+    const BUSINESS_TIME_FORMATTER = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Africa/Johannesburg",
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+    });
 
     const FALLBACK_IMAGES = {
       BARBER: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=200&q=70",
@@ -229,30 +237,33 @@
     }
 
     // Returns true (open), false (closed) or null (unknown), always using South African business time.
-    function isOpenNow(s) {
-      if (String(s.manual_status || "").toUpperCase() === "CLOSED") return false;
+    function parseMinute(value, fallback) {
+      const match = String(value || "").match(/^(\d{2}):(\d{2})/);
+      if (!match) return fallback;
+      const hour = Number(match[1]), minute = Number(match[2]);
+      return (hour < 24 && minute < 60) || (hour === 24 && minute === 0) ? hour * 60 + minute : fallback;
+    }
 
-      const parts = Object.fromEntries(new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Africa/Johannesburg",
-        year: "numeric", month: "2-digit", day: "2-digit",
-        hour: "2-digit", minute: "2-digit", hourCycle: "h23"
-      }).formatToParts(new Date()).filter(p => p.type !== "literal").map(p => [p.type, p.value]));
-      const today = parts.year + "-" + parts.month + "-" + parts.day;
-      const minuteNow = Number(parts.hour) * 60 + Number(parts.minute);
-      // Match the booking validator's defaults when a shop has no saved hours.
-      const parseMinute = (value, fallback) => {
-        const match = String(value || "").match(/^(\d{2}):(\d{2})/);
-        if (!match) return fallback;
-        const hour = Number(match[1]), minute = Number(match[2]);
-        return hour <= 23 && minute <= 59 ? hour * 60 + minute : fallback;
+    function getBusinessClock() {
+      const parts = Object.fromEntries(BUSINESS_TIME_FORMATTER.formatToParts(new Date())
+        .filter(p => p.type !== "literal").map(p => [p.type, p.value]));
+      return {
+        today: parts.year + "-" + parts.month + "-" + parts.day,
+        minuteNow: Number(parts.hour) * 60 + Number(parts.minute),
+        year: Number(parts.year), month: Number(parts.month), day: Number(parts.day)
       };
+    }
+
+    function isOpenNow(s, clock) {
+      if (String(s.manual_status || "").toUpperCase() === "CLOSED") return false;
+      const now = clock || getBusinessClock();
       const opening = parseMinute(s.opening_time, 8 * 60);
       const closing = parseMinute(s.closing_time, 17 * 60);
       const overnight = closing <= opening;
-      let businessDate = today;
+      let businessDate = now.today;
       // For overnight and 24-hour schedules, after-midnight hours belong to the previous business date.
-      if (overnight && minuteNow < closing) {
-        const previous = new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day) - 1));
+      if (overnight && now.minuteNow < closing) {
+        const previous = new Date(Date.UTC(now.year, now.month - 1, now.day - 1));
         businessDate = previous.toISOString().slice(0, 10);
       }
       const holidayStart = s.holiday_start_date ? String(s.holiday_start_date).slice(0, 10) : "";
@@ -262,9 +273,9 @@
         || (!holidayStart && holidayEnd && businessDate === holidayEnd)) return false;
 
       // "OPEN" means normal scheduled operation, not an override of hours or holidays.
-      if (opening === closing) return true; // Same opening/closing time means a 24-hour schedule in booking validation.
-      if (overnight) return minuteNow >= opening || minuteNow < closing;
-      return minuteNow >= opening && minuteNow < closing;
+      if (opening === closing) return true;
+      if (overnight) return now.minuteNow >= opening || now.minuteNow < closing;
+      return now.minuteNow >= opening && now.minuteNow < closing;
     }
 
     function showMessage(text) {
@@ -276,12 +287,17 @@
 
     async function loadMarketplace(silent = false, append = false) {
       if (marketplaceBusy) return;
+      const attemptedAt = Date.now();
+      if (silent && attemptedAt - lastRefreshAttemptAt < MIN_REFRESH_GAP_MS) return;
       marketplaceBusy = true;
+      if (!append) lastRefreshAttemptAt = attemptedAt;
+      updateLoadMore(lastVisibleCount);
       if (!silent && !append) showMessage("Loading available stores...");
 
       if (!window.supabase || !db) {
         showMessage("Couldn't connect. Check your internet and refresh the page.");
         marketplaceBusy = false;
+        updateLoadMore(lastVisibleCount);
         return;
       }
 
@@ -322,8 +338,6 @@
 
         allStores = append ? allStores.concat(page) : page;
         hasMoreStores = fetched.length > (append ? PAGE_SIZE : targetCount);
-        if (!append) lastRefreshAt = Date.now();
-
         const areas = [...new Set(allStores.map(s => (s.area || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
         const areaSelect = $("area-select");
         areaSelect.replaceChildren(new Option("All areas", ""), ...areas.map(a => new Option(a, a)));
@@ -337,21 +351,19 @@
       } catch (err) {
         console.error("Marketplace error:", err);
         if (!silent && !append) showMessage("Couldn't load stores. Refresh the page to try again.");
-        if (append) $("marketplace-status").textContent = "Couldn't load more shops. Please try again.";
         marketplaceBusy = false;
-        // Reset manually so the error message above is not replaced by updateLoadMore().
-        const loadMoreButton = $("load-more");
-        loadMoreButton.disabled = false;
-        loadMoreButton.textContent = "Load more shops";
+        updateLoadMore(lastVisibleCount);
+        if (append) $("marketplace-status").textContent = "Couldn't load more shops. Please try again.";
       }
     }
 
-    function renderStores(stores) {
+    function renderStores(stores, openCache) {
+      lastVisibleCount = stores.length;
       const container = $("store-grid");
       const signature = JSON.stringify(stores.map(s => [
         s.id, s.store_name, s.category, s.area, s.store_image_url,
         s.opening_time, s.closing_time, s.manual_status,
-        s.holiday_start_date, s.holiday_end_date, isOpenNow(s),
+        s.holiday_start_date, s.holiday_end_date, openCache.get(s.id),
         s.rating && s.rating.avg_rating, s.rating && s.rating.review_count,
         (s.service_items || []).map(i => [i.id, i.title])
       ]));
@@ -369,7 +381,7 @@
         return;
       }
 
-      const cards = stores.map(s => {
+      const cards = stores.map((s, index) => {
         const card = document.createElement("div");
         card.className = "store-card";
 
@@ -377,7 +389,9 @@
         avatarContainer.className = "store-avatar-container";
         const img = document.createElement("img");
         img.className = "store-avatar";
-        img.loading = "lazy";
+        img.loading = index < 4 ? "eager" : "lazy";
+        img.decoding = "async";
+        if (index < 4) img.fetchPriority = "high";
         img.width = 75;
         img.height = 75;
         img.alt = s.store_name || "Shop photo";
@@ -415,15 +429,13 @@
         }
         meta.appendChild(services);
 
-        const open = isOpenNow(s);
-        if (open !== null) {
-          const dot = document.createElement("span");
-          dot.textContent = "•";
-          const state = document.createElement("span");
-          state.className = open ? "status-open" : "status-closed";
-          state.textContent = open ? "Open now" : "Closed";
-          meta.append(dot, state);
-        }
+        const open = openCache.get(s.id);
+        const dot = document.createElement("span");
+        dot.textContent = "•";
+        const state = document.createElement("span");
+        state.className = open ? "status-open" : "status-closed";
+        state.textContent = open ? "Open now" : "Closed";
+        meta.append(dot, state);
 
         const top = document.createElement("div");
         top.append(title, category, meta);
@@ -454,10 +466,12 @@
       wrap.style.display = hasMoreStores ? "" : "none";
       button.disabled = marketplaceBusy;
       button.textContent = marketplaceBusy ? "Loading..." : "Load more shops";
-      status.textContent = (visibleCount
-        ? "Showing " + visibleCount + " matching shops from " + allStores.length + " loaded."
-        : (hasMoreStores ? "No matches in the shops loaded so far." : ""))
-        + (hasMoreStores ? " More shops may match — load more to continue searching." : "");
+      status.textContent = allStores.length
+        ? (visibleCount
+          ? "Showing " + visibleCount + " matching shops from " + allStores.length + " loaded."
+          : "No matches among " + allStores.length + " loaded shops.")
+          + (hasMoreStores ? " More shops may match — load more to continue searching." : "")
+        : "";
     }
 
     // Search and category filter work together
@@ -471,11 +485,13 @@
         $("sort-select").value = "new";
       }
       const term = $("search-input").value.toLowerCase().trim();
+      const clock = getBusinessClock();
+      const openCache = new Map(allStores.map(s => [s.id, isOpenNow(s, clock)]));
 
       const filtered = allStores.filter(s => {
         if (activeCat !== "ALL" && s.cat !== activeCat) return false;
         if (activeArea && (s.area || "").trim() !== activeArea) return false;
-        if (onlyOpen && isOpenNow(s) !== true) return false;
+        if (onlyOpen && openCache.get(s.id) !== true) return false;
         if (!term) return true;
         const haystack = [s.store_name, s.category, CATEGORY_LABELS[s.cat], s.area, s.address, ...s.service_items.map(i => i.title)];
         return haystack.some(t => (t || "").toLowerCase().includes(term));
@@ -488,7 +504,7 @@
         filtered.sort((a, b) => (a.store_name || "").localeCompare(b.store_name || ""));
       }
 
-      renderStores(filtered);
+      renderStores(filtered, openCache);
     }
 
     function bindEvents() {
@@ -516,7 +532,7 @@
       let timer;
       $("search-input").addEventListener("input", () => {
         clearTimeout(timer);
-        timer = setTimeout(applyFilters, 150);
+        timer = setTimeout(applyFilters, 250);
       });
       $("load-more").addEventListener("click", () => loadMarketplace(false, true));
     }
@@ -537,11 +553,9 @@
         if (!document.hidden) loadMarketplace(true, false);
       }, REFRESH_INTERVAL_MS);
       document.addEventListener("visibilitychange", () => {
-        if (!document.hidden && Date.now() - lastRefreshAt > 5000) loadMarketplace(true, false);
+        if (!document.hidden) loadMarketplace(true, false);
       });
-      window.addEventListener("focus", () => {
-        if (Date.now() - lastRefreshAt > 5000) loadMarketplace(true, false);
-      });
+      window.addEventListener("focus", () => loadMarketplace(true, false));
     }
 
     if (document.readyState === "loading") {
@@ -551,6 +565,6 @@
     }
   })();
   </script>
-<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(err){console.warn("Service worker registration failed:",err);});});}</script>
 </body>
 </html>

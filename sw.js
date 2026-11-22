@@ -1,17 +1,21 @@
-// BOOK.NOW service worker: fast repeat visits and a cached app shell on weak networks.
-const CACHE = "booknow-shell-v18";
+// BOOK.NOW service worker: network-first for known app files, with an offline shell.
+const CACHE = "booknow-shell-v19";
 const CORE_FILES = [
   "./",
   "./index.html",
   "./store.html",
   "./manage.html",
   "./vendor.html",
+  "./partners.html",
+  "./privacy.html",
+  "./terms.html",
   "./booking-utils.js",
   "./qr.js",
   "./manifest.webmanifest",
   "./i18n.js",
   "./icon-192.png"
 ];
+const CORE_PATHS = new Set(CORE_FILES.map(path => new URL(path, self.registration.scope).pathname));
 
 self.addEventListener("install", event => {
   event.waitUntil((async () => {
@@ -30,7 +34,7 @@ self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
-        keys.filter(key => key.startsWith("booknow-") && key !== CACHE)
+        keys.filter(key => key.startsWith("booknow-shell-") && key !== CACHE)
           .map(key => caches.delete(key))
       ))
       .then(() => self.clients.claim())
@@ -40,27 +44,26 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   const req = event.request;
   const url = new URL(req.url);
-  if (req.method !== "GET" || url.origin !== self.location.origin || /admin/i.test(url.pathname)) return;
+  if (req.method !== "GET" || url.origin !== self.location.origin
+      || /admin/i.test(url.pathname) || !CORE_PATHS.has(url.pathname)) return;
 
-  // Serve a saved page or asset immediately, while refreshing it for the next visit.
-  const networkPromise = fetch(req).then(response => {
-    if (response.ok) {
-      const copy = response.clone();
-      event.waitUntil(caches.open(CACHE).then(cache => cache.put(req, copy)));
-    }
-    return response;
-  });
-
-  event.waitUntil(networkPromise.then(() => undefined).catch(() => undefined));
+  // App pages are static: remove query parameters from cache keys so booking references
+  // are never stored as separate offline cache entries.
+  const cacheKey = new Request(url.origin + url.pathname, { method: "GET" });
   event.respondWith((async () => {
-    const cached = await caches.match(req);
-    if (cached) return cached;
-
     try {
-      return await networkPromise;
+      const response = await fetch(req);
+      if (response.ok) {
+        const copy = response.clone();
+        event.waitUntil(caches.open(CACHE).then(cache => cache.put(cacheKey, copy)));
+      }
+      return response;
     } catch (_) {
+      const cached = await caches.match(cacheKey);
+      if (cached) return cached;
       if (req.mode === "navigate") {
-        const shell = await caches.match("./index.html") || await caches.match("./");
+        const shellUrl = new URL("./index.html", self.registration.scope).href;
+        const shell = await caches.match(shellUrl);
         if (shell) return shell;
       }
       return new Response("You're offline. Reconnect to use BOOK.NOW.", {
@@ -91,7 +94,10 @@ self.addEventListener("push", event => {
       tag: data.tag || "booknow",
       renotify: true,
       vibrate: [200, 100, 200],
-      data: { url: data.url || "vendor.html" }
+      data: {
+        url: data.url || (String(data.tag || "").startsWith("customer_") ? "manage.html" : "vendor.html"),
+        tag: data.tag || ""
+      }
     });
   })());
 });
@@ -99,7 +105,9 @@ self.addEventListener("push", event => {
 // Tapping an alert opens the app on the right page
 self.addEventListener("notificationclick", event => {
   event.notification.close();
-  const target = new URL((event.notification.data && event.notification.data.url) || "vendor.html", self.registration.scope).href;
+  const notificationData = event.notification.data || {};
+  const fallbackUrl = String(notificationData.tag || "").startsWith("customer_") ? "manage.html" : "vendor.html";
+  const target = new URL(notificationData.url || fallbackUrl, self.registration.scope).href;
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async list => {
       for (const c of list) {

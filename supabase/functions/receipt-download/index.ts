@@ -3,7 +3,34 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const BUCKET = "receipt-downloads";
+const MAX_REQUEST_BYTES = 2_200_000;
 const ALLOWED_ORIGINS = new Set(["https://getbooknow.co.za", "https://www.getbooknow.co.za"]);
+
+async function readJsonBody(req: Request, maxBytes: number) {
+  const contentLength = Number(req.headers.get("content-length") || 0);
+  if (Number.isFinite(contentLength) && contentLength > maxBytes) throw new Error("REQUEST_TOO_LARGE");
+  const reader = req.body?.getReader();
+  if (!reader) throw new Error("INVALID_JSON_BODY");
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      try { await reader.cancel(); } catch (_) {}
+      throw new Error("REQUEST_TOO_LARGE");
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
 
 function headers(origin: string | null) {
   const allowed = origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://getbooknow.co.za";
@@ -51,13 +78,26 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const body = await req.json();
+    let body: any;
+    try {
+      body = await readJsonBody(req, MAX_REQUEST_BYTES);
+    } catch (error) {
+      const tooLarge = error instanceof Error && error.message === "REQUEST_TOO_LARGE";
+      return new Response(JSON.stringify({ error: tooLarge ? "Receipt image is too large" : "Invalid request body" }), {
+        status: tooLarge ? 413 : 400, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" },
+      });
+    }
     const encoded = typeof body?.imageBase64 === "string" ? body.imageBase64.replace(/^data:image\/png;base64,/, "") : "";
     if (!encoded || encoded.length > 2_100_000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) {
-      return new Response(JSON.stringify({ error: "Invalid receipt image" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Invalid receipt image" }), { status: 400, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" } });
     }
 
-    const binary = Uint8Array.from(atob(encoded), c => c.charCodeAt(0));
+    let binary: Uint8Array;
+    try {
+      binary = Uint8Array.from(atob(encoded), c => c.charCodeAt(0));
+    } catch (_) {
+      return new Response(JSON.stringify({ error: "Invalid receipt image encoding" }), { status: 400, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" } });
+    }
     if (binary.length < 8 || binary.length > 1_572_864 ||
         binary[0] !== 137 || binary[1] !== 80 || binary[2] !== 78 || binary[3] !== 71 ||
         binary[4] !== 13 || binary[5] !== 10 || binary[6] !== 26 || binary[7] !== 10) {

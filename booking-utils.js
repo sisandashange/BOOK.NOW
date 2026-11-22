@@ -7,11 +7,17 @@
     return Object.fromEntries(parts.filter(p => p.type !== "literal").map(p => [p.type, p.value]));
   }
   function toMin(hhmm) {
-    const [h, m] = String(hhmm || "00:00").slice(0, 5).split(":").map(Number);
+    const raw = String(hhmm || "00:00").trim();
+    const match = /^(\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?$/.exec(raw);
+    if (!match) return NaN;
+    const h = Number(match[1]), m = Number(match[2]);
+    if (m > 59 || h > 24 || (h === 24 && m !== 0)) return NaN;
     return h * 60 + m;
   }
   function fmtMin(minutes) {
-    const m = ((Number(minutes) % 1440) + 1440) % 1440;
+    const value = Number(minutes);
+    if (!Number.isFinite(value)) return "";
+    const m = ((Math.trunc(value) % 1440) + 1440) % 1440;
     return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
   }
   function saTodayStr() {
@@ -20,8 +26,10 @@
   }
   function currentBusinessDate(shop) {
     const now = saNow();
-    const open = toMin(String((shop && shop.opening_time) || "08:00"));
-    const closeRaw = toMin(String((shop && shop.closing_time) || "17:00"));
+    const parsedOpen = toMin(String((shop && shop.opening_time) || "08:00"));
+    const parsedClose = toMin(String((shop && shop.closing_time) || "17:00"));
+    const open = Number.isFinite(parsedOpen) ? parsedOpen : 8 * 60;
+    const closeRaw = Number.isFinite(parsedClose) ? parsedClose : 17 * 60;
     const close = closeRaw <= open ? closeRaw + 1440 : closeRaw;
     const nowMin = Number(now.hour) * 60 + Number(now.minute);
     if (close > 1440 && nowMin < close - 1440) {
@@ -31,8 +39,17 @@
     return now.year + "-" + now.month + "-" + now.day;
   }
   function appointmentInstant(dateStr, minutes) {
-    const midnight = new Date(String(dateStr) + "T00:00:00+02:00");
-    return new Date(midnight.getTime() + Number(minutes) * 60000);
+    const value = String(dateStr || "");
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    const offsetMinutes = Number(minutes);
+    if (!match || !Number.isFinite(offsetMinutes) || !Number.isInteger(offsetMinutes)
+        || offsetMinutes < 0 || offsetMinutes > 2880) return new Date(NaN);
+    const year = Number(match[1]), month = Number(match[2]), day = Number(match[3]);
+    const calendarDate = new Date(Date.UTC(year, month - 1, day));
+    if (calendarDate.getUTCFullYear() !== year || calendarDate.getUTCMonth() !== month - 1
+        || calendarDate.getUTCDate() !== day) return new Date(NaN);
+    const midnight = new Date(value + "T00:00:00+02:00");
+    return new Date(midnight.getTime() + offsetMinutes * 60000);
   }
   function fmtAppt(instant, duration) {
     const start = new Date(instant);

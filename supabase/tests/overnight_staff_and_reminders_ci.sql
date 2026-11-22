@@ -1,10 +1,15 @@
 -- Disposable PostgreSQL regression fixture for overnight staff and reminder fixes.
 -- Never run this file against production. It creates its own minimal schema.
 CREATE SCHEMA net;
+CREATE SCHEMA private;
+CREATE SCHEMA auth;
+CREATE FUNCTION auth.uid() RETURNS uuid
+LANGUAGE sql STABLE
+AS $auth$ SELECT nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $auth$;
 CREATE TABLE net._http_response (
   id bigint PRIMARY KEY,
   status_code integer NOT NULL,
-  content jsonb NOT NULL
+  content text NOT NULL
 );
 CREATE TABLE net.mock_calls (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -33,7 +38,11 @@ CREATE TABLE public.stores (
   opening_time time,
   closing_time time,
   status text NOT NULL,
-  is_hidden boolean NOT NULL DEFAULT false
+  is_hidden boolean NOT NULL DEFAULT false,
+  subscription_expires_at timestamptz,
+  manual_status text NOT NULL DEFAULT 'OPEN',
+  holiday_start_date date,
+  holiday_end_date date
 );
 CREATE TABLE public.service_items (
   id uuid PRIMARY KEY,
@@ -42,7 +51,9 @@ CREATE TABLE public.service_items (
 CREATE TABLE public.staff_members (
   id uuid PRIMARY KEY,
   store_id uuid NOT NULL REFERENCES public.stores(id),
+  user_id uuid,
   full_name text NOT NULL,
+  job_title text,
   is_active boolean NOT NULL DEFAULT true
 );
 CREATE TABLE public.staff_services (
@@ -99,6 +110,9 @@ END
 $$;
 
 \ir ../migrations/20261120080029_fix_overnight_staff_availability_and_reminders.sql
+\ir ../migrations/20261122212843_restrict_public_staff_lookup_to_visible_shops.sql
+\ir ../migrations/20261122212947_make_booking_reminder_response_parsing_safe.sql
+\ir ../migrations/20261122213802_restrict_staff_booking_visibility_to_assigned_or_unassigned.sql
 
 CREATE TRIGGER booking_push_after_insert
 AFTER INSERT ON public.bookings
@@ -107,10 +121,16 @@ FOR EACH ROW EXECUTE FUNCTION public.push_notify_booking();
 DO $$
 DECLARE
   v_store uuid := '10000000-0000-0000-0000-000000000001';
+  v_other_store uuid := '10000000-0000-0000-0000-000000000099';
   v_service uuid := '20000000-0000-0000-0000-000000000001';
+  v_other_service uuid := '20000000-0000-0000-0000-000000000099';
   v_unstaffed_service uuid := '20000000-0000-0000-0000-000000000002';
   v_staff uuid := '30000000-0000-0000-0000-000000000001';
   v_wrong_day_staff uuid := '30000000-0000-0000-0000-000000000002';
+  v_staff_user uuid := '50000000-0000-0000-0000-000000000001';
+  v_wrong_day_staff_user uuid := '50000000-0000-0000-0000-000000000002';
+  v_assigned_any_booking uuid := '60000000-0000-0000-0000-000000000001';
+  v_available_any_booking uuid := '60000000-0000-0000-0000-000000000002';
   v_business_date date := (now() AT TIME ZONE 'Africa/Johannesburg')::date + 2;
   v_actual_weekday smallint;
   v_wrong_weekday smallint;
@@ -126,20 +146,71 @@ BEGIN
   v_actual_weekday := extract(dow FROM (v_business_date + 1))::smallint;
   v_wrong_weekday := extract(dow FROM v_business_date)::smallint;
 
-  INSERT INTO public.stores(id, opening_time, closing_time, status)
-  VALUES (v_store, time '20:00', time '02:00', 'active');
+  INSERT INTO public.stores(id, opening_time, closing_time, status, subscription_expires_at)
+  VALUES (v_store, time '20:00', time '02:00', 'active', now() + interval '30 days');
   INSERT INTO public.service_items(id, store_id)
   VALUES (v_service, v_store), (v_unstaffed_service, v_store);
-  INSERT INTO public.staff_members(id, store_id, full_name)
+  INSERT INTO public.staff_members(id, store_id, user_id, full_name)
   VALUES
-    (v_staff, v_store, 'Overnight Worker'),
-    (v_wrong_day_staff, v_store, 'Wrong Weekday Worker');
+    (v_staff, v_store, v_staff_user, 'Overnight Worker'),
+    (v_wrong_day_staff, v_store, v_wrong_day_staff_user, 'Wrong Weekday Worker');
   INSERT INTO public.staff_services(staff_id, service_id)
   VALUES (v_staff, v_service), (v_wrong_day_staff, v_service);
   INSERT INTO public.staff_working_hours(staff_id, day_of_week, is_working, start_time, end_time)
   VALUES
     (v_staff, v_actual_weekday, true, time '00:00', time '02:00'),
     (v_wrong_day_staff, v_wrong_weekday, true, time '00:00', time '02:00');
+
+  -- Public staff lookup only exposes workers for visible, bookable shops and services.
+  IF (SELECT count(*) FROM public.get_bookable_staff(v_store, v_service)) <> 2 THEN
+    RAISE EXCEPTION 'Expected both active workers for the visible shop';
+  END IF;
+  IF NOT has_function_privilege('anon', 'public.get_bookable_staff(uuid,uuid)', 'EXECUTE')
+     OR NOT has_function_privilege('anon', 'public.get_staff_slot_availability(uuid,uuid,date,integer,uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'Customer staff lookup RPC execute grants were not preserved';
+  END IF;
+  IF has_function_privilege('anon', 'private.push_response_was_sent(text)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'Private reminder response parser is publicly executable';
+  END IF;
+  IF NOT private.push_response_was_sent('{"sent":1}')
+     OR private.push_response_was_sent('not-json')
+     OR private.push_response_was_sent('{"sent":"not-a-number"}') THEN
+    RAISE EXCEPTION 'Safe reminder response parsing regression';
+  END IF;
+
+  INSERT INTO public.stores(id, opening_time, closing_time, status, subscription_expires_at)
+  VALUES (v_other_store, time '08:00', time '17:00', 'active', now() + interval '30 days');
+  INSERT INTO public.service_items(id, store_id) VALUES (v_other_service, v_other_store);
+  INSERT INTO public.staff_services(staff_id, service_id) VALUES (v_staff, v_other_service);
+  IF EXISTS (SELECT 1 FROM public.get_bookable_staff(v_store, v_other_service))
+     OR EXISTS (SELECT 1 FROM public.get_staff_slot_availability(v_store, v_other_service, v_business_date, 30, NULL)) THEN
+    RAISE EXCEPTION 'A service belonging to another shop leaked staff availability';
+  END IF;
+
+  UPDATE public.stores SET subscription_expires_at = now() - interval '1 minute' WHERE id = v_store;
+  IF EXISTS (SELECT 1 FROM public.get_bookable_staff(v_store, v_service))
+     OR EXISTS (SELECT 1 FROM public.get_staff_slot_availability(v_store, v_service, v_business_date, 30, NULL)) THEN
+    RAISE EXCEPTION 'Expired shop still exposed public staff availability';
+  END IF;
+  UPDATE public.stores SET subscription_expires_at = now() + interval '30 days', is_hidden = true WHERE id = v_store;
+  IF EXISTS (SELECT 1 FROM public.get_bookable_staff(v_store, v_service))
+     OR EXISTS (SELECT 1 FROM public.get_staff_slot_availability(v_store, v_service, v_business_date, 30, NULL)) THEN
+    RAISE EXCEPTION 'Hidden shop still exposed public staff availability';
+  END IF;
+  UPDATE public.stores SET is_hidden = false, manual_status = 'CLOSED' WHERE id = v_store;
+  IF EXISTS (SELECT 1 FROM public.get_bookable_staff(v_store, v_service))
+     OR EXISTS (SELECT 1 FROM public.get_staff_slot_availability(v_store, v_service, v_business_date, 30, NULL)) THEN
+    RAISE EXCEPTION 'Paused shop still exposed public staff availability';
+  END IF;
+  UPDATE public.stores SET manual_status = 'OPEN', holiday_start_date = v_business_date,
+    holiday_end_date = v_business_date WHERE id = v_store;
+  IF EXISTS (SELECT 1 FROM public.get_staff_slot_availability(v_store, v_service, v_business_date, 30, NULL)) THEN
+    RAISE EXCEPTION 'Holiday date still exposed public staff slots';
+  END IF;
+  UPDATE public.stores SET holiday_start_date = NULL, holiday_end_date = NULL WHERE id = v_store;
+  IF EXISTS (SELECT 1 FROM public.get_staff_slot_availability(v_store, v_service, (now() AT TIME ZONE 'Africa/Johannesburg')::date + 61, 30, NULL)) THEN
+    RAISE EXCEPTION 'Staff availability accepted a date beyond the 60-day booking window';
+  END IF;
 
   -- A 00:30 slot belongs to the calendar day after the selected business date.
   SELECT available_count INTO v_count
@@ -159,6 +230,33 @@ BEGIN
     public.compute_appointment_at(v_store, v_business_date, time '00:30'),
     30, v_staff, 'SPECIFIC', 'confirmed'
   );
+
+  -- Legacy unassigned ANY bookings remain visible to qualified workers, but an
+  -- ANY booking already assigned to one worker must not leak to other workers.
+  ALTER TABLE public.bookings DISABLE TRIGGER USER;
+  INSERT INTO public.bookings(
+    id, store_id, service_id, booking_date, booking_time, appointment_at,
+    duration_minutes, staff_id, staff_assignment_mode, status
+  ) VALUES
+    (v_assigned_any_booking, v_store, v_service, v_business_date, time '23:00',
+      public.compute_appointment_at(v_store, v_business_date, time '23:00'),
+      30, v_staff, 'ANY', 'pending'),
+    (v_available_any_booking, v_store, v_service, v_business_date, time '23:30',
+      public.compute_appointment_at(v_store, v_business_date, time '23:30'),
+      30, NULL, 'ANY', 'pending');
+  ALTER TABLE public.bookings ENABLE TRIGGER USER;
+
+  PERFORM set_config('request.jwt.claim.sub', v_staff_user::text, true);
+  IF NOT public.can_staff_view_booking(v_assigned_any_booking)
+     OR NOT public.can_staff_view_booking(v_available_any_booking) THEN
+    RAISE EXCEPTION 'Assigned worker could not see own and unassigned ANY bookings';
+  END IF;
+  PERFORM set_config('request.jwt.claim.sub', v_wrong_day_staff_user::text, true);
+  IF public.can_staff_view_booking(v_assigned_any_booking)
+     OR NOT public.can_staff_view_booking(v_available_any_booking) THEN
+    RAISE EXCEPTION 'Staff visibility leaked an assigned ANY booking or hid an unassigned one';
+  END IF;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
 
   IF EXISTS (
     SELECT 1
@@ -325,7 +423,7 @@ BEGIN
   END IF;
 
   INSERT INTO net._http_response(id, status_code, content)
-  VALUES (v_request_id, 200, '{"sent":0,"customer_onesignal_sent":1}'::jsonb);
+  VALUES (v_request_id, 200, '{"sent":0,"customer_onesignal_sent":1}');
   IF public.send_booking_reminders() <> 0 THEN
     RAISE EXCEPTION 'Successfully delivered reminder was queued again';
   END IF;

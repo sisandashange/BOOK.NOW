@@ -786,7 +786,19 @@ var QRMode = require('./QRMode');
 
 function QR8bitByte(data) {
 	this.mode = QRMode.MODE_8BIT_BYTE;
-	this.data = data;
+	var value = String(data);
+	if (typeof TextEncoder !== "undefined") {
+		this.data = Array.prototype.slice.call(new TextEncoder().encode(value));
+	} else {
+		var encoded;
+		try {
+			encoded = unescape(encodeURIComponent(value));
+		} catch (_) {
+			encoded = unescape(encodeURIComponent(value.replace(/[\uD800-\uDFFF]/g, "\uFFFD")));
+		}
+		this.data = [];
+		for (var i = 0; i < encoded.length; i++) this.data.push(encoded.charCodeAt(i));
+	}
 }
 
 QR8bitByte.prototype = {
@@ -797,8 +809,7 @@ QR8bitByte.prototype = {
 	
 	write : function(buffer) {
 		for (var i = 0; i < this.data.length; i++) {
-			// not JIS ...
-			buffer.put(this.data.charCodeAt(i), 8);
+			buffer.put(this.data[i], 8);
 		}
 	}
 };

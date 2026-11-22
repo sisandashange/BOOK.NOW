@@ -191,7 +191,7 @@
   function tr(text) {
     if (lang === "en" || typeof text !== "string") return text;
     var i = IDX[lang];
-    var hit = D[text];
+    var hit = Object.prototype.hasOwnProperty.call(D, text) ? D[text] : null;
     if (hit && hit[i]) return hit[i];
     for (var p = 0; p < PAT.length; p++) {
       var m = text.match(PAT[p][0]);
@@ -201,7 +201,8 @@
   }
   window.T = tr;
 
-  var SKIP = { SCRIPT: 1, STYLE: 1, TEXTAREA: 1, NOSCRIPT: 1 };
+  var SKIP = Object.create(null);
+  SKIP.SCRIPT = 1; SKIP.STYLE = 1; SKIP.TEXTAREA = 1; SKIP.NOSCRIPT = 1;
   function translateTextNode(node) {
     var raw = node.nodeValue;
     var trimmed = raw && raw.trim();
@@ -224,7 +225,7 @@
     var n;
     while ((n = w.nextNode())) {
       if (n.nodeType === 3) { if (!SKIP[n.parentNode.nodeName] && !(n.parentNode.closest && n.parentNode.closest("[data-no-i18n]"))) translateTextNode(n); }
-      else translateAttrs(n);
+      else if (!(n.closest && n.closest("[data-no-i18n]"))) translateAttrs(n);
     }
   }
 
