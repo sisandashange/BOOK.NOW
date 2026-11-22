@@ -2,6 +2,10 @@
 -- Never run this file against production. It creates its own minimal schema.
 CREATE SCHEMA net;
 CREATE SCHEMA private;
+CREATE SCHEMA auth;
+CREATE FUNCTION auth.uid() RETURNS uuid
+LANGUAGE sql STABLE
+AS $ SELECT nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $;
 CREATE TABLE net._http_response (
   id bigint PRIMARY KEY,
   status_code integer NOT NULL,
@@ -47,6 +51,7 @@ CREATE TABLE public.service_items (
 CREATE TABLE public.staff_members (
   id uuid PRIMARY KEY,
   store_id uuid NOT NULL REFERENCES public.stores(id),
+  user_id uuid,
   full_name text NOT NULL,
   job_title text,
   is_active boolean NOT NULL DEFAULT true
@@ -107,6 +112,7 @@ $$;
 \ir ../migrations/20261120080029_fix_overnight_staff_availability_and_reminders.sql
 \ir ../migrations/20261122212843_restrict_public_staff_lookup_to_visible_shops.sql
 \ir ../migrations/20261122212947_make_booking_reminder_response_parsing_safe.sql
+\ir ../migrations/20261122213802_restrict_staff_booking_visibility_to_assigned_or_unassigned.sql
 
 CREATE TRIGGER booking_push_after_insert
 AFTER INSERT ON public.bookings
@@ -121,6 +127,10 @@ DECLARE
   v_unstaffed_service uuid := '20000000-0000-0000-0000-000000000002';
   v_staff uuid := '30000000-0000-0000-0000-000000000001';
   v_wrong_day_staff uuid := '30000000-0000-0000-0000-000000000002';
+  v_staff_user uuid := '50000000-0000-0000-0000-000000000001';
+  v_wrong_day_staff_user uuid := '50000000-0000-0000-0000-000000000002';
+  v_assigned_any_booking uuid := '40000000-0000-0000-0000-000000000003';
+  v_available_any_booking uuid := '40000000-0000-0000-0000-000000000004';
   v_business_date date := (now() AT TIME ZONE 'Africa/Johannesburg')::date + 2;
   v_actual_weekday smallint;
   v_wrong_weekday smallint;
@@ -140,10 +150,10 @@ BEGIN
   VALUES (v_store, time '20:00', time '02:00', 'active', now() + interval '30 days');
   INSERT INTO public.service_items(id, store_id)
   VALUES (v_service, v_store), (v_unstaffed_service, v_store);
-  INSERT INTO public.staff_members(id, store_id, full_name)
+  INSERT INTO public.staff_members(id, store_id, user_id, full_name)
   VALUES
-    (v_staff, v_store, 'Overnight Worker'),
-    (v_wrong_day_staff, v_store, 'Wrong Weekday Worker');
+    (v_staff, v_store, v_staff_user, 'Overnight Worker'),
+    (v_wrong_day_staff, v_store, v_wrong_day_staff_user, 'Wrong Weekday Worker');
   INSERT INTO public.staff_services(staff_id, service_id)
   VALUES (v_staff, v_service), (v_wrong_day_staff, v_service);
   INSERT INTO public.staff_working_hours(staff_id, day_of_week, is_working, start_time, end_time)
