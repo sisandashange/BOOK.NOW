@@ -1491,6 +1491,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
   async function populateBankForm() {
     if (!activeVendor) return;
+    $("account-holder").value = "";
+    $("account-number").value = "";
+    $("branch-code").value = "";
+    $("bank-select").selectedIndex = 0;
     // Bank details are read only from the private table; never fall back to public store data.
     let bank;
     try {
