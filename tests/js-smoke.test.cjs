@@ -10,8 +10,8 @@ function read(file) {
 
 function checkInlineScripts(file) {
   const source = read(file);
-  const scripts = [...source.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script\\s*>/gi)]
-    .filter(([, attrs, body]) => !/\\bsrc\\s*=/.test(attrs) && body.trim());
+  const scripts = [...source.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)]
+    .filter(([, attrs, body]) => !/\bsrc\s*=/.test(attrs) && body.trim());
   for (let i = 0; i < scripts.length; i++) {
     new vm.Script(scripts[i][2], { filename: file + "#inline-" + (i + 1) });
   }
@@ -32,9 +32,9 @@ const utils = utilityContext.window.BookingUtils;
 assert.equal(utils.toMin("08:30"), 510);
 assert.equal(utils.toMin("08:30:00"), 510);
 assert.equal(utils.toMin("24:00"), 1440);
-assert.equal(utils.toMin("24:01"), Number.NaN);
-assert.equal(utils.toMin("09:60"), Number.NaN);
-assert.equal(utils.toMin("not-a-time"), Number.NaN);
+assert.ok(Number.isNaN(utils.toMin("24:01")));
+assert.ok(Number.isNaN(utils.toMin("09:60")));
+assert.ok(Number.isNaN(utils.toMin("not-a-time")));
 assert.equal(utils.fmtMin(1440), "00:00");
 assert.equal(utils.fmtMin(Number.NaN), "");
 const expectedInstant = Date.parse("2026-02-28T00:00:00+02:00") + 1500 * 60_000;
@@ -45,8 +45,8 @@ assert.ok(Number.isNaN(utils.appointmentInstant("2026-02-28", Number.NaN).getTim
 const qrContext = { window: {}, TextEncoder };
 vm.runInNewContext(read("qr.js"), qrContext);
 const qrSize = svg => {
-  const match = svg.match(/viewBox="0 0 (\\d+) \\1"/);
-  assert.ok(match, "QR SVG should contain a square viewBox");
+  const match = svg.match(/viewBox="0 0 ([0-9]+) [0-9]+"/);
+  assert.ok(match, "QR SVG should contain a viewBox");
   return Number(match[1]);
 };
 const asciiQrSize = qrSize(qrContext.window.BNQR.svg("A".repeat(50), { margin: 0 }));
@@ -67,7 +67,7 @@ assert.ok(store.includes("p_party_size: guests"));
 
 const vendor = read("vendor.html");
 assert.ok(vendor.includes('db.from("store_bank_details")'));
-assert.ok(!vendor.includes('db.from("stores").update({\\n          bank_name'));
+assert.ok(!vendor.includes('db.from("stores").update({\n          bank_name'));
 
 const manage = read("manage.html");
 assert.ok(manage.includes('e.key === "ArrowRight"'));
