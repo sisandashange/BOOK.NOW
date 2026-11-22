@@ -20,6 +20,8 @@ on:
       - "sw.js"
       - "tests/**"
       - "supabase/functions/**"
+      - "supabase/migrations/**"
+      - "supabase/tests/**"
       - ".github/workflows/app-quality.yml"
 
 permissions:
