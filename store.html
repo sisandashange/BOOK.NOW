@@ -1303,8 +1303,16 @@
       }
       let appointmentMinutes = toMin(time);
       const openingMinutes = toMin(String(storeData.opening_time || "08:00").slice(0, 5));
+      if (!Number.isFinite(appointmentMinutes) || !Number.isFinite(openingMinutes)) {
+        errorBox.textContent = "The selected booking time is invalid. Please choose another time.";
+        return;
+      }
       if (appointmentMinutes < openingMinutes) appointmentMinutes += 1440;
       const requestedInstant = appointmentInstant(date, appointmentMinutes);
+      if (!Number.isFinite(requestedInstant.getTime())) {
+        errorBox.textContent = "The selected booking date or time is invalid.";
+        return;
+      }
       if (requestedInstant <= new Date()) {
         errorBox.textContent = "That time has already passed. Choose a later time.";
         return;
