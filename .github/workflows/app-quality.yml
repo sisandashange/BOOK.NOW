@@ -39,5 +39,5 @@ jobs:
         run: node tests/js-smoke.test.cjs
       - name: Parse changed Edge Function TypeScript
         run: |
-          npx --yes esbuild@0.25.0 supabase/functions/receipt-download/index.ts --bundle --format=esm --external:jsr:* --outfile=/tmp/receipt-download.js
-          npx --yes esbuild@0.25.0 supabase/functions/invite-staff/index.ts --bundle --format=esm --external:jsr:* --outfile=/tmp/invite-staff.js
+          npx --yes esbuild@0.25.0 supabase/functions/receipt-download/index.ts --bundle --format=esm --external:jsr:* --external:npm:* --outfile=/tmp/receipt-download.js
+          npx --yes esbuild@0.25.0 supabase/functions/invite-staff/index.ts --bundle --format=esm --external:jsr:* --external:npm:* --outfile=/tmp/invite-staff.js
