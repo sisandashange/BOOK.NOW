@@ -94,7 +94,10 @@ self.addEventListener("push", event => {
       tag: data.tag || "booknow",
       renotify: true,
       vibrate: [200, 100, 200],
-      data: { url: data.url || (String(data.tag || "").startsWith("customer_") ? "manage.html" : "vendor.html") }
+      data: {
+        url: data.url || (String(data.tag || "").startsWith("customer_") ? "manage.html" : "vendor.html"),
+        tag: data.tag || ""
+      }
     });
   })());
 });
