@@ -9,6 +9,8 @@ on:
       - "sw.js"
       - "tests/**"
       - "supabase/functions/**"
+      - "supabase/migrations/**"
+      - "supabase/tests/**"
       - ".github/workflows/app-quality.yml"
   push:
     branches: [main]
@@ -33,5 +35,7 @@ jobs:
           node-version: 22
       - name: Run application regression and utility tests
         run: node tests/js-smoke.test.cjs
-      - name: Parse receipt Edge Function TypeScript
-        run: npx --yes esbuild@0.25.0 supabase/functions/receipt-download/index.ts --format=esm --external:jsr:* --outfile=/tmp/receipt-download.js
+      - name: Parse changed Edge Function TypeScript
+        run: |
+          npx --yes esbuild@0.25.0 supabase/functions/receipt-download/index.ts --format=esm --external:jsr:* --outfile=/tmp/receipt-download.js
+          npx --yes esbuild@0.25.0 supabase/functions/invite-staff/index.ts --format=esm --external:jsr:* --outfile=/tmp/invite-staff.js
