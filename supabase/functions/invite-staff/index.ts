@@ -80,6 +80,16 @@ Deno.serve(async (req: Request) => {
       .eq("profile_id", userData.user.id).maybeSingle();
     if (storeError || !store) return json({ error: "You do not own this business." }, 403, origin);
 
+    // Limit invitations per store so a compromised owner session cannot rapidly spam email invites.
+    const inviteWindowStart = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const { count: recentInvites, error: inviteRateError } = await caller
+      .from("staff_members").select("id", { count: "exact", head: true })
+      .eq("store_id", storeId).gte("invited_at", inviteWindowStart);
+    if (inviteRateError) throw inviteRateError;
+    if ((recentInvites || 0) >= 5) {
+      return json({ error: "Too many staff invitations. Please wait 10 minutes before sending more." }, 429, origin);
+    }
+
     const { data: staff, error: staffError } = await caller
       .from("staff_members").select("id, full_name, is_active, user_id")
       .eq("id", staffId).eq("store_id", storeId).maybeSingle();
