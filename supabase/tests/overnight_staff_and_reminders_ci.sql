@@ -115,7 +115,9 @@ FOR EACH ROW EXECUTE FUNCTION public.push_notify_booking();
 DO $$
 DECLARE
   v_store uuid := '10000000-0000-0000-0000-000000000001';
+  v_other_store uuid := '10000000-0000-0000-0000-000000000099';
   v_service uuid := '20000000-0000-0000-0000-000000000001';
+  v_other_service uuid := '20000000-0000-0000-0000-000000000099';
   v_unstaffed_service uuid := '20000000-0000-0000-0000-000000000002';
   v_staff uuid := '30000000-0000-0000-0000-000000000001';
   v_wrong_day_staff uuid := '30000000-0000-0000-0000-000000000002';
@@ -148,6 +150,57 @@ BEGIN
   VALUES
     (v_staff, v_actual_weekday, true, time '00:00', time '02:00'),
     (v_wrong_day_staff, v_wrong_weekday, true, time '00:00', time '02:00');
+
+  -- Public staff lookup only exposes workers for visible, bookable shops and services.
+  IF (SELECT count(*) FROM public.get_bookable_staff(v_store, v_service)) <> 2 THEN
+    RAISE EXCEPTION 'Expected both active workers for the visible shop';
+  END IF;
+  IF NOT has_function_privilege('anon', 'public.get_bookable_staff(uuid,uuid)', 'EXECUTE')
+     OR NOT has_function_privilege('anon', 'public.get_staff_slot_availability(uuid,uuid,date,integer,uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'Customer staff lookup RPC execute grants were not preserved';
+  END IF;
+  IF has_function_privilege('anon', 'private.push_response_was_sent(text)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'Private reminder response parser is publicly executable';
+  END IF;
+  IF NOT private.push_response_was_sent('{"sent":1}')
+     OR private.push_response_was_sent('not-json')
+     OR private.push_response_was_sent('{"sent":"not-a-number"}') THEN
+    RAISE EXCEPTION 'Safe reminder response parsing regression';
+  END IF;
+
+  INSERT INTO public.stores(id, opening_time, closing_time, status, subscription_expires_at)
+  VALUES (v_other_store, time '08:00', time '17:00', 'active', now() + interval '30 days');
+  INSERT INTO public.service_items(id, store_id) VALUES (v_other_service, v_other_store);
+  INSERT INTO public.staff_services(staff_id, service_id) VALUES (v_staff, v_other_service);
+  IF EXISTS (SELECT 1 FROM public.get_bookable_staff(v_store, v_other_service))
+     OR EXISTS (SELECT 1 FROM public.get_staff_slot_availability(v_store, v_other_service, v_business_date, 30, NULL)) THEN
+    RAISE EXCEPTION 'A service belonging to another shop leaked staff availability';
+  END IF;
+
+  UPDATE public.stores SET subscription_expires_at = now() - interval '1 minute' WHERE id = v_store;
+  IF EXISTS (SELECT 1 FROM public.get_bookable_staff(v_store, v_service))
+     OR EXISTS (SELECT 1 FROM public.get_staff_slot_availability(v_store, v_service, v_business_date, 30, NULL)) THEN
+    RAISE EXCEPTION 'Expired shop still exposed public staff availability';
+  END IF;
+  UPDATE public.stores SET subscription_expires_at = now() + interval '30 days', is_hidden = true WHERE id = v_store;
+  IF EXISTS (SELECT 1 FROM public.get_bookable_staff(v_store, v_service))
+     OR EXISTS (SELECT 1 FROM public.get_staff_slot_availability(v_store, v_service, v_business_date, 30, NULL)) THEN
+    RAISE EXCEPTION 'Hidden shop still exposed public staff availability';
+  END IF;
+  UPDATE public.stores SET is_hidden = false, manual_status = 'CLOSED' WHERE id = v_store;
+  IF EXISTS (SELECT 1 FROM public.get_bookable_staff(v_store, v_service))
+     OR EXISTS (SELECT 1 FROM public.get_staff_slot_availability(v_store, v_service, v_business_date, 30, NULL)) THEN
+    RAISE EXCEPTION 'Paused shop still exposed public staff availability';
+  END IF;
+  UPDATE public.stores SET manual_status = 'OPEN', holiday_start_date = v_business_date,
+    holiday_end_date = v_business_date WHERE id = v_store;
+  IF EXISTS (SELECT 1 FROM public.get_staff_slot_availability(v_store, v_service, v_business_date, 30, NULL)) THEN
+    RAISE EXCEPTION 'Holiday date still exposed public staff slots';
+  END IF;
+  UPDATE public.stores SET holiday_start_date = NULL, holiday_end_date = NULL WHERE id = v_store;
+  IF EXISTS (SELECT 1 FROM public.get_staff_slot_availability(v_store, v_service, (now() AT TIME ZONE 'Africa/Johannesburg')::date + 61, 30, NULL)) THEN
+    RAISE EXCEPTION 'Staff availability accepted a date beyond the 60-day booking window';
+  END IF;
 
   -- A 00:30 slot belongs to the calendar day after the selected business date.
   SELECT available_count INTO v_count
