@@ -238,11 +238,11 @@ BEGIN
     id, store_id, service_id, booking_date, booking_time, appointment_at,
     duration_minutes, staff_id, staff_assignment_mode, status
   ) VALUES
-    (v_assigned_any_booking, v_store, v_service, v_business_date, time '01:00',
-      public.compute_appointment_at(v_store, v_business_date, time '01:00'),
+    (v_assigned_any_booking, v_store, v_service, v_business_date, time '23:00',
+      public.compute_appointment_at(v_store, v_business_date, time '23:00'),
       30, v_staff, 'ANY', 'pending'),
-    (v_available_any_booking, v_store, v_service, v_business_date, time '01:30',
-      public.compute_appointment_at(v_store, v_business_date, time '01:30'),
+    (v_available_any_booking, v_store, v_service, v_business_date, time '23:30',
+      public.compute_appointment_at(v_store, v_business_date, time '23:30'),
       30, NULL, 'ANY', 'pending');
   ALTER TABLE public.bookings ENABLE TRIGGER USER;
 
