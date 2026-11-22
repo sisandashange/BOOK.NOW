@@ -732,7 +732,7 @@
         const cover = store.store_image_url || FALLBACK_IMAGES[cat];
         const name = store.store_name || "Shop";
         $("store-hero-box").innerHTML = `
-          <img src="${esc(cover)}" class="hero-banner" alt="${esc(name)}">
+          <img src="${esc(cover)}" class="hero-banner" alt="${esc(name)}" decoding="async" fetchpriority="high">
           <div class="hero-content">
             <div class="store-title-row">
               <h1 class="store-title">${esc(name)}</h1>
@@ -822,6 +822,7 @@
           const cover = document.createElement("img");
           cover.className = "menu-cover-img";
           cover.loading = "lazy";
+          cover.decoding = "async";
           cover.src = defaultImg;
           cover.alt = s.title;
           const zoom = document.createElement("div");
@@ -838,6 +839,8 @@
               const thumb = document.createElement("img");
               thumb.className = "thumb-btn" + (i === 0 ? " active" : "");
               thumb.src = url;
+              thumb.loading = "lazy";
+              thumb.decoding = "async";
               thumb.alt = "Photo " + (i + 1) + " of " + s.title;
               thumb.addEventListener("click", () => {
                 cover.src = url;
@@ -1118,7 +1121,8 @@
       selectedService.isShisanyamaOrder = true;
       $("takeaway-field").style.display = "block";
       $("is-takeaway").checked = isTakeaway === true;
-      $("party-field").style.display = (!isTakeaway && storeData.capacity_mode === "GUESTS") ? "block" : "none";
+      const shisanyamaTables = normalizeCategory(storeData.category) === "SHISANYAMA";
+      $("party-field").style.display = (!isTakeaway && (storeData.capacity_mode === "GUESTS" || shisanyamaTables)) ? "block" : "none";
       $("staff-choice-field").style.display = isTakeaway ? "none" : (bookableStaff.length ? "block" : "none");
       $("modal-service-title").textContent = isTakeaway ? "Place takeaway order" : "Reserve seats & order";
       $("confirm-booking-btn").textContent = isTakeaway ? "Confirm takeaway order" : "Confirm seats & food order";
@@ -1269,7 +1273,15 @@
       const date = $("booking-date").value;
       const time = $("booking-time").value;
       const isTakeaway = $("is-takeaway").checked === true;
-      const guestsMode = !isTakeaway && !!storeData && storeData.capacity_mode === "GUESTS";
+      const isShisanyamaOrder = !!(selectedService && selectedService.isShisanyamaOrder && storeData
+        && normalizeCategory(storeData.category) === "SHISANYAMA");
+      const guestsMode = !isTakeaway && !!storeData
+        && (storeData.capacity_mode === "GUESTS" || isShisanyamaOrder);
+      const maxGuests = storeData
+        ? (isShisanyamaOrder
+          ? Math.min(50, Math.max(1, Number(storeData.table_count) || 1) * Math.max(1, Number(storeData.seats_per_table) || 4))
+          : Math.min(50, Number(storeData.hourly_capacity || storeData.slot_capacity) || 50))
+        : 50;
       const guests = guestsMode ? Math.floor(Number($("party-size").value)) : 1;
       const button = $("confirm-booking-btn");
       const errorBox = $("modal-error");
@@ -1279,8 +1291,8 @@
       if (phone.replace(/\D/g, "").length < 9) { errorBox.textContent = "Enter a valid phone number."; return; }
       if (!date) { errorBox.textContent = "Choose your appointment date."; return; }
       if (date < currentBusinessDate(storeData)) { errorBox.textContent = "Choose today or a future date."; return; }
-      if (guestsMode && (!Number.isFinite(guests) || guests < 1 || guests > Math.min(50, Number(storeData.hourly_capacity || storeData.slot_capacity) || 50))) {
-        errorBox.textContent = "Enter how many people are coming (up to " + Math.min(50, Number(storeData.hourly_capacity || storeData.slot_capacity) || 50) + ").";
+      if (guestsMode && (!Number.isFinite(guests) || guests < 1 || guests > maxGuests)) {
+        errorBox.textContent = "Enter how many people are coming (up to " + maxGuests + ").";
         return;
       }
       if (!time) { errorBox.textContent = "Choose your appointment time."; return; }
@@ -1498,7 +1510,7 @@
 
     function init() {
       db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+      if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(err => console.warn("Service worker registration failed:", err));
 
       $("close-modal-btn").addEventListener("click", closeModals);
       $("report-open").addEventListener("click", openReport);
