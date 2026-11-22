@@ -1525,7 +1525,14 @@
       $("booking-date").addEventListener("change", refreshSlots);
       $("party-size").addEventListener("change", refreshSlots);
       $("booking-staff").addEventListener("change", () => { chosenTime = ""; refreshSlots(); });
-      $("is-takeaway").addEventListener("change", () => { chosenTime = ""; if ($("staff-choice-field")) $("staff-choice-field").style.display = $("is-takeaway").checked ? "none" : (bookableStaff.length ? "block" : "none"); refreshSlots(); });
+      $("is-takeaway").addEventListener("change", () => {
+        chosenTime = "";
+        const takeaway = $("is-takeaway").checked;
+        const guestsShop = storeData && (storeData.capacity_mode === "GUESTS" || normalizeCategory(storeData.category) === "SHISANYAMA");
+        $("party-field").style.display = (!takeaway && guestsShop) ? "block" : "none";
+        if ($("staff-choice-field")) $("staff-choice-field").style.display = takeaway ? "none" : (bookableStaff.length ? "block" : "none");
+        refreshSlots();
+      });
       $("booking-time").addEventListener("change", () => { chosenTime = $("booking-time").value; });
       $("pay-method-eft").addEventListener("click", () => setPaymentMethod("EFT"));
       $("pay-method-cash").addEventListener("click", () => setPaymentMethod("CASH"));
