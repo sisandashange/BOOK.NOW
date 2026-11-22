@@ -231,6 +231,33 @@ BEGIN
     30, v_staff, 'SPECIFIC', 'confirmed'
   );
 
+  -- Legacy unassigned ANY bookings remain visible to qualified workers, but an
+  -- ANY booking already assigned to one worker must not leak to other workers.
+  ALTER TABLE public.bookings DISABLE TRIGGER USER;
+  INSERT INTO public.bookings(
+    id, store_id, service_id, booking_date, booking_time, appointment_at,
+    duration_minutes, staff_id, staff_assignment_mode, status
+  ) VALUES
+    (v_assigned_any_booking, v_store, v_service, v_business_date, time '01:00',
+      public.compute_appointment_at(v_store, v_business_date, time '01:00'),
+      30, v_staff, 'ANY', 'pending'),
+    (v_available_any_booking, v_store, v_service, v_business_date, time '01:30',
+      public.compute_appointment_at(v_store, v_business_date, time '01:30'),
+      30, NULL, 'ANY', 'pending');
+  ALTER TABLE public.bookings ENABLE TRIGGER USER;
+
+  PERFORM set_config('request.jwt.claim.sub', v_staff_user::text, true);
+  IF NOT public.can_staff_view_booking(v_assigned_any_booking)
+     OR NOT public.can_staff_view_booking(v_available_any_booking) THEN
+    RAISE EXCEPTION 'Assigned worker could not see own and unassigned ANY bookings';
+  END IF;
+  PERFORM set_config('request.jwt.claim.sub', v_wrong_day_staff_user::text, true);
+  IF public.can_staff_view_booking(v_assigned_any_booking)
+     OR NOT public.can_staff_view_booking(v_available_any_booking) THEN
+    RAISE EXCEPTION 'Staff visibility leaked an assigned ANY booking or hid an unassigned one';
+  END IF;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+
   IF EXISTS (
     SELECT 1
     FROM public.get_staff_slot_availability(v_store, v_service, v_business_date, 30, NULL)
