@@ -129,8 +129,8 @@ DECLARE
   v_wrong_day_staff uuid := '30000000-0000-0000-0000-000000000002';
   v_staff_user uuid := '50000000-0000-0000-0000-000000000001';
   v_wrong_day_staff_user uuid := '50000000-0000-0000-0000-000000000002';
-  v_assigned_any_booking uuid := '40000000-0000-0000-0000-000000000003';
-  v_available_any_booking uuid := '40000000-0000-0000-0000-000000000004';
+  v_assigned_any_booking uuid := '60000000-0000-0000-0000-000000000001';
+  v_available_any_booking uuid := '60000000-0000-0000-0000-000000000002';
   v_business_date date := (now() AT TIME ZONE 'Africa/Johannesburg')::date + 2;
   v_actual_weekday smallint;
   v_wrong_weekday smallint;
