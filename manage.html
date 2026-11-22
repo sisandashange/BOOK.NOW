@@ -478,7 +478,8 @@ footer a{color:var(--muted);font-weight:600}
       else { const key = fmtMin(Math.floor(ownStart / 60) * 60); usedHourly[key] = Math.max(0, (usedHourly[key] || 0) - need); }
     }
     for (let m = open; m + dur <= close; m += 30) {
-      if (appointmentInstant(date, m) <= new Date()) continue;
+      const slotInstant = appointmentInstant(date, m);
+      if (!Number.isFinite(slotInstant.getTime()) || slotInstant <= new Date()) continue;
       const label = fmtMin(m);
       const isCurrent = date === bk.booking_date && label === bk.booking_time;
       let left = isTakeaway ? cap : cap - (usedHourly[fmtMin(Math.floor(m / 60) * 60)] || 0);
@@ -515,7 +516,9 @@ footer a{color:var(--muted);font-weight:600}
     let appointmentMinutes = toMin(time);
     const openingMinutes = toMin(String(bk.opening_time || "08:00").slice(0, 5));
     if (appointmentMinutes < openingMinutes) appointmentMinutes += 1440;
-    if (appointmentInstant(date, appointmentMinutes) <= new Date()) return say("That time has already passed. Choose a later time.", "err");
+    const requestedInstant = appointmentInstant(date, appointmentMinutes);
+    if (!Number.isFinite(requestedInstant.getTime())) return say("Choose a valid booking date and time.", "err");
+    if (requestedInstant <= new Date()) return say("That time has already passed. Choose a later time.", "err");
     const btn = $("confirm-change-btn");
     btn.disabled = true; btn.textContent = "Saving...";
     try {
