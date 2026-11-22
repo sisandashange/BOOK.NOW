@@ -1,0 +1,37 @@
+name: BOOK.NOW application checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "*.html"
+      - "*.js"
+      - "sw.js"
+      - "tests/**"
+      - "supabase/functions/**"
+      - ".github/workflows/app-quality.yml"
+  push:
+    branches: [main]
+    paths:
+      - "*.html"
+      - "*.js"
+      - "sw.js"
+      - "tests/**"
+      - "supabase/functions/**"
+      - ".github/workflows/app-quality.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  application-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run application regression and utility tests
+        run: node tests/js-smoke.test.cjs
+      - name: Parse receipt Edge Function TypeScript
+        run: npx --yes esbuild@0.25.0 supabase/functions/receipt-download/index.ts --format=esm --external:jsr:* --outfile=/tmp/receipt-download.js
