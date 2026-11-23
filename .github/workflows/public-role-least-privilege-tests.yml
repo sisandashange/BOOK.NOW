@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - "supabase/migrations/20261119192942_public_role_least_privilege.sql"
-      - "supabase/migrations/20261124011100_grant_receipt_lookup_to_service_role.sql"
+      - "supabase/migrations/20261123231316_grant_receipt_lookup_to_service_role.sql"
       - "supabase/migrations/20261120131500_restrict_public_takeaway_insert.sql"
       - "supabase/migrations/20261120132000_one_pending_subscription_request_per_store.sql"
       - "vendor.html"
