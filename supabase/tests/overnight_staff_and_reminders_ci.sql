@@ -113,6 +113,7 @@ $$;
 \ir ../migrations/20261122212843_restrict_public_staff_lookup_to_visible_shops.sql
 \ir ../migrations/20261122212947_make_booking_reminder_response_parsing_safe.sql
 \ir ../migrations/20261122213802_restrict_staff_booking_visibility_to_assigned_or_unassigned.sql
+\ir ../migrations/20261123054350_move_staff_visibility_rls_helper_private.sql
 
 CREATE TRIGGER booking_push_after_insert
 AFTER INSERT ON public.bookings
@@ -231,6 +232,16 @@ BEGIN
     30, v_staff, 'SPECIFIC', 'confirmed'
   );
 
+  IF to_regprocedure('public.can_staff_view_booking(uuid)') IS NOT NULL THEN
+    RAISE EXCEPTION 'Staff visibility helper remains exposed in public schema';
+  END IF;
+  IF has_function_privilege('anon', 'private.can_staff_view_booking(uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'Anonymous users can execute the private staff visibility helper';
+  END IF;
+  IF NOT has_function_privilege('authenticated', 'private.can_staff_view_booking(uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'Authenticated staff cannot execute the private RLS helper';
+  END IF;
+
   -- Legacy unassigned ANY bookings remain visible to qualified workers, but an
   -- ANY booking already assigned to one worker must not leak to other workers.
   ALTER TABLE public.bookings DISABLE TRIGGER USER;
@@ -247,13 +258,13 @@ BEGIN
   ALTER TABLE public.bookings ENABLE TRIGGER USER;
 
   PERFORM set_config('request.jwt.claim.sub', v_staff_user::text, true);
-  IF NOT public.can_staff_view_booking(v_assigned_any_booking)
-     OR NOT public.can_staff_view_booking(v_available_any_booking) THEN
+  IF NOT private.can_staff_view_booking(v_assigned_any_booking)
+     OR NOT private.can_staff_view_booking(v_available_any_booking) THEN
     RAISE EXCEPTION 'Assigned worker could not see own and unassigned ANY bookings';
   END IF;
   PERFORM set_config('request.jwt.claim.sub', v_wrong_day_staff_user::text, true);
-  IF public.can_staff_view_booking(v_assigned_any_booking)
-     OR NOT public.can_staff_view_booking(v_available_any_booking) THEN
+  IF private.can_staff_view_booking(v_assigned_any_booking)
+     OR NOT private.can_staff_view_booking(v_available_any_booking) THEN
     RAISE EXCEPTION 'Staff visibility leaked an assigned ANY booking or hid an unassigned one';
   END IF;
   PERFORM set_config('request.jwt.claim.sub', '', true);
