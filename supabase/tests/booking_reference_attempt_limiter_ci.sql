@@ -89,6 +89,7 @@ CREATE OR REPLACE FUNCTION public.validate_booking_slot(
 -- Apply the exact migration under test after the synthetic base schema exists.
 \ir ../migrations/20261119074731_booking_reference_attempt_limiter.sql
 \ir ../migrations/20261119192024_booking_reference_throttle_timeout_fix.sql
+\ir ../migrations/20261123055910_preserve_payment_reference_when_rescheduling.sql
 
 DO $$
 DECLARE
@@ -99,6 +100,9 @@ DECLARE
   v_started timestamptz;
   v_elapsed numeric;
   v_found integer;
+  v_reschedule jsonb;
+  v_payment_ref text;
+  v_payment_status text;
 BEGIN
   INSERT INTO public.stores(id, store_name, phone_number, opening_time, closing_time, slot_capacity, capacity_mode)
   VALUES (v_store, 'CI Test Shop', '0310000000', '09:00', '17:00', 10, 'bookings');
@@ -125,6 +129,20 @@ BEGIN
   SELECT count(*) INTO v_count FROM private.booking_reference_attempts
   WHERE ref_fingerprint = private.booking_reference_fingerprint('BN-CITEST1');
   IF v_count <> 0 THEN RAISE EXCEPTION 'Successful identity check did not clear failures'; END IF;
+
+  -- A successful reschedule must preserve the existing EFT/payment reference.
+  v_reschedule := public.reschedule_my_booking('BN-CITEST1', '0821234567', current_date + 2, '11:00');
+  IF coalesce((v_reschedule->>'success')::boolean, false) IS NOT TRUE THEN
+    RAISE EXCEPTION 'Synthetic booking could not be rescheduled: %', v_reschedule;
+  END IF;
+  SELECT payment_ref, payment_status INTO v_payment_ref, v_payment_status
+  FROM public.bookings WHERE id = v_id;
+  IF v_payment_ref <> 'BN-CITEST1' OR v_payment_status <> 'UNPAID' THEN
+    RAISE EXCEPTION 'Rescheduling changed the payment reference or payment status.';
+  END IF;
+  IF v_reschedule->>'payment_ref' <> 'BN-CITEST1' THEN
+    RAISE EXCEPTION 'Reschedule response did not return the original payment reference.';
+  END IF;
 
   -- Unknown references must never create limiter rows.
   PERFORM * FROM public.find_my_booking('BN-NOTREAL', '0829999999');
