@@ -422,8 +422,8 @@ footer a{color:var(--muted);font-weight:600}
 
     const open = toMin(String(bk.opening_time || "08:00").slice(0, 5));
     let close = toMin(String(bk.closing_time || "17:00").slice(0, 5));
-    if (open === close) { sel.replaceChildren(mk("", "No times available")); hint.textContent = "This shop's opening hours aren't set up yet."; return; }
-    if (close < open) close += 1440;
+    // Equal opening and closing times represent a 24-hour schedule.
+    if (close <= open) close += 1440;
 
     const used = {};
     const isTakeaway = bk.is_takeaway === true;
