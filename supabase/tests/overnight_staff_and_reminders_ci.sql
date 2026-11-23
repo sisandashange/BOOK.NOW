@@ -267,6 +267,40 @@ BEGIN
      OR NOT private.can_staff_view_booking(v_available_any_booking) THEN
     RAISE EXCEPTION 'Staff visibility leaked an assigned ANY booking or hid an unassigned one';
   END IF;
+  -- A worker cannot use the SECURITY DEFINER acceptance RPC to take a
+  -- provisional ANY booking reserved for another worker.
+  PERFORM set_config('request.jwt.claim.sub', v_wrong_day_staff_user::text, true);
+  BEGIN
+    PERFORM public.accept_staff_booking(v_assigned_any_booking);
+    RAISE EXCEPTION 'A different worker accepted a booking reserved for someone else';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM NOT LIKE '%reserved for another worker%' THEN RAISE; END IF;
+  END;
+
+  -- The selected worker can confirm their provisional assignment.
+  PERFORM set_config('request.jwt.claim.sub', v_staff_user::text, true);
+  PERFORM public.accept_staff_booking(v_assigned_any_booking);
+  IF NOT EXISTS (
+    SELECT 1 FROM public.bookings
+    WHERE id = v_assigned_any_booking
+      AND staff_id = v_staff
+      AND staff_assignment_mode = 'SPECIFIC'
+  ) THEN
+    RAISE EXCEPTION 'The reserved worker could not accept their own booking';
+  END IF;
+
+  -- A genuinely unassigned legacy ANY booking can still be claimed by an eligible worker.
+  PERFORM set_config('request.jwt.claim.sub', v_wrong_day_staff_user::text, true);
+  PERFORM public.accept_staff_booking(v_available_any_booking);
+  IF NOT EXISTS (
+    SELECT 1 FROM public.bookings
+    WHERE id = v_available_any_booking
+      AND staff_id = v_wrong_day_staff
+      AND staff_assignment_mode = 'SPECIFIC'
+  ) THEN
+    RAISE EXCEPTION 'An eligible worker could not accept an unassigned ANY booking';
+  END IF;
+
   PERFORM set_config('request.jwt.claim.sub', '', true);
 
   IF EXISTS (
