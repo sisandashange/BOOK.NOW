@@ -58,6 +58,10 @@ assert.ok(index.indexOf('id="marketplace-status"') < index.indexOf('id="load-mor
   "Marketplace status must remain visible when pagination ends");
 assert.ok(index.includes(".app-downloads { margin: 28px auto 8px;"));
 assert.ok(index.includes("MIN_REFRESH_GAP_MS"));
+assert.match(index, /\.order\("created_at", \{ ascending: false \}\)\s*\.order\("id", \{ ascending: true \}\)/,
+  "Marketplace pagination must use a stable unique tie-breaker");
+assert.ok(index.includes("Top rated (loaded shops)"), "Sorting must remain usable before every shop is loaded");
+assert.ok(index.includes("Name A to Z (loaded shops)"), "Name sorting must explain its loaded-results scope");
 assert.ok(!/let\s+lastRefreshAt\s*=/.test(index));
 assert.ok(!/Date\.now\(\)\s*-\s*lastRefreshAt/.test(index));
 

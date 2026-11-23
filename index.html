@@ -142,8 +142,8 @@
       <select id="area-select" class="filter-select" aria-label="Filter by area" style="display:none"><option value="">All areas</option></select>
       <select id="sort-select" class="filter-select" aria-label="Sort shops">
         <option value="new">Newest first</option>
-        <option value="rating" disabled>Top rated (load all shops first)</option>
-        <option value="name" disabled>Name A to Z (load all shops first)</option>
+        <option value="rating">Top rated (loaded shops)</option>
+        <option value="name">Name A to Z (loaded shops)</option>
       </select>
       <button class="open-chip" id="open-now-chip" type="button" aria-pressed="false">Open now</button>
     </div>
@@ -313,6 +313,7 @@
           .select("id, store_name, category, area, address, store_image_url, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, service_items(id, title)")
           .eq("status", "active")
           .order("created_at", { ascending: false })
+          .order("id", { ascending: true })
           .range(offset, requestedEnd); // PostgREST range end is inclusive: requesting N returns N+1 rows for hasMore detection.
 
         if (error) throw error;
@@ -478,12 +479,10 @@
     function applyFilters() {
       const ratingOption = $("sort-select").querySelector('option[value="rating"]');
       const nameOption = $("sort-select").querySelector('option[value="name"]');
-      ratingOption.disabled = hasMoreStores;
-      nameOption.disabled = hasMoreStores;
-      if (hasMoreStores && sortBy !== "new") {
-        sortBy = "new";
-        $("sort-select").value = "new";
-      }
+      ratingOption.disabled = false;
+      nameOption.disabled = false;
+      ratingOption.textContent = hasMoreStores ? "Top rated (loaded shops)" : "Top rated";
+      nameOption.textContent = hasMoreStores ? "Name A to Z (loaded shops)" : "Name A to Z";
       const term = $("search-input").value.toLowerCase().trim();
       const clock = getBusinessClock();
       const openCache = new Map(allStores.map(s => [s.id, isOpenNow(s, clock)]));
