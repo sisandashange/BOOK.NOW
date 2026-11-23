@@ -81,6 +81,8 @@ assert.ok(manage.includes("requestedInstant.getTime()"));
 const sw = read("sw.js");
 assert.ok(sw.includes("CORE_PATHS.has(url.pathname)"));
 assert.ok(sw.includes("url.origin + url.pathname"));
+assert.ok(sw.includes("await cache.put(cacheKey, response.clone())"));
+assert.ok(!/event\.waitUntil\(caches\.open\(CACHE\)/.test(sw));
 
 const i18n = read("i18n.js");
 assert.ok(i18n.includes("Object.prototype.hasOwnProperty.call(D, text)"));
