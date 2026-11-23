@@ -42,6 +42,33 @@ function headers(origin: string | null) {
   };
 }
 
+async function cleanupExpiredReceipts() {
+  try {
+    const listed = await storage(`object/list/${BUCKET}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prefix: "", limit: 1000, offset: 0, sortBy: { column: "created_at", order: "asc" } }),
+    });
+    if (!listed.ok) return;
+    const items = await listed.json();
+    const cutoff = Date.now() - 15 * 60 * 1000;
+    const stale = (Array.isArray(items) ? items : [])
+      .filter((item: any) => item.id && item.created_at && new Date(item.created_at).getTime() < cutoff)
+      .map((item: any) => item.name)
+      .filter((name: unknown) => typeof name === "string");
+    if (stale.length) {
+      const removed = await storage(`object/${BUCKET}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prefixes: stale }),
+      });
+      if (!removed.ok) console.warn("Expired receipt cleanup returned", removed.status);
+    }
+  } catch (error) {
+    console.warn("Expired receipt cleanup failed:", error);
+  }
+}
+
 async function storage(path: string, init: RequestInit) {
   return fetch(`${SUPABASE_URL}/storage/v1/${path}`, {
     ...init,
@@ -130,26 +157,6 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Opportunistically remove expired receipt files. Signed links last only 10 minutes.
-    try {
-      const listed = await storage(`object/list/${BUCKET}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prefix: "", limit: 1000, offset: 0, sortBy: { column: "created_at", order: "asc" } }),
-      });
-      if (listed.ok) {
-        const items = await listed.json();
-        const cutoff = Date.now() - 15 * 60 * 1000;
-        const stale = (Array.isArray(items) ? items : [])
-          .filter((item: any) => item.id && item.created_at && new Date(item.created_at).getTime() < cutoff)
-          .map((item: any) => item.name)
-          .filter((name: unknown) => typeof name === "string");
-        if (stale.length) {
-          await storage(`object/${BUCKET}`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prefixes: stale }) });
-        }
-      }
-    } catch (_) { /* A cleanup failure must not block a customer's receipt. */ }
-
     const objectPath = `${crypto.randomUUID()}.png`;
     const uploaded = await storage(`object/${BUCKET}/${objectPath}`, {
       method: "POST",
@@ -171,6 +178,8 @@ Deno.serve(async (req: Request) => {
     const signedPath = result.signedURL || result.signedUrl;
     if (typeof signedPath !== "string") throw new Error("Invalid signed download response");
     const url = signedPath.startsWith("http") ? signedPath : `${SUPABASE_URL}/storage/v1${signedPath.startsWith("/") ? "" : "/"}${signedPath}`;
+    // Do not make customers wait for bucket housekeeping before their receipt is saved.
+    EdgeRuntime.waitUntil(cleanupExpiredReceipts());
     return new Response(JSON.stringify({ url, expiresIn: 600 }), { status: 200, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("receipt-download:", error);
