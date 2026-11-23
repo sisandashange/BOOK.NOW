@@ -560,7 +560,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     const lastWeek = active.filter(b => between(b, lastWeekStart, addDays(weekStart, -1))).length;
     const ahead = active.filter(b => between(b, today, addDays(today, 6))).length;
 
-    const done = all.filter(b => status(b) === "completed");
+    const done = all.filter(b => status(b) === "completed" && String(b.payment_status || "").toUpperCase() === "PAID");
     const monthKey = today.slice(0, 7), lastMonthKey = addDays(monthKey + "-01", -1).slice(0, 7);
     const earned = key => done.filter(b => dayOf(b).slice(0, 7) === key).reduce((s, b) => s + bookingPrice(b), 0);
     const total = done.reduce((s, b) => s + bookingPrice(b), 0);
@@ -2190,10 +2190,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
       all.forEach(b => {
         const st = String(b.status || "pending").toUpperCase();
-        if (st === "COMPLETED") {
+        if (st === "COMPLETED" && String(b.payment_status || "").toUpperCase() === "PAID") {
           revenue += bookingPrice(b);
           if (String(b.payment_method || "EFT").toUpperCase() === "EFT") eft += bookingPrice(b);
-        } else if ((st === "PENDING" || st === "CONFIRMED") && apptDay(b) === today) {
+        }
+        if ((st === "PENDING" || st === "CONFIRMED") && apptDay(b) === today) {
           activeToday++;
         }
       });
