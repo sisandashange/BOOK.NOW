@@ -90,7 +90,7 @@ GRANT REFERENCES,TRIGGER ON TABLE public.bookings TO anon;
 GRANT SELECT,UPDATE ON TABLE public.bookings TO authenticated;
 
 \ir ../migrations/20261119192942_public_role_least_privilege.sql
-\ir ../migrations/20261124011100_grant_receipt_lookup_to_service_role.sql
+\ir ../migrations/20261123231316_grant_receipt_lookup_to_service_role.sql
 \ir ../migrations/20261120122138_restrict_public_service_items_to_visible_stores.sql
 \ir ../migrations/20261120131500_restrict_public_takeaway_insert.sql
 \ir ../migrations/20261120132000_one_pending_subscription_request_per_store.sql
