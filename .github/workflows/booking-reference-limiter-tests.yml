@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "supabase/migrations/20261119074731_booking_reference_attempt_limiter.sql"
+      - "supabase/migrations/20261123055910_preserve_payment_reference_when_rescheduling.sql"
       - "supabase/tests/booking_reference_attempt_limiter_ci.sql"
       - ".github/workflows/booking-reference-limiter-tests.yml"
   push:
