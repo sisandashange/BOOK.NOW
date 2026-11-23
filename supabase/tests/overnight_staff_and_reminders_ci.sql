@@ -114,6 +114,7 @@ $$;
 \ir ../migrations/20261122212947_make_booking_reminder_response_parsing_safe.sql
 \ir ../migrations/20261122213802_restrict_staff_booking_visibility_to_assigned_or_unassigned.sql
 \ir ../migrations/20261123054350_move_staff_visibility_rls_helper_private.sql
+\ir ../migrations/20261123055642_prevent_staff_accepting_another_workers_reserved_booking.sql
 
 CREATE TRIGGER booking_push_after_insert
 AFTER INSERT ON public.bookings
