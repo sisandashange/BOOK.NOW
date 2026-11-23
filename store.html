@@ -1212,7 +1212,7 @@
 
 
 
-  async function saveReceiptBlob(blob, filename, noteEl) {
+  async function saveReceiptBlob(blob, filename, noteEl, paymentRef, phone) {
     // Median's native downloader needs a real HTTPS URL, not a temporary blob: URL.
     if (window.median && window.median.share && typeof window.median.share.downloadFile === "function") {
       const dataUrl = await new Promise((resolve, reject) => {
@@ -1224,7 +1224,11 @@
       const response = await fetch(SUPABASE_URL + "/functions/v1/receipt-download", {
         method: "POST",
         headers: { "Content-Type": "application/json", "apikey": SUPABASE_KEY },
-        body: JSON.stringify({ imageBase64: String(dataUrl).split(",")[1] })
+        body: JSON.stringify({
+          imageBase64: String(dataUrl).split(",")[1],
+          paymentRef: String(paymentRef || ""),
+          phone: String(phone || "")
+        })
       });
       if (!response.ok) throw new Error("Secure receipt download could not be prepared");
       const result = await response.json();
@@ -1262,7 +1266,7 @@
         const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));if(!blob)throw new Error("Image creation failed");
         const filename="BOOK-NOW-receipt-"+String(details.reference||"booking").replace(/[^A-Za-z0-9-]/g,"")+".png";
         const note=$("receipt-image-note");
-        await saveReceiptBlob(blob, filename, note);
+        await saveReceiptBlob(blob, filename, note, details.reference, details.phone);
       } catch(err){console.error("Receipt image error:",err);alert("We couldn't create the receipt image. You can still show the QR code on screen.");}
       finally{if(btn){btn.disabled=false;btn.textContent="Save receipt as image";}}
     }
@@ -1496,7 +1500,7 @@
         confirmation.style.display = "block";
         $("done-btn").addEventListener("click", () => location.reload());
         if (bookingId && $("download-booking-receipt")) {
-          $("download-booking-receipt").addEventListener("click", () => downloadBookingReceiptImage({ bookingId, shop: shopName, service: selectedService.title, name, appointment: apptText, price: money(price), reference: paymentRef }));
+          $("download-booking-receipt").addEventListener("click", () => downloadBookingReceiptImage({ bookingId, shop: shopName, service: selectedService.title, name, appointment: apptText, price: money(price), reference: paymentRef, phone }));
         }
         if (bookingId) {
           $("alerts-btn").addEventListener("click", () => enableCustomerAlerts(bookingId, paymentRef, phone, $("alerts-btn"), $("alerts-note")));
