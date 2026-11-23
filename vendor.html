@@ -1774,7 +1774,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       if (!rows.length) return setEmpty("staff-bookings-list", "No bookings are available or assigned to you right now.");
       $("staff-bookings-list").replaceChildren(...rows.map(b => {
         const status = String(b.status || "pending").toUpperCase();
-        const isMine = b.staff_id === currentStaffMember.id && b.staff_assignment_mode !== "ANY";
+        const isMine = b.staff_id === currentStaffMember.id;
         const isReservedForMe = b.staff_id === currentStaffMember.id && b.staff_assignment_mode === "ANY"
           && ["PENDING", "CONFIRMED"].includes(status);
         const isAvailable = !b.staff_id && b.staff_assignment_mode === "ANY" && ["PENDING", "CONFIRMED"].includes(status);
