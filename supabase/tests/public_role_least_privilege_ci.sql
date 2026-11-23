@@ -3,8 +3,20 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='anon') THEN CREATE ROLE anon NOLOGIN; END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='authenticated') THEN CREATE ROLE authenticated NOLOGIN; END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='service_role') THEN CREATE ROLE service_role NOLOGIN; END IF;
 END
 $$;
+
+-- Minimal receipt lookup fixture for the service-role permission regression.
+CREATE FUNCTION public.get_booking_receipt_v2(p_ref text, p_phone text)
+RETURNS TABLE(id uuid, queue_number integer, booked_price numeric, created_at timestamptz,
+              payment_ref text, booking_date date, booking_time text, party_size integer,
+              appointment_at timestamptz)
+LANGUAGE sql AS $function$ SELECT NULL::uuid,NULL::integer,NULL::numeric,NULL::timestamptz,
+                         NULL::text,NULL::date,NULL::text,NULL::integer,NULL::timestamptz
+                  WHERE false $function$;
+REVOKE ALL ON FUNCTION public.get_booking_receipt_v2(text,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_booking_receipt_v2(text,text) TO anon, authenticated;
 
 CREATE TABLE public.stores (
   id uuid, profile_id uuid, store_name text, store_slug text, category text,
@@ -78,6 +90,7 @@ GRANT REFERENCES,TRIGGER ON TABLE public.bookings TO anon;
 GRANT SELECT,UPDATE ON TABLE public.bookings TO authenticated;
 
 \ir ../migrations/20261119192942_public_role_least_privilege.sql
+\ir ../migrations/20261124011100_grant_receipt_lookup_to_service_role.sql
 \ir ../migrations/20261120122138_restrict_public_service_items_to_visible_stores.sql
 \ir ../migrations/20261120131500_restrict_public_takeaway_insert.sql
 \ir ../migrations/20261120132000_one_pending_subscription_request_per_store.sql
@@ -95,6 +108,14 @@ INSERT INTO public.service_items (id, store_id, title, price) VALUES
 
 DO $$
 BEGIN
+  IF NOT has_function_privilege('service_role','public.get_booking_receipt_v2(text,text)','EXECUTE') THEN
+    RAISE EXCEPTION 'The secure receipt-download backend cannot execute the booking ownership lookup';
+  END IF;
+  IF NOT has_function_privilege('anon','public.get_booking_receipt_v2(text,text)','EXECUTE')
+     OR NOT has_function_privilege('authenticated','public.get_booking_receipt_v2(text,text)','EXECUTE') THEN
+    RAISE EXCEPTION 'Customer receipt lookup permissions changed unexpectedly';
+  END IF;
+
   -- Store finder and booking page retain required fields.
   IF has_table_privilege('anon','public.stores','SELECT') THEN
     RAISE EXCEPTION 'anon unexpectedly has table-wide stores SELECT';
