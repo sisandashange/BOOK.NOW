@@ -90,18 +90,39 @@
     @media (max-width: 580px) { .list-cta { flex-direction: column; align-items: stretch; text-align: center; } }
 
 
-    .app-downloads { margin: 28px auto 8px; padding: 22px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
-    .app-downloads h2 { margin: 0 0 6px; font-size: 19px; font-weight: 800; letter-spacing: -0.5px; color: var(--primary); }
-    .app-downloads-intro { margin: 0 0 16px; color: var(--muted); font-size: 13px; line-height: 1.5; }
-    .app-download-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    .app-download-card { border: 1px solid var(--border); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 9px; min-width: 0; }
-    .app-download-icon { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: #eff6ff; color: var(--accent); font-size: 23px; }
-    .app-download-card h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--primary); }
-    .app-download-card p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; flex: 1; }
-    .app-download-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px 12px; border-radius: 11px; background: var(--accent); color: #fff; text-decoration: none; font-size: 13px; font-weight: 800; }
-    .app-download-btn:hover { background: var(--accent-hover); }
-    .app-download-note { margin: 13px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
-    @media (max-width: 580px) { .app-download-grid { grid-template-columns: 1fr; } }
+    .app-downloads { margin: 34px auto 12px; padding: 26px; background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%); border: 1px solid #dbe4f0; border-radius: 22px; box-shadow: 0 14px 36px rgba(15, 23, 42, .07); }
+    .app-download-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
+    .app-download-kicker { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 9px; color: #1d4ed8; font-size: 10px; font-weight: 800; letter-spacing: 1.15px; text-transform: uppercase; }
+    .app-download-kicker i { font-size: 15px; }
+    .app-downloads h2 { margin: 0 0 7px; font-size: clamp(21px, 3vw, 27px); line-height: 1.15; font-weight: 800; letter-spacing: -.8px; color: var(--primary); }
+    .app-downloads-intro { max-width: 590px; margin: 0; color: #64748b; font-size: 13px; line-height: 1.65; }
+    .app-download-official { display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto; padding: 9px 11px; border: 1px solid #bfdbfe; border-radius: 999px; background: #eff6ff; color: #1e40af; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .app-download-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .app-download-card { position: relative; overflow: hidden; border: 1px solid #dbe4f0; border-radius: 18px; padding: 21px; display: flex; flex-direction: column; gap: 13px; min-width: 0; background: #fff; box-shadow: 0 4px 14px rgba(15, 23, 42, .035); }
+    .app-download-card:before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: #2563eb; }
+    .app-download-card.vendor:before { background: #0f766e; }
+    .app-download-card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .app-download-icon { width: 48px; height: 48px; flex: 0 0 48px; border-radius: 15px; display: grid; place-items: center; background: #eff6ff; color: #1d4ed8; font-size: 25px; }
+    .app-download-card.vendor .app-download-icon { background: #ecfdf5; color: #047857; }
+    .app-download-role { color: #64748b; font-size: 10px; font-weight: 800; letter-spacing: .9px; text-transform: uppercase; }
+    .app-download-card h3 { margin: 0; font-size: 18px; line-height: 1.25; font-weight: 800; letter-spacing: -.35px; color: var(--primary); }
+    .app-download-card p { margin: 0; color: #64748b; font-size: 13px; line-height: 1.6; flex: 1; }
+    .app-download-features { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; color: #334155; font-size: 12px; }
+    .app-download-features li { display: flex; align-items: flex-start; gap: 8px; line-height: 1.45; }
+    .app-download-features i { margin-top: 1px; color: #059669; font-size: 15px; }
+    .app-download-meta { display: flex; flex-wrap: wrap; gap: 7px; padding-top: 12px; border-top: 1px solid #edf2f7; color: #64748b; font-size: 10px; font-weight: 600; }
+    .app-download-meta span { display: inline-flex; align-items: center; gap: 5px; }
+    .app-download-btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; width: 100%; min-height: 47px; padding: 12px 14px; border-radius: 12px; background: #1d4ed8; color: #fff; text-decoration: none; font-size: 13px; font-weight: 800; transition: background .2s, transform .2s; }
+    .app-download-btn:hover { background: #1e40af; transform: translateY(-1px); }
+    .app-download-card.vendor .app-download-btn { background: #0f766e; }
+    .app-download-card.vendor .app-download-btn:hover { background: #115e59; }
+    .app-download-btn i { font-size: 17px; }
+    .app-download-trust { display: flex; align-items: flex-start; gap: 11px; margin-top: 17px; padding: 14px 15px; border: 1px solid #e2e8f0; border-radius: 13px; background: #f8fafc; }
+    .app-download-trust > i { margin-top: 1px; color: #475569; font-size: 19px; }
+    .app-download-trust strong { display: block; margin-bottom: 3px; color: #334155; font-size: 12px; }
+    .app-download-note { margin: 0; color: #64748b; font-size: 11px; line-height: 1.6; }
+    .app-download-note a { color: #1d4ed8; font-weight: 700; }
+    @media (max-width: 640px) { .app-downloads { padding: 20px; } .app-download-heading { flex-direction: column; gap: 12px; } .app-download-official { align-self: flex-start; } .app-download-grid { grid-template-columns: 1fr; } .app-download-card { padding: 19px; } }
 
     .legal-foot { text-align: center; padding: 18px 16px 8px; font-size: 12px; color: #64748b; }
     .legal-foot a { color: #64748b; font-weight: 600; }
@@ -165,27 +186,63 @@
     </div>
   </main>
   <section class="app-downloads container" aria-labelledby="app-download-title">
-    <h2 id="app-download-title">Get the BOOK.NOW app</h2>
-    <p class="app-downloads-intro">Choose the app that matches what you want to do. Android apps are available below.</p>
+    <div class="app-download-heading">
+      <div>
+        <div class="app-download-kicker"><i class="ph ph-device-mobile" aria-hidden="true"></i> Official BOOK.NOW downloads</div>
+        <h2 id="app-download-title">BOOK.NOW for Android</h2>
+        <p class="app-downloads-intro">A dedicated experience for customers and local businesses. Choose the app made for you and download it directly from the official BOOK.NOW website.</p>
+      </div>
+      <div class="app-download-official"><i class="ph ph-shield-check" aria-hidden="true"></i> getbooknow.co.za</div>
+    </div>
     <div class="app-download-grid">
-      <article class="app-download-card">
-        <div class="app-download-icon" aria-hidden="true"><i class="ph ph-storefront"></i></div>
-        <h3>BOOK.NOW for Customers</h3>
-        <p>Explore the home screen, discover local shops and make bookings.</p>
-        <a class="app-download-btn" href="https://pvplhsiafklaoqrpdhpd.supabase.co/storage/v1/object/public/app-downloads/BOOK.NOW.apk?download=BOOK.NOW.apk">
-          <i class="ph ph-download-simple" aria-hidden="true"></i> Download Customer App
+      <article class="app-download-card customer">
+        <div class="app-download-card-top">
+          <div class="app-download-icon" aria-hidden="true"><i class="ph ph-calendar-check"></i></div>
+          <span class="app-download-role">For customers</span>
+        </div>
+        <h3>Find a shop. Book your time.</h3>
+        <p>Discover participating local businesses, explore their services and make bookings from your Android phone.</p>
+        <ul class="app-download-features">
+          <li><i class="ph ph-check-circle" aria-hidden="true"></i><span>Browse salons, barbershops and shisanyamas</span></li>
+          <li><i class="ph ph-check-circle" aria-hidden="true"></i><span>Choose available services and booking times</span></li>
+          <li><i class="ph ph-check-circle" aria-hidden="true"></i><span>Keep track of your bookings</span></li>
+        </ul>
+        <div class="app-download-meta">
+          <span><i class="ph ph-android-logo" aria-hidden="true"></i> Android</span>
+          <span><i class="ph ph-download-simple" aria-hidden="true"></i> APK download</span>
+        </div>
+        <a class="app-download-btn" href="https://pvplhsiafklaoqrpdhpd.supabase.co/storage/v1/object/public/app-downloads/BOOK.NOW.apk?download=BOOK.NOW.apk" aria-label="Download the official BOOK.NOW customer app for Android">
+          <i class="ph ph-download-simple" aria-hidden="true"></i> Download customer app
         </a>
       </article>
-      <article class="app-download-card">
-        <div class="app-download-icon" aria-hidden="true"><i class="ph ph-briefcase"></i></div>
-        <h3>BOOK.NOW for Vendors</h3>
-        <p>Manage your business and keep track of your customer bookings.</p>
-        <a class="app-download-btn" href="https://pvplhsiafklaoqrpdhpd.supabase.co/storage/v1/object/public/app-downloads/BOOK.NOW%20PARTNER.apk?download=BOOK.NOW%20PARTNER.apk">
-          <i class="ph ph-download-simple" aria-hidden="true"></i> Download Vendor App
+      <article class="app-download-card vendor">
+        <div class="app-download-card-top">
+          <div class="app-download-icon" aria-hidden="true"><i class="ph ph-storefront"></i></div>
+          <span class="app-download-role">For business owners and staff</span>
+        </div>
+        <h3>Your bookings. Your business.</h3>
+        <p>Manage your BOOK.NOW shop, stay on top of customer reservations and handle daily booking activity.</p>
+        <ul class="app-download-features">
+          <li><i class="ph ph-check-circle" aria-hidden="true"></i><span>View and manage customer bookings</span></li>
+          <li><i class="ph ph-check-circle" aria-hidden="true"></i><span>Keep track of your shop's daily activity</span></li>
+          <li><i class="ph ph-check-circle" aria-hidden="true"></i><span>Use the partner tools for your business</span></li>
+        </ul>
+        <div class="app-download-meta">
+          <span><i class="ph ph-android-logo" aria-hidden="true"></i> Android</span>
+          <span><i class="ph ph-download-simple" aria-hidden="true"></i> APK download</span>
+        </div>
+        <a class="app-download-btn" href="https://pvplhsiafklaoqrpdhpd.supabase.co/storage/v1/object/public/app-downloads/BOOK.NOW%20PARTNER.apk?download=BOOK.NOW%20PARTNER.apk" aria-label="Download the official BOOK.NOW business partner app for Android">
+          <i class="ph ph-download-simple" aria-hidden="true"></i> Download business app
         </a>
       </article>
     </div>
-    <p class="app-download-note">Android may ask you to allow installation from your browser. Only install apps you trust, and follow the instructions shown by your device.</p>
+    <div class="app-download-trust">
+      <i class="ph ph-info" aria-hidden="true"></i>
+      <div>
+        <strong>About these downloads</strong>
+        <p class="app-download-note">These are Android APK files provided directly by BOOK.NOW, not Google Play Store listings. Your phone may ask you to allow installation from the browser you used to download the file. Only continue if you intended to download BOOK.NOW. You can review our <a href="privacy.html">Privacy Policy</a> and <a href="terms.html">Terms of Use</a> before installing.</p>
+      </div>
+    </div>
   </section>
 
   <footer class="legal-foot"><a href="manage.html">Manage my booking</a> &middot; <a href="privacy.html">Privacy Policy</a> &middot; <a href="terms.html">Terms of Use</a></footer>
