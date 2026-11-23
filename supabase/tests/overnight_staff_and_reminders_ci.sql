@@ -340,7 +340,7 @@ BEGIN
       id, store_id, service_id, booking_date, booking_time, appointment_at,
       duration_minutes, staff_id, staff_assignment_mode, status
     ) VALUES (
-      '40000000-0000-0000-0000-000000000003', v_store, v_service,
+      '40000000-0000-0000-0000-000000000007', v_store, v_service,
       v_business_date, time '00:30',
       public.compute_appointment_at(v_store, v_business_date, time '00:30'),
       30, v_staff, 'SPECIFIC', 'pending'
@@ -358,7 +358,7 @@ BEGIN
     id, store_id, service_id, booking_date, booking_time, appointment_at,
     duration_minutes, staff_id, staff_assignment_mode, status
   ) VALUES (
-    '40000000-0000-0000-0000-000000000004', v_store, v_service,
+    '40000000-0000-0000-0000-000000000008', v_store, v_service,
     v_business_date, time '01:00',
     public.compute_appointment_at(v_store, v_business_date, time '01:00'),
     30, v_staff, 'SPECIFIC', 'pending'
