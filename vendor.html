@@ -67,6 +67,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 .status-completed{background:var(--success-bg);color:var(--success)}
 .status-cancelled,.status-failed{background:#fee2e2;color:#991b1b}
 .order-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)}
+.booking-search{margin-bottom:16px}.booking-search input{width:100%;padding:13px 14px;border:1px solid var(--border);border-radius:12px;background:#fff;font-size:14px}.booking-search-hint{font-size:11px;color:var(--muted);margin:6px 2px 0}.booking-search-results{margin-bottom:20px}
 .btn-action{padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;border:0}
 .btn-confirm{background:#0284c7;color:#fff}
 .btn-complete{background:var(--success);color:#fff}
@@ -239,10 +240,14 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     </section>
 
     <section id="orders-tab">
+      <div class="booking-search"><label for="booking-search-input" style="display:block;font-size:13px;font-weight:700;margin-bottom:7px">Find a customer or booking</label><input id="booking-search-input" type="search" autocomplete="off" placeholder="Search name, phone number or booking reference"><div class="booking-search-hint">Search all bookings for this shop, including previous bookings.</div></div>
+      <div id="booking-search-results" class="card-list booking-search-results" style="display:none" aria-live="polite"></div>
+      <div id="booking-day-lists">
       <div class="section-head"><h3>Today's Appointments</h3></div>
       <div id="orders-list" class="card-list"><div class="empty-box">No appointments today.</div></div>
       <div class="section-head" style="margin-top:24px"><h3>Upcoming Appointments</h3></div>
       <div id="upcoming-list" class="card-list"><div class="empty-box">No upcoming appointments.</div></div>
+      </div>
     </section>
 
     
@@ -555,7 +560,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     const lastWeek = active.filter(b => between(b, lastWeekStart, addDays(weekStart, -1))).length;
     const ahead = active.filter(b => between(b, today, addDays(today, 6))).length;
 
-    const done = all.filter(b => status(b) === "completed");
+    const done = all.filter(b => status(b) === "completed" && String(b.payment_status || "").toUpperCase() === "PAID");
     const monthKey = today.slice(0, 7), lastMonthKey = addDays(monthKey + "-01", -1).slice(0, 7);
     const earned = key => done.filter(b => dayOf(b).slice(0, 7) === key).reduce((s, b) => s + bookingPrice(b), 0);
     const total = done.reduce((s, b) => s + bookingPrice(b), 0);
@@ -1200,6 +1205,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     $("close-qr-scanner-btn").addEventListener("click", closeQrScanner);
 
     $("tab-orders-btn").addEventListener("click", () => showTab("orders"));
+    $("booking-search-input").addEventListener("input", event => renderBookingSearch(event.target.value));
     $("tab-calendar-btn").addEventListener("click", async () => { showTab("calendar"); await loadOrders(); renderCalendar(); });
     $("tab-staff-btn").addEventListener("click", async () => { showTab("staff"); await loadStaff(); });
     $("staff-add-btn").addEventListener("click", addStaff);
@@ -2184,10 +2190,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
       all.forEach(b => {
         const st = String(b.status || "pending").toUpperCase();
-        if (st === "COMPLETED") {
+        if (st === "COMPLETED" && String(b.payment_status || "").toUpperCase() === "PAID") {
           revenue += bookingPrice(b);
           if (String(b.payment_method || "EFT").toUpperCase() === "EFT") eft += bookingPrice(b);
-        } else if ((st === "PENDING" || st === "CONFIRMED") && apptDay(b) === today) {
+        }
+        if ((st === "PENDING" || st === "CONFIRMED") && apptDay(b) === today) {
           activeToday++;
         }
       });
@@ -2237,12 +2244,15 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         if (st !== "COMPLETED" && st !== "CANCELLED") {
           const actions = h("div", { class: "order-actions" });
           if (st === "PENDING") actions.appendChild(h("button", { class: "btn-action btn-confirm", text: "Confirm Booking", onclick: () => updateBookingStatus(b.id, "confirmed", false) }));
-          actions.appendChild(h("button", { class: "btn-action btn-complete", text: "Mark Completed & Paid", onclick: () => updateBookingStatus(b.id, "completed", true) }));
+          if (st !== "COMPLETED") actions.appendChild(h("button", { class: "btn-action btn-complete", text: "Mark Completed", onclick: () => updateBookingStatus(b.id, "completed") }));
+          if (String(b.payment_status || "UNPAID").toUpperCase() !== "PAID") actions.appendChild(h("button", { class: "btn-action btn-confirm", text: "Mark Paid", onclick: () => markBookingPaid(b.id) }));
           if (b.customer_phone) actions.appendChild(h("button", { class: "btn-action btn-edit", text: "Remind on WhatsApp", onclick: () => whatsappCustomer(b) }));
           card.appendChild(actions);
-        } else if (st === "COMPLETED" && b.customer_phone && b.payment_ref) {
-          card.appendChild(h("div", { class: "order-actions" },
-            h("button", { class: "btn-action btn-edit", text: "Ask for a review on WhatsApp", onclick: () => whatsappReview(b) })));
+        } else if (st === "COMPLETED") {
+          const actions = h("div", { class: "order-actions" });
+          if (String(b.payment_status || "UNPAID").toUpperCase() !== "PAID") actions.appendChild(h("button", { class: "btn-action btn-confirm", text: "Mark Paid", onclick: () => markBookingPaid(b.id) }));
+          if (b.customer_phone && b.payment_ref) actions.appendChild(h("button", { class: "btn-action btn-edit", text: "Ask for a review on WhatsApp", onclick: () => whatsappReview(b) }));
+          if (actions.childElementCount) card.appendChild(actions);
         }
         return card;
       };
@@ -2251,6 +2261,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       else $("orders-list").replaceChildren(...todays.map(buildCard));
       if (!upcoming.length) setEmpty("upcoming-list", "No upcoming appointments.");
       else $("upcoming-list").replaceChildren(...upcoming.map(buildCard));
+      renderBookingSearch($("booking-search-input")?.value || "");
 
       renderCalendar();
       $("stat-revenue").textContent = money(revenue);
@@ -2274,14 +2285,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     }
   }
 
-  // Only marks PAID when the booking is completed, never when it is just confirmed
-  async function updateBookingStatus(bookingId, newStatus, markPaid) {
-    if (!activeVendor) return;
+  async function updateBookingStatus(bookingId, newStatus) {
+    if (!activeVendor || !["confirmed", "completed"].includes(String(newStatus).toLowerCase())) return;
     try {
-      const update = { status: newStatus };
-      if (markPaid) update.payment_status = "PAID";
       ownChanges.add(bookingId);
-      const { error } = await db.from("bookings").update(update).eq("id", bookingId).eq("store_id", activeVendor.id);
+      const { error } = await db.from("bookings").update({ status: newStatus }).eq("id", bookingId).eq("store_id", activeVendor.id);
       if (error) throw error;
       if ($("qr-scanner-modal").style.display === "flex") closeQrScanner();
       await loadOrders();
@@ -2289,6 +2297,62 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       ownChanges.delete(bookingId);
       alert("Could not update booking: " + err.message);
     }
+  }
+
+  async function markBookingPaid(bookingId) {
+    if (!activeVendor || !confirm("Confirm that this shop has received the customer's payment?")) return;
+    try {
+      ownChanges.add(bookingId);
+      const { error } = await db.from("bookings").update({ payment_status: "PAID" }).eq("id", bookingId).eq("store_id", activeVendor.id);
+      if (error) throw error;
+      await loadOrders();
+    } catch (err) {
+      ownChanges.delete(bookingId);
+      alert("Could not mark booking as paid: " + err.message);
+    }
+  }
+
+  function renderBookingSearch(rawQuery) {
+    const results = $("booking-search-results");
+    const dayLists = $("booking-day-lists");
+    if (!results || !dayLists) return;
+    const query = String(rawQuery || "").trim().toLocaleLowerCase();
+    results.style.display = query ? "flex" : "none";
+    dayLists.style.display = query ? "none" : "block";
+    if (!query) { results.replaceChildren(); return; }
+    const digits = query.replace(/\D/g, "");
+    const matches = (lastBookings || []).filter(b => {
+      const name = String(b.customer_name || "").toLocaleLowerCase();
+      const phone = String(b.customer_phone || "").toLocaleLowerCase();
+      const reference = String(b.payment_ref || "").toLocaleLowerCase();
+      return name.includes(query) || phone.includes(query) || reference.includes(query) || (digits.length >= 3 && phone.replace(/\D/g, "").includes(digits));
+    }).sort((a,b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+    if (!matches.length) { setEmpty("booking-search-results", "No bookings match that name, phone number or reference."); return; }
+    results.replaceChildren(...matches.map(b => {
+      const status = String(b.status || "pending").toUpperCase();
+      const payment = String(b.payment_status || "UNPAID").toUpperCase();
+      const card = h("div", { class: "order-card" },
+        h("div", { class: "order-top" },
+          h("div", {},
+            h("div", { class: "order-title", text: b.customer_name || "Guest" }),
+            h("div", { class: "order-time", text: b.customer_phone || "No phone number" }),
+            h("div", { class: "order-time", text: b.booking_date ? fmtAppt(b) : "Date not set" }),
+            h("span", { class: "ref-pill", text: "REF: " + (b.payment_ref || "N/A") }),
+            h("span", { class: "order-status status-" + status.toLowerCase(), text: status }),
+            h("span", { class: "order-status " + (payment === "PAID" ? "status-completed" : "status-pending"), text: "PAYMENT: " + payment })
+          ),
+          h("div", { class: "order-price", text: money(bookingPrice(b)) })
+        ));
+      if (status !== "CANCELLED") {
+        const actions = h("div", { class: "order-actions" });
+        if (status === "PENDING") actions.appendChild(h("button", { class: "btn-action btn-confirm", text: "Confirm Booking", onclick: () => updateBookingStatus(b.id, "confirmed") }));
+        if (status !== "COMPLETED") actions.appendChild(h("button", { class: "btn-action btn-complete", text: "Mark Completed", onclick: () => updateBookingStatus(b.id, "completed") }));
+        if (payment !== "PAID") actions.appendChild(h("button", { class: "btn-action btn-confirm", text: "Mark Paid", onclick: () => markBookingPaid(b.id) }));
+        if (b.customer_phone) actions.appendChild(h("button", { class: "btn-action btn-edit", text: "Remind on WhatsApp", onclick: () => whatsappCustomer(b) }));
+        if (actions.childElementCount) card.appendChild(actions);
+      }
+      return card;
+    }));
   }
 
   async function submitSubscriptionProof() {
