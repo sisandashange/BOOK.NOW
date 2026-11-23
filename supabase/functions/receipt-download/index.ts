@@ -104,6 +104,32 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "Invalid PNG image" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
     }
 
+    // A receipt image is only issued for a real booking when both its reference
+    // and the customer's booking phone match. This prevents generic file hosting.
+    const paymentRef = typeof body?.paymentRef === "string" ? body.paymentRef.trim() : "";
+    const phone = typeof body?.phone === "string" ? body.phone.trim() : "";
+    if (paymentRef.length < 4 || paymentRef.length > 32 || phone.replace(/\D/g, "").length < 9) {
+      return new Response(JSON.stringify({ error: "A valid booking reference and phone number are required" }), {
+        status: 400, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" },
+      });
+    }
+    const verified = await fetch(SUPABASE_URL + "/rest/v1/rpc/get_booking_receipt_v2", {
+      method: "POST",
+      headers: {
+        "apikey": SERVICE_ROLE_KEY,
+        "Authorization": "Bearer " + SERVICE_ROLE_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ p_ref: paymentRef, p_phone: phone }),
+    });
+    if (!verified.ok) throw new Error("Receipt ownership verification failed");
+    const receiptRows = await verified.json();
+    if (!Array.isArray(receiptRows) || receiptRows.length === 0) {
+      return new Response(JSON.stringify({ error: "The booking reference and phone number did not match" }), {
+        status: 403, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" },
+      });
+    }
+
     // Opportunistically remove expired receipt files. Signed links last only 10 minutes.
     try {
       const listed = await storage(`object/list/${BUCKET}`, {
