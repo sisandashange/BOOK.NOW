@@ -66,6 +66,7 @@ assert.ok(!/let\s+lastRefreshAt\s*=/.test(index));
 assert.ok(!/Date\.now\(\)\s*-\s*lastRefreshAt/.test(index));
 
 const store = read("store.html");
+const manage = read("manage.html");
 assert.ok(store.includes("const isShisanyamaOrder ="));
 assert.ok(store.includes("Number(storeData.table_count)"));
 assert.ok(store.includes("p_party_size: guests"));
@@ -79,7 +80,6 @@ const vendor = read("vendor.html");
 assert.ok(vendor.includes('db.from("store_bank_details")'));
 assert.ok(!vendor.includes('db.from("stores").update({\n          bank_name'));
 
-const manage = read("manage.html");
 assert.ok(manage.includes('e.key === "ArrowRight"'));
 assert.ok(manage.includes("requestedInstant.getTime()"));
 
