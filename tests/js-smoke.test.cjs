@@ -73,6 +73,8 @@ assert.ok(store.includes("p_party_size: guests"));
 const vendor = read("vendor.html");
 assert.ok(vendor.includes('db.from("store_bank_details")'));
 assert.ok(!vendor.includes('db.from("stores").update({\n          bank_name'));
+assert.ok(vendor.includes("Reserved for you · Accept to confirm the assignment"));
+assert.ok(vendor.includes("available.length + reservedForMe.length"));
 
 const manage = read("manage.html");
 assert.ok(manage.includes('e.key === "ArrowRight"'));
