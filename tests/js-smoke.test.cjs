@@ -66,9 +66,15 @@ assert.ok(!/let\s+lastRefreshAt\s*=/.test(index));
 assert.ok(!/Date\.now\(\)\s*-\s*lastRefreshAt/.test(index));
 
 const store = read("store.html");
+const manage = read("manage.html");
 assert.ok(store.includes("const isShisanyamaOrder ="));
 assert.ok(store.includes("Number(storeData.table_count)"));
 assert.ok(store.includes("p_party_size: guests"));
+assert.ok(store.includes("details.reference, details.phone"), "Store receipt upload must include booking proof");
+assert.ok(manage.includes("bk.payment_ref, lookup.phone"), "Manage receipt upload must include booking proof");
+const receiptFunction = read("supabase/functions/receipt-download/index.ts");
+assert.ok(receiptFunction.includes("/rest/v1/rpc/get_booking_receipt_v2"));
+assert.ok(receiptFunction.includes("receiptRows.length === 0"));
 
 const vendor = read("vendor.html");
 assert.ok(vendor.includes('db.from("store_bank_details")'));
@@ -76,7 +82,6 @@ assert.ok(!vendor.includes('db.from("stores").update({\n          bank_name'));
 assert.ok(vendor.includes("Reserved for you · Accept to confirm the assignment"));
 assert.ok(vendor.includes("available.length + reservedForMe.length"));
 
-const manage = read("manage.html");
 assert.ok(manage.includes('e.key === "ArrowRight"'));
 assert.ok(manage.includes("requestedInstant.getTime()"));
 
