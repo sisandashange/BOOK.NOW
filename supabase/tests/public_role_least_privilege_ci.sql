@@ -12,9 +12,9 @@ CREATE FUNCTION public.get_booking_receipt_v2(p_ref text, p_phone text)
 RETURNS TABLE(id uuid, queue_number integer, booked_price numeric, created_at timestamptz,
               payment_ref text, booking_date date, booking_time text, party_size integer,
               appointment_at timestamptz)
-LANGUAGE sql AS $ SELECT NULL::uuid,NULL::integer,NULL::numeric,NULL::timestamptz,
+LANGUAGE sql AS $function$ SELECT NULL::uuid,NULL::integer,NULL::numeric,NULL::timestamptz,
                          NULL::text,NULL::date,NULL::text,NULL::integer,NULL::timestamptz
-                  WHERE false $;
+                  WHERE false $function$;
 REVOKE ALL ON FUNCTION public.get_booking_receipt_v2(text,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_booking_receipt_v2(text,text) TO anon, authenticated;
 
