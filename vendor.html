@@ -2247,11 +2247,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
           if (String(b.payment_status || "UNPAID").toUpperCase() !== "PAID") actions.appendChild(h("button", { class: "btn-action btn-confirm", text: "Mark Paid", onclick: () => markBookingPaid(b.id) }));
           if (b.customer_phone) actions.appendChild(h("button", { class: "btn-action btn-edit", text: "Remind on WhatsApp", onclick: () => whatsappCustomer(b) }));
           card.appendChild(actions);
-        } else if (st === "COMPLETED" && b.customer_phone && b.payment_ref) {
+        } else if (st === "COMPLETED") {
           const actions = h("div", { class: "order-actions" });
           if (String(b.payment_status || "UNPAID").toUpperCase() !== "PAID") actions.appendChild(h("button", { class: "btn-action btn-confirm", text: "Mark Paid", onclick: () => markBookingPaid(b.id) }));
-          actions.appendChild(h("button", { class: "btn-action btn-edit", text: "Ask for a review on WhatsApp", onclick: () => whatsappReview(b) }));
-          card.appendChild(actions);
+          if (b.customer_phone && b.payment_ref) actions.appendChild(h("button", { class: "btn-action btn-edit", text: "Ask for a review on WhatsApp", onclick: () => whatsappReview(b) }));
+          if (actions.childElementCount) card.appendChild(actions);
         }
         return card;
       };
