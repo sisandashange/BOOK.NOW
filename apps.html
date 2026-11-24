@@ -141,7 +141,8 @@
     const ua = navigator.userAgent || "";
     const inStandalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
     const inAndroidWebView = /;\s*wv\)/i.test(ua);
-    if (inStandalone || inAndroidWebView) {
+    const inAppContext = inStandalone || inAndroidWebView || new URLSearchParams(window.location.search).get("inapp") === "1";
+    if (inAppContext) {
       window.location.replace("index.html");
       return;
     }
