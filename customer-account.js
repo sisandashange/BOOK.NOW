@@ -167,9 +167,7 @@
       catch(error){$("reset-message").textContent=error.message||"Password could not be updated.";}
       finally{setBusy(false);}
     });
-    db.auth.onAuthStateChange(event=>{
-      if(event==="PASSWORD_RECOVERY" && recoveryForm){recoveryForm.hidden=false;$("customer-auth-card").hidden=false;$("customer-account-content").hidden=true;$("reset-new-password").focus();}
-    });
+
     $("auth-forgot").addEventListener("click",async()=>{
       const email=$("auth-email").value.trim().toLowerCase();
       if(!email){setMessage("Enter your email address first.");return;}
@@ -218,6 +216,13 @@
     if(session){await showSignedIn(session);}else showSignedOut();
     db.auth.onAuthStateChange((event,session)=>{
       currentSession=session;
+      if(event==="PASSWORD_RECOVERY" && recoveryForm){
+        recoveryForm.hidden=false;
+        $("customer-auth-card").hidden=false;
+        $("customer-account-content").hidden=true;
+        $("reset-new-password").focus();
+        return;
+      }
       if(!session){showSignedOut();return;}
       // Avoid awaiting Supabase calls inside the auth callback; render on the next task.
       Promise.resolve().then(()=>showSignedIn(session)).catch(error=>setMessage(error.message||"Account could not be loaded.","error"));
