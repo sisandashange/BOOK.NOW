@@ -54,7 +54,7 @@ GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT INSERT, UPDATE, SELECT ON public.bookings TO authenticated;
 
 -- Apply the exact customer account migration under test.
-\i supabase/migrations/20261124090000_optional_customer_accounts.sql
+\i supabase/migrations/20261124003016_optional_customer_accounts.sql
 
 INSERT INTO auth.users(id, raw_user_meta_data) VALUES
  ('00000000-0000-4000-8000-000000000001', '{"full_name":"Customer One"}'),
