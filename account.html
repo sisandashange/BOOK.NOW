@@ -27,6 +27,11 @@
 <div class="account-actions"><button class="account-secondary" id="auth-forgot" type="button">Forgot password?</button></div>
 <p class="account-message" id="account-auth-message" role="status" aria-live="polite"></p>
 </form>
+<form id="customer-password-reset-form" hidden>
+<div class="account-field"><label for="reset-new-password">New password</label><input id="reset-new-password" type="password" minlength="8" maxlength="128" autocomplete="new-password" required placeholder="At least 8 characters"></div>
+<button class="account-primary" data-auth-submit data-idle-text="Update password" data-busy-text="Updating…" type="submit">Update password</button>
+<p class="account-message" id="reset-message" role="status"></p>
+</form>
 </section>
 <div id="customer-account-content" hidden>
 <section class="account-card" id="profile">
