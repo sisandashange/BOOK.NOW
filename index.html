@@ -457,7 +457,7 @@
         s.opening_time, s.closing_time, s.manual_status,
         s.holiday_start_date, s.holiday_end_date, openCache.get(s.id),
         s.rating && s.rating.avg_rating, s.rating && s.rating.review_count,
-        (s.service_items || []).map(i => [i.id, i.title])
+        favoriteStoreIds.has(s.id), (s.service_items || []).map(i => [i.id, i.title])
       ]));
       if (signature === lastRenderedSignature) {
         updateLoadMore(stores.length);
@@ -466,9 +466,13 @@
       lastRenderedSignature = signature;
 
       if (stores.length === 0) {
-        showMessage(allStores.length === 0
-          ? "No shops are listed yet. Check back soon."
-          : "No shops match your search. Try a different word or category.");
+        showMessage(savedOnly && favoriteStoreIds.size === 0
+          ? "You haven't saved any shops yet. Tap the heart on a shop to add it here."
+          : savedOnly
+            ? "Your saved shops are currently unavailable or no longer listed."
+            : allStores.length === 0
+              ? "No shops are listed yet. Check back soon."
+              : "No shops match your search. Try a different word or category.");
         updateLoadMore(stores.length);
         return;
       }
@@ -543,7 +547,19 @@
         body.className = "store-body";
         body.append(top, visitBtn);
 
-        card.append(avatarContainer, body);
+        const favorite = document.createElement("button");
+        favorite.type = "button";
+        favorite.className = "store-favorite";
+        favorite.setAttribute("aria-pressed", String(favoriteStoreIds.has(s.id)));
+        favorite.setAttribute("aria-label", favoriteStoreIds.has(s.id) ? "Remove " + (s.store_name || "shop") + " from saved shops" : "Save " + (s.store_name || "shop"));
+        favorite.title = favoriteStoreIds.has(s.id) ? "Remove from saved shops" : "Save shop";
+        const heart = document.createElement("i");
+        heart.className = favoriteStoreIds.has(s.id) ? "ph-fill ph-heart" : "ph ph-heart";
+        heart.setAttribute("aria-hidden", "true");
+        favorite.appendChild(heart);
+        favorite.addEventListener("click", () => toggleFavorite(s.id, favorite));
+
+        card.append(favorite, avatarContainer, body);
         return card;
       });
 
@@ -579,6 +595,7 @@
       const openCache = new Map(allStores.map(s => [s.id, isOpenNow(s, clock)]));
 
       const filtered = allStores.filter(s => {
+        if (savedOnly && !favoriteStoreIds.has(s.id)) return false;
         if (activeCat !== "ALL" && s.cat !== activeCat) return false;
         if (activeArea && (s.area || "").trim() !== activeArea) return false;
         if (onlyOpen && openCache.get(s.id) !== true) return false;
@@ -637,7 +654,20 @@
         console.error("Boot error:", e);
       }
       bindEvents();
+      document.body.classList.toggle("saved-shops-view", savedOnly);
       loadMarketplace();
+      db.auth.getSession().then(({ data }) => refreshFavoriteState(data && data.session ? data.session : null))
+        .catch(error => { console.warn("Could not initialize saved shops:", error); favoriteStoreIds = new Set(readGuestFavorites()); favoritesReady = true; applyFilters(); });
+      window.addEventListener("booknow:customer-ready", event => {
+        const session = event.detail && event.detail.session;
+        refreshFavoriteState(session || null);
+      });
+      window.addEventListener("hashchange", () => {
+        savedOnly = location.hash === "#saved-shops";
+        document.body.classList.toggle("saved-shops-view", savedOnly);
+        lastRenderedSignature = "";
+        if (savedOnly) loadSavedStores(); else applyFilters();
+      });
       // Refresh less aggressively; refresh immediately when a visitor returns.
       setInterval(() => {
         if (!document.hidden) loadMarketplace(true, false);
