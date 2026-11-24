@@ -91,10 +91,15 @@ BEGIN
     RAISE EXCEPTION 'A second account was able to claim another account booking';
   END IF;
 
+  -- Create a second customer's booking and prove the first customer cannot see it.
+  PERFORM set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000002',true);
+  INSERT INTO public.bookings(id, customer_name, customer_phone, payment_ref)
+  VALUES ('10000000-0000-4000-8000-000000000003','Customer Two','0821234567','BN-OTHER2');
+
   -- The history RPC must return only the authenticated user's bookings.
   PERFORM set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000001',true);
   SELECT count(*) INTO v_count FROM public.list_my_customer_bookings();
-  IF v_count <> 1 THEN RAISE EXCEPTION 'Expected one owned booking, got %', v_count; END IF;
+  IF v_count <> 1 THEN RAISE EXCEPTION 'Expected one owned booking and no other account bookings, got %', v_count; END IF;
 
   IF has_function_privilege('anon','public.claim_customer_booking(text,text)','EXECUTE') THEN
     RAISE EXCEPTION 'Anonymous role can execute the booking claim RPC';
