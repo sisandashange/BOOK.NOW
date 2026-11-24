@@ -196,6 +196,9 @@
         item.appendChild(note); list.appendChild(item);
       });
     }
+    window.addEventListener("focus", () => {
+      if (currentSession && isAccountPage) renderBookings().catch(error => console.warn("Could not refresh customer receipts:", error));
+    });
     async function showSignedIn(session) {
       currentSession=session;
       $("customer-auth-card").hidden=true; $("customer-account-content").hidden=false;
