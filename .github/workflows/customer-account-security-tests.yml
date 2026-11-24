@@ -8,6 +8,13 @@ on:
       - "supabase/migrations/20261124100000_customer_booking_receipts.sql"
       - "supabase/tests/customer_account_security_ci.sql"
       - ".github/workflows/customer-account-security-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/20261124003016_optional_customer_accounts.sql"
+      - "supabase/migrations/20261124100000_customer_booking_receipts.sql"
+      - "supabase/tests/customer_account_security_ci.sql"
+      - ".github/workflows/customer-account-security-tests.yml"
 
 permissions:
   contents: read
@@ -35,16 +42,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes postgresql-client
-      - name: Test customer account migration, RLS and ownership
-  push:
-    branches: [main]
-    paths:
-      - "supabase/migrations/20261124003016_optional_customer_accounts.sql"
-      - "supabase/migrations/20261124100000_customer_booking_receipts.sql"
-      - "supabase/tests/customer_account_security_ci.sql"
-      - ".github/workflows/customer-account-security-tests.yml"
-      - uses: actions/checkout@v4
-      - name: Install PostgreSQL client
       - name: Test customer account migration, RLS and ownership
         env:
           PGPASSWORD: postgres
