@@ -9,7 +9,10 @@ const migration = read("supabase/migrations/20261124003016_optional_customer_acc
 const store = read("store.html");
 const index = read("index.html");
 
-assert.ok(nav.includes("touchstart") && nav.includes("touchend"), "Drawer must support edge swipe gestures");
+assert.ok(nav.includes("touchstart") && nav.includes("touchend") && nav.includes("dx > 0") && !nav.includes("touchStart.x <= 26"), "Drawer must open with a right swipe starting anywhere on the page");
+assert.ok(!nav.includes("customer-menu-trigger") && !nav.includes("ph-list"), "Drawer must not depend on a visible hamburger button");
+assert.ok(nav.includes('href="apps.html"') && nav.includes('href="vendor.html"'), "Get the app and Partner Portal must be available inside the drawer");
+assert.ok(!index.includes("get-app-link") && !index.includes("partner-link"), "Get the app and Partner Portal must not appear in the homepage header");
 assert.ok(nav.includes("aria-expanded") && nav.includes("Escape"), "Drawer must expose accessible state and keyboard close");
 assert.ok(nav.includes("list_my_customer_bookings"), "Account page must load private booking history through RPC");
 assert.ok(nav.includes("claim_customer_booking"), "Account page must support linking earlier guest bookings");
