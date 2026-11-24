@@ -330,6 +330,10 @@ footer a{color:var(--muted);font-weight:600}
     return true;
   }
 
+  window.addEventListener("focus", () => {
+    if (bk && lookup.ref && lookup.phone) findBooking(true).catch(error => console.warn("Could not refresh guest receipt:", error));
+  });
+
   async function onLookup(e) {
     e.preventDefault();
     const ref = $("ref").value.trim().toUpperCase();
