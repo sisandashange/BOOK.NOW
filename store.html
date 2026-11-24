@@ -1440,17 +1440,20 @@
         $("done-btn").addEventListener("click", () => location.reload());
         if (bookingId) {
           let lastReceiptRefreshAt = 0;
+          let receiptClosed = false;
           const refreshReceiptState = async () => {
-            if (document.visibilityState === "hidden" || Date.now() - lastReceiptRefreshAt < 8000) return;
+            if (receiptClosed || document.visibilityState === "hidden" || Date.now() - lastReceiptRefreshAt < 8000) return;
             lastReceiptRefreshAt = Date.now();
             try {
               const { data, error } = await db.rpc("find_my_booking", { p_ref: paymentRef, p_phone: phone });
               if (error) throw error;
               const latest = Array.isArray(data) ? data[0] : data;
               if (latest && ["completed", "cancelled"].includes(String(latest.status || "").toLowerCase())) {
+                receiptClosed = true;
                 const receiptQr = $("booking-receipt-qr");
                 if (receiptQr) receiptQr.textContent = "This receipt has been closed. Your booking remains in My bookings or Manage a guest booking.";
                 window.removeEventListener("focus", refreshReceiptState);
+                document.removeEventListener("visibilitychange", refreshReceiptState);
               }
             } catch (refreshError) {
               console.warn("Could not refresh receipt status:", refreshError);
