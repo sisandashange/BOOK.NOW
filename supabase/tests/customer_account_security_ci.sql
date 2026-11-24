@@ -26,11 +26,11 @@ LANGUAGE sql IMMUTABLE
 AS $$ SELECT public.phone_digits(p_a) = public.phone_digits(p_b) $$;
 
 CREATE FUNCTION private.booking_reference_throttle(p_ref text) RETURNS void
-LANGUAGE sql AS $$ SELECT $$;
+LANGUAGE plpgsql AS $ BEGIN RETURN; END $;
 CREATE FUNCTION private.booking_reference_record_failure(p_ref text) RETURNS void
-LANGUAGE sql AS $$ SELECT $$;
+LANGUAGE plpgsql AS $ BEGIN RETURN; END $;
 CREATE FUNCTION private.booking_reference_clear(p_ref text) RETURNS void
-LANGUAGE sql AS $$ SELECT $$;
+LANGUAGE plpgsql AS $ BEGIN RETURN; END $;
 
 CREATE TABLE public.bookings (
   id uuid PRIMARY KEY,
@@ -51,7 +51,7 @@ CREATE TABLE public.bookings (
 CREATE TABLE public.stores (id uuid PRIMARY KEY, store_name text);
 CREATE TABLE public.service_items (id uuid PRIMARY KEY, title text);
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
-GRANT INSERT ON public.bookings TO authenticated;
+GRANT INSERT, UPDATE ON public.bookings TO authenticated;
 
 -- Apply the exact customer account migration under test.
 \i supabase/migrations/20261124090000_optional_customer_accounts.sql
@@ -96,21 +96,18 @@ BEGIN
   SELECT count(*) INTO v_count FROM public.list_my_customer_bookings();
   IF v_count <> 1 THEN RAISE EXCEPTION 'Expected one owned booking, got %', v_count; END IF;
 
-  -- Client inserts must derive ownership from auth.uid(), not a supplied value.
+  -- Client inserts derive ownership from auth.uid(), not a supplied value.
+  PERFORM set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000001',true);
+  SET LOCAL ROLE authenticated;
   INSERT INTO public.bookings(id, customer_name, customer_phone, payment_ref, customer_user_id)
   VALUES ('10000000-0000-4000-8000-000000000002','Signed In','0712345678','BN-AUTO02',
           '00000000-0000-4000-8000-000000000002');
-  SELECT customer_user_id INTO v_owner FROM public.bookings WHERE id='10000000-0000-4000-8000-000000000002';
-  IF v_owner <> '00000000-0000-4000-8000-000000000001' THEN
-    RAISE EXCEPTION 'Insert trigger trusted a client-supplied customer owner';
-  END IF;
-
-  -- Direct API ownership changes must be ignored.
   UPDATE public.bookings SET customer_user_id='00000000-0000-4000-8000-000000000002'
   WHERE id='10000000-0000-4000-8000-000000000002';
+  RESET ROLE;
   SELECT customer_user_id INTO v_owner FROM public.bookings WHERE id='10000000-0000-4000-8000-000000000002';
   IF v_owner <> '00000000-0000-4000-8000-000000000001' THEN
-    RAISE EXCEPTION 'Client update changed booking ownership';
+    RAISE EXCEPTION 'Client-supplied insert or update changed booking ownership';
   END IF;
 
   IF has_function_privilege('anon','public.claim_customer_booking(text,text)','EXECUTE') THEN
