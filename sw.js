@@ -1,10 +1,13 @@
 // BOOK.NOW service worker: network-first for known app files, with an offline shell.
-const CACHE = "booknow-shell-v19";
+const CACHE = "booknow-shell-v20";
 const CORE_FILES = [
   "./",
   "./index.html",
   "./store.html",
   "./manage.html",
+  "./account.html",
+  "./customer-account.js",
+  "./customer-account.css",
   "./vendor.html",
   "./partners.html",
   "./privacy.html",
