@@ -18,11 +18,11 @@ function checkInlineScripts(file) {
   return scripts.length;
 }
 
-const htmlFiles = ["index.html", "store.html", "manage.html", "vendor.html", "partners.html"];
+const htmlFiles = ["index.html", "store.html", "manage.html", "vendor.html", "partners.html", "account.html"];
 let inlineCount = 0;
 for (const file of htmlFiles) inlineCount += checkInlineScripts(file);
 
-for (const file of ["booking-utils.js", "qr.js", "i18n.js", "sw.js"]) {
+for (const file of ["booking-utils.js", "qr.js", "i18n.js", "sw.js", "customer-account.js"]) {
   new vm.Script(read(file), { filename: file });
 }
 
@@ -71,8 +71,7 @@ assert.ok(apps.includes("not Google Play Store listings"), "Direct APK distribut
 assert.ok(apps.includes("BOOK.NOW.apk?download=BOOK.NOW.apk"), "Customer APK download must remain available");
 assert.ok(apps.includes("BOOK.NOW%20PARTNER.apk?download=BOOK.NOW%20PARTNER.apk"), "Business APK download must remain available");
 assert.ok(apps.includes("booknow_app_download_started_at"), "Starting an APK download must suppress later app prompts");
-assert.ok(apps.includes("window.location.replace(\"index.html\")"), "Apps download page must redirect away inside the installed app");
-assert.ok(apps.includes('new URLSearchParams(window.location.search).get("inapp") === "1"'), "Apps page must stay hidden when the wrapper marks its in-app context");
+assert.ok(!apps.includes("window.location.replace(\"index.html\")"), "Apps page must remain accessible inside the installed app");
 assert.ok(index.includes("MIN_REFRESH_GAP_MS"));
 assert.match(index, /\.order\("created_at", \{ ascending: false \}\)\s*\.order\("id", \{ ascending: true \}\)/,
   "Marketplace pagination must use a stable unique tie-breaker");
@@ -86,11 +85,11 @@ const manage = read("manage.html");
 assert.ok(store.includes("const isShisanyamaOrder ="));
 assert.ok(store.includes("Number(storeData.table_count)"));
 assert.ok(store.includes("p_party_size: guests"));
-assert.ok(store.includes("details.reference, details.phone"), "Store receipt upload must include booking proof");
-assert.ok(manage.includes("bk.payment_ref, lookup.phone"), "Manage receipt upload must include booking proof");
-const receiptFunction = read("supabase/functions/receipt-download/index.ts");
-assert.ok(receiptFunction.includes("/rest/v1/rpc/get_booking_receipt_v2"));
-assert.ok(receiptFunction.includes("receiptRows.length === 0"));
+assert.ok(!store.includes("Save receipt as image") && !store.includes("receipt-download"), "Booking confirmation must not export receipt images");
+assert.ok(!manage.includes("Save receipt as image") && !manage.includes("receipt-download"), "Guest booking management must not export receipt images");
+assert.ok(read("customer-account.js").includes('db.rpc("list_my_customer_booking_receipts")'), "Customer account must load in-app booking receipts");
+assert.ok(read("account.html").includes('src="qr.js" defer'), "Customer account must load the QR renderer");
+assert.ok(vendor.includes('db.from("booking_items").select("item_title,quantity,unit_price,line_total")'), "Owner scanner must load itemised orders");
 
 const vendor = read("vendor.html");
 assert.ok(vendor.includes('db.from("store_bank_details")'));
