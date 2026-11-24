@@ -293,6 +293,7 @@
     async function refreshFavoriteState(session) {
       const token = ++favoriteSyncToken;
       favoriteSession = session && session.user && !session.user.is_anonymous ? session : null;
+      favoriteStoreIds = new Set(readGuestFavorites());
       try {
         if (favoriteSession) {
           const guestIds = readGuestFavorites();
@@ -577,15 +578,17 @@
       const wrap = $("load-more-wrap");
       const button = $("load-more");
       const status = $("marketplace-status");
-      wrap.style.display = hasMoreStores ? "" : "none";
+      wrap.style.display = hasMoreStores && !savedOnly ? "" : "none";
       button.disabled = marketplaceBusy;
       button.textContent = marketplaceBusy ? "Loading..." : "Load more shops";
-      status.textContent = allStores.length
-        ? (visibleCount
-          ? "Showing " + visibleCount + " matching shops from " + allStores.length + " loaded."
-          : "No matches among " + allStores.length + " loaded shops.")
-          + (hasMoreStores ? " More shops may match — load more to continue searching." : "")
-        : "";
+      status.textContent = savedOnly
+        ? (visibleCount ? "Showing " + visibleCount + " saved shops." : "No saved shops to show.")
+        : allStores.length
+          ? (visibleCount
+            ? "Showing " + visibleCount + " matching shops from " + allStores.length + " loaded."
+            : "No matches among " + allStores.length + " loaded shops.")
+            + (hasMoreStores ? " More shops may match — load more to continue searching." : "")
+          : "";
     }
 
     // Search and category filter work together
