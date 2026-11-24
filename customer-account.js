@@ -14,6 +14,29 @@
   let drawerOpen = false;
   let touchStart = null;
   let authBusy = false;
+  const VIEW_MODE_KEY = "booknow_view_mode_v1";
+  let desktopView = false;
+
+  function applyViewMode(mode, persist = false) {
+    desktopView = mode === "desktop";
+    document.documentElement.classList.toggle("booknow-desktop-view", desktopView);
+    let viewport = document.querySelector('meta[name="viewport"]');
+    if (!viewport) { viewport = document.createElement("meta"); viewport.name = "viewport"; document.head.appendChild(viewport); }
+    if (!viewport.dataset.booknowMobileContent) viewport.dataset.booknowMobileContent = viewport.content || "width=device-width, initial-scale=1.0";
+    viewport.content = desktopView ? "width=1280, initial-scale=1.0" : viewport.dataset.booknowMobileContent;
+    const button = document.getElementById("booknow-view-mode-toggle");
+    if (button) {
+      button.innerHTML = desktopView ? '<i class="ph ph-device-mobile"></i> Mobile view <span class="booknow-view-mode-state">On</span>' : '<i class="ph ph-monitor"></i> Desktop view <span class="booknow-view-mode-state">Off</span>';
+      button.setAttribute("aria-pressed", String(desktopView));
+    }
+    if (persist) { try { localStorage.setItem(VIEW_MODE_KEY, desktopView ? "desktop" : "mobile"); } catch (_) {} }
+  }
+
+  function initViewMode() {
+    let saved = "mobile";
+    try { saved = localStorage.getItem(VIEW_MODE_KEY) || "mobile"; } catch (_) {}
+    applyViewMode(saved === "desktop" ? "desktop" : "mobile");
+  }
 
   function mountDrawer() {
     const nav = document.querySelector(".top-nav");
@@ -22,7 +45,7 @@
     backdrop.className = "customer-drawer-backdrop";
     backdrop.id = "customer-drawer-backdrop";
     backdrop.setAttribute("aria-hidden","true");
-    backdrop.innerHTML = '<nav class="customer-drawer" id="customer-drawer" aria-label="Customer navigation" aria-modal="true" role="dialog"><div class="customer-drawer-head"><div class="customer-drawer-brand">BOOK.NOW</div><button type="button" class="customer-drawer-close" aria-label="Close menu">&times;</button></div><a class="customer-drawer-account" href="account.html"><span class="customer-drawer-avatar" id="customer-drawer-avatar">B</span><span><strong id="customer-drawer-name">Sign in or create an account</strong><small id="customer-drawer-subtitle">Your bookings, all in one place</small></span></a><section><p class="customer-drawer-label">Discover</p><div class="customer-drawer-links"><a class="customer-drawer-link" href="index.html"><i class="ph ph-house"></i>Home</a><a class="customer-drawer-link" href="index.html#store-grid"><i class="ph ph-storefront"></i>Find a shop</a><a class="customer-drawer-link" href="index.html#saved-shops"><i class="ph ph-heart"></i>Saved shops</a></div></section><section><p class="customer-drawer-label">Your account</p><div class="customer-drawer-links"><a class="customer-drawer-link" href="account.html#bookings"><i class="ph ph-calendar-check"></i>My bookings & history</a><a class="customer-drawer-link" href="account.html#profile"><i class="ph ph-user-circle"></i>My profile</a><a class="customer-drawer-link" href="manage.html"><i class="ph ph-magnifying-glass"></i>Manage a guest booking</a></div></section><section><p class="customer-drawer-label">More</p><div class="customer-drawer-links"><a class="customer-drawer-link" href="privacy.html"><i class="ph ph-shield-check"></i>Privacy policy</a><a class="customer-drawer-link" href="terms.html"><i class="ph ph-file-text"></i>Terms of use</a><a class="customer-drawer-link" href="vendor.html"><i class="ph ph-storefront"></i>Partner portal</a><a class="customer-drawer-link" href="apps.html"><i class="ph ph-download-simple"></i>Get the app</a></div></section><div class="customer-drawer-footer">BOOK.NOW · Your bookings, made easier</div></nav>';
+    backdrop.innerHTML = '<nav class="customer-drawer" id="customer-drawer" aria-label="Customer navigation" aria-modal="true" role="dialog"><div class="customer-drawer-head"><div class="customer-drawer-brand">BOOK.NOW</div><button type="button" class="customer-drawer-close" aria-label="Close menu">&times;</button></div><a class="customer-drawer-account" href="account.html"><span class="customer-drawer-avatar" id="customer-drawer-avatar">B</span><span><strong id="customer-drawer-name">Sign in or create an account</strong><small id="customer-drawer-subtitle">Your bookings, all in one place</small></span></a><section><p class="customer-drawer-label">Discover</p><div class="customer-drawer-links"><a class="customer-drawer-link" href="index.html"><i class="ph ph-house"></i>Home</a><a class="customer-drawer-link" href="index.html#store-grid"><i class="ph ph-storefront"></i>Find a shop</a><a class="customer-drawer-link" href="index.html#saved-shops"><i class="ph ph-heart"></i>Saved shops</a></div></section><section><p class="customer-drawer-label">Your account</p><div class="customer-drawer-links"><a class="customer-drawer-link" href="account.html#bookings"><i class="ph ph-calendar-check"></i>My bookings & history</a><a class="customer-drawer-link" href="account.html#profile"><i class="ph ph-user-circle"></i>My profile</a><a class="customer-drawer-link" href="manage.html"><i class="ph ph-magnifying-glass"></i>Manage a guest booking</a></div></section><section><p class="customer-drawer-label">More</p><div class="customer-drawer-links"><a class="customer-drawer-link" href="privacy.html"><i class="ph ph-shield-check"></i>Privacy policy</a><a class="customer-drawer-link" href="terms.html"><i class="ph ph-file-text"></i>Terms of use</a><a class="customer-drawer-link" href="vendor.html"><i class="ph ph-storefront"></i>Partner portal</a><a class="customer-drawer-link" href="apps.html"><i class="ph ph-download-simple"></i>Get the app</a><button class="customer-drawer-link customer-view-mode" id="booknow-view-mode-toggle" type="button" aria-pressed="false"><i class="ph ph-monitor"></i>Desktop view <span class="booknow-view-mode-state">Off</span></button></div></section><div class="customer-drawer-footer">BOOK.NOW · Your bookings, made easier</div></nav>';
     document.body.appendChild(backdrop);
     const close = () => setDrawer(false);
     backdrop.addEventListener("click", event => { if (event.target === backdrop || event.target.closest(".customer-drawer-close")) close(); });
