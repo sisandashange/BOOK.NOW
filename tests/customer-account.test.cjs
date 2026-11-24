@@ -6,6 +6,7 @@ const read = file => fs.readFileSync(path.join(__dirname, "..", file), "utf8");
 const nav = read("customer-account.js");
 const account = read("account.html");
 const migration = read("supabase/migrations/20261124003016_optional_customer_accounts.sql");
+const favoritesMigration = read("supabase/migrations/20261124010959_customer_favorite_stores.sql");
 const store = read("store.html");
 const index = read("index.html");
 
@@ -14,6 +15,14 @@ assert.ok(!nav.includes("customer-menu-trigger") && !nav.includes("ph-list"), "D
 assert.ok(nav.includes('href="apps.html"') && nav.includes('href="vendor.html"'), "Get the app and Partner Portal must be available inside the drawer");
 assert.ok(!index.includes("get-app-link") && !index.includes("partner-link"), "Get the app and Partner Portal must not appear in the homepage header");
 assert.ok(nav.includes("aria-modal") && nav.includes("Escape"), "Drawer must expose dialog semantics and keyboard close");
+assert.ok(nav.includes('href="index.html#saved-shops"') && nav.includes("Saved shops"), "Customer drawer must link to Saved shops");
+assert.ok(index.includes("store-favorite") && index.includes("ph-fill ph-heart"), "Shop cards must show a heart save control");
+assert.ok(index.includes("FAVORITES_STORAGE_KEY") && index.includes("localStorage"), "Guests must be able to save shops on their device without an account");
+assert.ok(index.includes("customer_favorite_stores") && index.includes("refreshFavoriteState"), "Signed-in customer favourites must sync with their account");
+assert.ok(index.includes("booknow:customer-ready") && index.includes("loadSavedStores"), "Favourites must load after authentication and populate the Saved shops view");
+assert.ok(favoritesMigration.includes("references auth.users(id) on delete cascade") && favoritesMigration.includes("references public.stores(id) on delete cascade"), "Saved shops must be tied to valid customers and shops");
+assert.ok(favoritesMigration.includes("enable row level security") && favoritesMigration.includes("auth.uid()") && favoritesMigration.includes("for select") && favoritesMigration.includes("for insert") && favoritesMigration.includes("for delete"), "Saved shop rows must be protected by owner-only RLS");
+assert.ok(!favoritesMigration.includes("to anon"), "Guests must not be able to access the private favourites table directly");
 assert.ok(nav.includes("list_my_customer_bookings"), "Account page must load private booking history through RPC");
 assert.ok(nav.includes("claim_customer_booking"), "Account page must support linking earlier guest bookings");
 assert.ok(nav.includes("signUp") && nav.includes("signInWithPassword"), "Optional email/password account registration and login must work");

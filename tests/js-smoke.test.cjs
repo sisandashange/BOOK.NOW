@@ -56,7 +56,10 @@ assert.ok(unicodeQrSize > asciiQrSize, "QR encoder must count UTF-8 bytes for no
 const index = read("index.html");
 assert.ok(index.indexOf('id="marketplace-status"') < index.indexOf('id="load-more-wrap"'),
   "Marketplace status must remain visible when pagination ends");
-assert.ok(index.includes('href="apps.html" class="get-app-link"'), "Homepage must link to the separate apps page");
+const customerNav = read("customer-account.js");
+assert.ok(customerNav.includes('href="apps.html"'), "The navigation drawer must link to the separate apps page");
+assert.ok(!index.includes("get-app-link") && !index.includes("partner-link"), "The homepage header must keep app and partner actions inside the drawer");
+assert.ok(index.includes("store-favorite") && index.includes("customer_favorite_stores"), "Homepage must provide saved shop favourites");
 assert.ok(index.includes('id="app-install-prompt"'), "Homepage must contain the app discovery prompt");
 assert.ok(index.includes("booknow_app_download_started_at"), "Dismissed download prompts must stay suppressed after a download starts");
 assert.ok(index.includes('new URLSearchParams(window.location.search).get("inapp") === "1"'), "The native wrapper can explicitly mark its in-app context");

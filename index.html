@@ -66,9 +66,14 @@
     .store-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
     @media (max-width: 580px) { .store-grid { grid-template-columns: 1fr; } }
 
-    .store-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; padding: 16px; text-align: center; }
+    .store-card { position: relative; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; padding: 16px; text-align: center; }
     .store-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
     .store-avatar-container { display: flex; justify-content: center; margin-bottom: 12px; }
+    .store-favorite { position:absolute; top:12px; right:12px; z-index:2; width:40px; height:40px; display:grid; place-items:center; border:1px solid var(--border); border-radius:50%; background:#fff; color:#64748b; font-size:21px; cursor:pointer; box-shadow:0 2px 8px rgba(15,23,42,.08); }
+    .store-favorite[aria-pressed="true"] { color:#e11d48; border-color:#fecdd3; background:#fff1f2; }
+    .store-favorite:disabled { opacity:.55; cursor:wait; }
+    .saved-shops-heading { display:none; margin:0 0 16px; font-size:19px; font-weight:800; }
+    body.saved-shops-view .saved-shops-heading { display:block; }
     .store-avatar { width: 75px; height: 75px; border-radius: 50%; object-fit: cover; border: 3px solid #f1f5f9; box-shadow: 0 4px 12px rgba(0,0,0,0.08); background: #e2e8f0; }
     .store-body { display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
     .store-title { font-size: 16px; font-weight: 800; margin: 0 0 4px; color: var(--primary); letter-spacing: -0.3px; }
@@ -145,6 +150,7 @@
       <button class="open-chip" id="open-now-chip" type="button" aria-pressed="false">Open now</button>
     </div>
 
+    <h2 class="saved-shops-heading" id="saved-shops-heading">Your saved shops</h2>
     <div id="store-grid" class="store-grid" role="region" aria-label="Available stores">
       <noscript><div class="empty-box">Enable JavaScript to browse and book available shops.</div></noscript>
     </div>
@@ -187,6 +193,12 @@
 
     let db = null;
     let allStores = [];
+    const FAVORITES_STORAGE_KEY = "booknow_saved_shop_ids_v1";
+    let favoriteStoreIds = new Set();
+    let favoriteSession = null;
+    let favoriteSyncToken = 0;
+    let favoritesReady = false;
+    let savedOnly = location.hash === "#saved-shops";
     let activeCat = "ALL";
     let activeArea = "", sortBy = "new", onlyOpen = false;
     let booted = false;
@@ -266,6 +278,98 @@
       return now.minuteNow >= opening && now.minuteNow < closing;
     }
 
+    function readGuestFavorites() {
+      try {
+        const value = JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) || "[]");
+        return Array.isArray(value) ? [...new Set(value.filter(id => typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)))].slice(0, 500) : [];
+      } catch (_) { return []; }
+    }
+
+    function writeGuestFavorites(ids) {
+      try { localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify([...ids].slice(0, 500))); }
+      catch (error) { console.warn("Could not save guest favourites on this device:", error); }
+    }
+
+    async function refreshFavoriteState(session) {
+      const token = ++favoriteSyncToken;
+      favoriteSession = session && session.user && !session.user.is_anonymous ? session : null;
+      favoriteStoreIds = new Set(readGuestFavorites());
+      try {
+        if (favoriteSession) {
+          const guestIds = readGuestFavorites();
+          if (guestIds.length) {
+            const { error: mergeError } = await db.from("customer_favorite_stores").upsert(guestIds.map(store_id => ({ user_id: favoriteSession.user.id, store_id })), { onConflict: "user_id,store_id", ignoreDuplicates: true });
+            if (mergeError) throw mergeError;
+            writeGuestFavorites([]);
+          }
+          const { data, error } = await db.from("customer_favorite_stores").select("store_id");
+          if (error) throw error;
+          if (token !== favoriteSyncToken) return;
+          favoriteStoreIds = new Set((data || []).map(row => row.store_id));
+        } else { favoriteStoreIds = new Set(readGuestFavorites()); }
+        if (token !== favoriteSyncToken) return;
+        favoritesReady = true;
+        lastRenderedSignature = "";
+        if (savedOnly) await loadSavedStores(); else applyFilters();
+      } catch (error) {
+        console.warn("BOOK.NOW saved shops could not sync:", error);
+        if (token !== favoriteSyncToken) return;
+        if (!favoriteSession) favoriteStoreIds = new Set(readGuestFavorites());
+        favoritesReady = true;
+        lastRenderedSignature = "";
+        if (savedOnly) await loadSavedStores(); else applyFilters();
+      }
+    }
+
+    async function toggleFavorite(storeId, button) {
+      if (!favoritesReady || (button && button.disabled)) return;
+      const wasSaved = favoriteStoreIds.has(storeId);
+      if (button) button.disabled = true;
+      try {
+        if (favoriteSession) {
+          const result = wasSaved ? await db.from("customer_favorite_stores").delete().eq("store_id", storeId) : await db.from("customer_favorite_stores").insert({ user_id: favoriteSession.user.id, store_id: storeId });
+          if (result.error) throw result.error;
+        } else {
+          const next = new Set(favoriteStoreIds);
+          if (wasSaved) next.delete(storeId); else next.add(storeId);
+          writeGuestFavorites(next);
+        }
+        if (wasSaved) favoriteStoreIds.delete(storeId); else favoriteStoreIds.add(storeId);
+        lastRenderedSignature = "";
+        if (savedOnly) await loadSavedStores(); else applyFilters();
+      } catch (error) {
+        console.error("Could not update saved shop:", error);
+        if (button) { button.disabled = false; button.title = "Could not save. Please try again."; }
+      }
+    }
+
+    async function loadSavedStores() {
+      if (!db || !favoritesReady) return;
+      const ids = [...favoriteStoreIds];
+      if (!ids.length) { applyFilters(); return; }
+      const missing = ids.filter(id => !allStores.some(store => store.id === id));
+      if (missing.length) {
+        try {
+          const { data, error } = await db.from("stores").select("id, store_name, category, area, address, store_image_url, opening_time, closing_time, manual_status, holiday_start_date, holiday_end_date, service_items(id, title)").eq("status", "active").in("id", missing);
+          if (error) throw error;
+          const page = data || [];
+          const ratings = {};
+          if (page.length) {
+            const { data: rs, error: ratingsError } = await db.from("store_ratings").select("store_id, avg_rating, review_count").in("store_id", page.map(store => store.id));
+            if (ratingsError) console.warn("Saved shop ratings unavailable:", ratingsError.message);
+            (rs || []).forEach(row => { ratings[row.store_id] = row; });
+          }
+          const additions = page.map(store => ({ ...store, rating: ratings[store.id] || null, cat: normalizeCategory(store.category), service_items: store.service_items || [] }));
+          const existing = new Set(allStores.map(store => store.id));
+          allStores = allStores.concat(additions.filter(store => !existing.has(store.id)));
+        } catch (error) {
+          console.warn("Could not load saved shops:", error);
+          $("marketplace-status").textContent = "Could not load saved shops. Check your connection and try again.";
+        }
+      }
+      applyFilters();
+    }
+
     function showMessage(text) {
       const box = document.createElement("div");
       box.className = "empty-box";
@@ -325,7 +429,13 @@
           service_items: s.service_items || []
         }));
 
-        allStores = append ? allStores.concat(page) : page;
+        if (append) {
+          allStores = allStores.concat(page);
+        } else {
+          const pageIds = new Set(page.map(store => store.id));
+          const savedExtras = allStores.filter(store => favoriteStoreIds.has(store.id) && !pageIds.has(store.id));
+          allStores = page.concat(savedExtras);
+        }
         hasMoreStores = fetched.length > (append ? PAGE_SIZE : targetCount);
         const areas = [...new Set(allStores.map(s => (s.area || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
         const areaSelect = $("area-select");
@@ -354,7 +464,7 @@
         s.opening_time, s.closing_time, s.manual_status,
         s.holiday_start_date, s.holiday_end_date, openCache.get(s.id),
         s.rating && s.rating.avg_rating, s.rating && s.rating.review_count,
-        (s.service_items || []).map(i => [i.id, i.title])
+        favoriteStoreIds.has(s.id), (s.service_items || []).map(i => [i.id, i.title])
       ]));
       if (signature === lastRenderedSignature) {
         updateLoadMore(stores.length);
@@ -363,9 +473,13 @@
       lastRenderedSignature = signature;
 
       if (stores.length === 0) {
-        showMessage(allStores.length === 0
-          ? "No shops are listed yet. Check back soon."
-          : "No shops match your search. Try a different word or category.");
+        showMessage(savedOnly && favoriteStoreIds.size === 0
+          ? "You haven't saved any shops yet. Tap the heart on a shop to add it here."
+          : savedOnly
+            ? "Your saved shops are currently unavailable or no longer listed."
+            : allStores.length === 0
+              ? "No shops are listed yet. Check back soon."
+              : "No shops match your search. Try a different word or category.");
         updateLoadMore(stores.length);
         return;
       }
@@ -440,7 +554,19 @@
         body.className = "store-body";
         body.append(top, visitBtn);
 
-        card.append(avatarContainer, body);
+        const favorite = document.createElement("button");
+        favorite.type = "button";
+        favorite.className = "store-favorite";
+        favorite.setAttribute("aria-pressed", String(favoriteStoreIds.has(s.id)));
+        favorite.setAttribute("aria-label", favoriteStoreIds.has(s.id) ? "Remove " + (s.store_name || "shop") + " from saved shops" : "Save " + (s.store_name || "shop"));
+        favorite.title = favoriteStoreIds.has(s.id) ? "Remove from saved shops" : "Save shop";
+        const heart = document.createElement("i");
+        heart.className = favoriteStoreIds.has(s.id) ? "ph-fill ph-heart" : "ph ph-heart";
+        heart.setAttribute("aria-hidden", "true");
+        favorite.appendChild(heart);
+        favorite.addEventListener("click", () => toggleFavorite(s.id, favorite));
+
+        card.append(favorite, avatarContainer, body);
         return card;
       });
 
@@ -452,15 +578,17 @@
       const wrap = $("load-more-wrap");
       const button = $("load-more");
       const status = $("marketplace-status");
-      wrap.style.display = hasMoreStores ? "" : "none";
+      wrap.style.display = hasMoreStores && !savedOnly ? "" : "none";
       button.disabled = marketplaceBusy;
       button.textContent = marketplaceBusy ? "Loading..." : "Load more shops";
-      status.textContent = allStores.length
-        ? (visibleCount
-          ? "Showing " + visibleCount + " matching shops from " + allStores.length + " loaded."
-          : "No matches among " + allStores.length + " loaded shops.")
-          + (hasMoreStores ? " More shops may match — load more to continue searching." : "")
-        : "";
+      status.textContent = savedOnly
+        ? (visibleCount ? "Showing " + visibleCount + " saved shops." : "No saved shops to show.")
+        : allStores.length
+          ? (visibleCount
+            ? "Showing " + visibleCount + " matching shops from " + allStores.length + " loaded."
+            : "No matches among " + allStores.length + " loaded shops.")
+            + (hasMoreStores ? " More shops may match — load more to continue searching." : "")
+          : "";
     }
 
     // Search and category filter work together
@@ -476,6 +604,7 @@
       const openCache = new Map(allStores.map(s => [s.id, isOpenNow(s, clock)]));
 
       const filtered = allStores.filter(s => {
+        if (savedOnly && !favoriteStoreIds.has(s.id)) return false;
         if (activeCat !== "ALL" && s.cat !== activeCat) return false;
         if (activeArea && (s.area || "").trim() !== activeArea) return false;
         if (onlyOpen && openCache.get(s.id) !== true) return false;
@@ -534,7 +663,20 @@
         console.error("Boot error:", e);
       }
       bindEvents();
+      document.body.classList.toggle("saved-shops-view", savedOnly);
       loadMarketplace();
+      db.auth.getSession().then(({ data }) => refreshFavoriteState(data && data.session ? data.session : null))
+        .catch(error => { console.warn("Could not initialize saved shops:", error); favoriteStoreIds = new Set(readGuestFavorites()); favoritesReady = true; applyFilters(); });
+      window.addEventListener("booknow:customer-ready", event => {
+        const session = event.detail && event.detail.session;
+        refreshFavoriteState(session || null);
+      });
+      window.addEventListener("hashchange", () => {
+        savedOnly = location.hash === "#saved-shops";
+        document.body.classList.toggle("saved-shops-view", savedOnly);
+        lastRenderedSignature = "";
+        if (savedOnly) loadSavedStores(); else applyFilters();
+      });
       // Refresh less aggressively; refresh immediately when a visitor returns.
       setInterval(() => {
         if (!document.hidden) loadMarketplace(true, false);
