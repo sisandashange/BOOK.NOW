@@ -61,11 +61,16 @@ BEGIN
     '[]'::jsonb
   )
   INTO v_result
-  FROM public.bookings AS b
+  FROM (
+    SELECT * FROM public.bookings
+    WHERE customer_user_id = auth.uid()
+    ORDER BY created_at DESC
+    LIMIT 200
+  ) AS b
   LEFT JOIN public.stores AS s ON s.id = b.store_id
   LEFT JOIN public.service_items AS si ON si.id = b.service_id
   LEFT JOIN public.staff_members AS sm ON sm.id = b.staff_id AND sm.store_id = b.store_id
-  WHERE b.customer_user_id = auth.uid();
+;
 
   RETURN v_result;
 END;
