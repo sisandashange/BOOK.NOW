@@ -724,7 +724,7 @@ footer a{color:var(--muted);font-weight:600}
 
   function init() {
     if (!window.supabase) { say("The page didn't load properly. Refresh and try again.", "err"); return; }
-    db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    db = window.BOOKNOW_CUSTOMER_AUTH || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const ref = new URLSearchParams(location.search).get("ref");
     if (ref) $("ref").value = ref.toUpperCase().slice(0, 20);
