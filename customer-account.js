@@ -23,7 +23,7 @@
     let viewport = document.querySelector('meta[name="viewport"]');
     if (!viewport) { viewport = document.createElement("meta"); viewport.name = "viewport"; document.head.appendChild(viewport); }
     if (!viewport.dataset.booknowMobileContent) viewport.dataset.booknowMobileContent = viewport.content || "width=device-width, initial-scale=1.0";
-    viewport.content = desktopView ? "width=980, initial-scale=1.0" : viewport.dataset.booknowMobileContent;
+    viewport.content = desktopView ? "width=device-width, initial-scale=1.0" : viewport.dataset.booknowMobileContent;
     const button = document.getElementById("booknow-view-mode-toggle");
     if (button) {
       button.innerHTML = desktopView ? '<i class="ph ph-device-mobile"></i> Mobile view <span class="booknow-view-mode-state">On</span>' : '<i class="ph ph-monitor"></i> Desktop view <span class="booknow-view-mode-state">Off</span>';
