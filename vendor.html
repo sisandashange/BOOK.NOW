@@ -1585,9 +1585,16 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     try {
       const { data: booking, error } = await db.from("bookings").select("*").eq("id", bookingId).eq("store_id", activeVendor.id).maybeSingle();
       if (error || !booking) { status.textContent = "Invalid receipt or booking."; status.style.color = "var(--danger)"; return; }
+      const [{ data: orderItems, error: itemsError }, serviceResult] = await Promise.all([
+        db.from("booking_items").select("item_title,quantity,unit_price,line_total").eq("booking_id", bookingId).order("created_at", { ascending: true }),
+        booking.service_id ? db.from("service_items").select("title").eq("id", booking.service_id).eq("store_id", activeVendor.id).maybeSingle() : Promise.resolve({ data: null, error: null })
+      ]);
+      if (itemsError) throw itemsError;
+      if (serviceResult.error) throw serviceResult.error;
+      const items = Array.isArray(orderItems) ? orderItems : [];
+      const serviceTitle = serviceResult.data?.title || (booking.is_takeaway ? "Takeaway order" : "Booking");
       const bookingCompleted = String(booking.status || "").toLowerCase() === "completed";
       const bookingPaid = String(booking.payment_status || "").toUpperCase() === "PAID";
-      if (bookingCompleted && bookingPaid) { status.textContent = "This booking is already completed and paid."; status.style.color = "var(--warning)"; return; }
 
       const today = saToday();
       const dayStart = new Date(today + "T00:00:00+02:00").toISOString();
@@ -1601,18 +1608,25 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       const ahead = aheadCount ?? 0;
 
       const actions = h("div", { style: "display:flex;flex-wrap:wrap;gap:8px;margin-top:10px" });
-      if (!bookingCompleted) actions.appendChild(h("button", { class: "btn-primary", style: "background:#16a34a", text: "Mark Completed",
-        onclick: () => updateBookingStatus(booking.id, "completed") }));
-      if (!bookingPaid) actions.appendChild(h("button", { class: "btn-primary", style: "background:#0284c7", text: "Mark Paid",
-        onclick: () => markBookingPaid(booking.id) }));
-
+      if (!bookingCompleted) actions.appendChild(h("button", { class: "btn-primary", style: "background:#16a34a", text: "Mark Completed", onclick: () => updateBookingStatus(booking.id, "completed") }));
+      if (!bookingPaid) actions.appendChild(h("button", { class: "btn-primary", style: "background:#0284c7", text: "Mark Paid", onclick: () => markBookingPaid(booking.id) }));
+      const detail = (label, value) => h("div", { style: "font-size:12px;line-height:1.55;margin-top:5px", text: label + ": " + value });
+      const itemRows = items.map(row => detail("Order item", Number(row.quantity || 1) + " × " + row.item_title + " · " + money(row.unit_price) + " each · " + money(row.line_total) + " total"));
       status.replaceChildren(h("div", { style: "background:#f0fdf4;border:1px solid #86efac;padding:12px;border-radius:10px;text-align:left" },
-        h("div", { style: "font-size:14px;font-weight:800;color:#166534;margin-bottom:4px", text: "VALID BOOKING FOUND" }),
-        h("div", { style: "font-size:12px", text: `Customer: ${booking.customer_name || "N/A"} (${booking.customer_phone || "N/A"})` }),
-        booking.party_size > 1 ? h("div", { style: "font-size:12px;margin-top:4px", text: "Guests: " + booking.party_size }) : null,
-        h("div", { style: "font-size:12px;margin-top:4px", text: "Payment ref: " + (booking.payment_ref || "N/A") }),
-        h("div", { style: "font-size:12px;font-weight:800;color:#b45309;margin-top:6px", text: booking.booking_date ? "Appointment: " + fmtAppt(booking) : (ahead === 0 ? "Next in line!" : `Queue: ${ahead} customer(s) ahead.`) }),
-        h("div", { style: "font-size:12px;margin-top:6px", text: "Booking: " + (bookingCompleted ? "COMPLETED" : "NOT COMPLETED") + " · Payment: " + (bookingPaid ? "PAID" : "UNPAID") }),
+        h("div", { style: "font-size:14px;font-weight:800;color:#166534;margin-bottom:4px", text: bookingCompleted ? "BOOKING COMPLETED" : "VALID BOOKING FOUND" }),
+        detail("Shop", activeVendor.store_name || "BOOK.NOW shop"),
+        detail("Customer", booking.customer_name || "N/A"),
+        detail("Customer phone", booking.customer_phone || "N/A"),
+        detail("Service / order", serviceTitle),
+        ...itemRows,
+        booking.comment ? detail("Customer note", booking.comment) : null,
+        Number(booking.party_size) > 1 ? detail("Guests", String(booking.party_size)) : null,
+        booking.queue_number ? detail("Queue number", "#" + booking.queue_number) : null,
+        detail("Appointment", booking.booking_date ? fmtAppt(booking) : (ahead === 0 ? "Next in line" : ahead + " customer(s) ahead")),
+        detail("Total", money(booking.booked_price)),
+        detail("Payment method", String(booking.payment_method || "EFT")),
+        detail("Payment reference", booking.payment_ref || "N/A"),
+        h("div", { style: "font-size:12px;font-weight:800;color:#92400e;margin-top:7px", text: "Booking: " + (bookingCompleted ? "COMPLETED" : String(booking.status || "PENDING").toUpperCase()) + " · Payment: " + (bookingPaid ? "PAID" : "UNPAID") }),
         actions));
     } catch (err) {
       status.textContent = "Scanner error: " + err.message;
