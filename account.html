@@ -34,7 +34,13 @@
 </form>
 </section>
 <div id="customer-account-content" hidden>
-<section class="account-card" id="profile">
+<nav class="account-section-nav" aria-label="Account sections">
+<a href="#bookings" data-account-nav="bookings">My bookings</a>
+<a href="#profile" data-account-nav="profile">My profile</a>
+<a href="#link-booking" data-account-nav="link-booking">Link guest booking</a>
+</nav>
+<p class="account-section-message" id="account-section-message" aria-live="polite"></p>
+<section class="account-card" id="profile" data-account-section="profile" hidden>
 <h1>My profile</h1><p class="account-muted">Keep your contact details up to date. Your email is used to sign in.</p>
 <form id="customer-profile-form">
 <div class="account-field"><label for="profile-name">Full name</label><input id="profile-name" autocomplete="name" maxlength="100" required></div>
@@ -45,11 +51,11 @@
 </form>
 <div class="account-actions"><button class="account-secondary" id="customer-signout" type="button">Sign out</button></div>
 </section>
-<section class="account-card" id="bookings">
+<section class="account-card" id="bookings" data-account-section="bookings" hidden>
 <h2>My bookings & history</h2><p class="account-muted">Bookings made while signed in appear here automatically. You can also link an earlier guest booking.</p>
 <div id="customer-booking-list" aria-live="polite"><div class="account-empty">Your bookings will appear here.</div></div>
 </section>
-<section class="account-card">
+<section class="account-card" id="link-booking" data-account-section="link-booking" hidden>
 <h2>Link an earlier guest booking</h2><p class="account-muted">Enter the booking reference and the same phone number used when booking. Only a matching booking can be linked.</p>
 <form id="customer-claim-form">
 <div class="account-field"><label for="claim-ref">Booking reference</label><input id="claim-ref" autocomplete="off" maxlength="32" required placeholder="BN-XXXXXX"></div>
