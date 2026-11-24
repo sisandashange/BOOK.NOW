@@ -14,6 +14,7 @@ assert.ok(nav.includes("aria-expanded") && nav.includes("Escape"), "Drawer must 
 assert.ok(nav.includes("list_my_customer_bookings"), "Account page must load private booking history through RPC");
 assert.ok(nav.includes("claim_customer_booking"), "Account page must support linking earlier guest bookings");
 assert.ok(nav.includes("signUp") && nav.includes("signInWithPassword"), "Optional email/password account registration and login must work");
+assert.ok(nav.includes("emailRedirectTo:location.origin+\"/account.html\""), "Email confirmation must return to the customer account page");
 assert.ok(account.includes("An account is optional"), "Account page must clearly say registration is optional");
 assert.ok(account.includes("Link an earlier guest booking"), "Account page must explain legacy booking linking");
 assert.ok(migration.includes("customer_user_id uuid") && migration.includes("REFERENCES auth.users"), "Bookings must support nullable auth ownership");
