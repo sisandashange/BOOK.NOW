@@ -13,7 +13,7 @@ assert.ok(nav.includes("touchstart") && nav.includes("touchend") && nav.includes
 assert.ok(!nav.includes("customer-menu-trigger") && !nav.includes("ph-list"), "Drawer must not depend on a visible hamburger button");
 assert.ok(nav.includes('href="apps.html"') && nav.includes('href="vendor.html"'), "Get the app and Partner Portal must be available inside the drawer");
 assert.ok(!index.includes("get-app-link") && !index.includes("partner-link"), "Get the app and Partner Portal must not appear in the homepage header");
-assert.ok(nav.includes("aria-expanded") && nav.includes("Escape"), "Drawer must expose accessible state and keyboard close");
+assert.ok(nav.includes("aria-modal") && nav.includes("Escape"), "Drawer must expose dialog semantics and keyboard close");
 assert.ok(nav.includes("list_my_customer_bookings"), "Account page must load private booking history through RPC");
 assert.ok(nav.includes("claim_customer_booking"), "Account page must support linking earlier guest bookings");
 assert.ok(nav.includes("signUp") && nav.includes("signInWithPassword"), "Optional email/password account registration and login must work");
