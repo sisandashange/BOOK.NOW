@@ -535,7 +535,7 @@
       booted = true;
 
       try {
-        db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        db = window.BOOKNOW_CUSTOMER_AUTH || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       } catch (e) {
         console.error("Boot error:", e);
       }
