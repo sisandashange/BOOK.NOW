@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="theme-color" content="#f8fafc">
+<meta name="description" content="Manage your optional BOOK.NOW customer account and booking history.">
+<title>My BOOK.NOW Account</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="customer-account.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" defer></script>
+<script src="customer-account.js" defer></script>
+<style>*{box-sizing:border-box;font-family:'Plus Jakarta Sans',sans-serif;-webkit-tap-highlight-color:transparent}body{margin:0;background:#f8fafc;color:#0f172a}.top-nav{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(255,255,255,.96);border-bottom:1px solid #e2e8f0}.brand{font-size:17px;font-weight:800;letter-spacing:-.5px;color:#0f172a;text-decoration:none}.account-back{margin-left:auto;text-decoration:none;color:#1d4ed8;font-size:12px;font-weight:800}</style>
+</head>
+<body data-customer-account="true">
+<header class="top-nav"><a class="brand" href="index.html">BOOK.NOW</a><a class="account-back" href="index.html">Find a shop</a></header>
+<main class="account-page">
+<section class="account-card" id="customer-auth-card">
+<h1>Your BOOK.NOW account</h1><p class="account-muted">Create an account to keep your bookings together, or sign in to see your booking history. An account is optional — you can always book as a guest.</p>
+<div class="account-tabs"><button class="account-tab active" type="button" data-auth-tab="signin">Sign in</button><button class="account-tab" type="button" data-auth-tab="signup">Create account</button></div>
+<form id="customer-auth-form">
+<div class="account-field" id="signup-name-wrap" hidden><label for="auth-full-name">Full name</label><input id="auth-full-name" autocomplete="name" maxlength="100" placeholder="Your full name"></div>
+<div class="account-field"><label for="auth-email">Email address</label><input id="auth-email" type="email" autocomplete="email" maxlength="254" required placeholder="you@example.com"></div>
+<div class="account-field"><label for="auth-password">Password</label><input id="auth-password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required placeholder="At least 8 characters"></div>
+<button class="account-primary" id="auth-submit" data-auth-submit data-idle-text="Sign in" data-busy-text="Please wait…" type="submit">Sign in</button>
+<div class="account-actions"><button class="account-secondary" id="auth-forgot" type="button">Forgot password?</button></div>
+<p class="account-message" id="account-auth-message" role="status" aria-live="polite"></p>
+</form>
+</section>
+<div id="customer-account-content" hidden>
+<section class="account-card" id="profile">
+<h1>My profile</h1><p class="account-muted">Keep your contact details up to date. Your email is used to sign in.</p>
+<form id="customer-profile-form">
+<div class="account-field"><label for="profile-name">Full name</label><input id="profile-name" autocomplete="name" maxlength="100" required></div>
+<div class="account-field"><label for="profile-phone">Phone number (optional)</label><input id="profile-phone" type="tel" autocomplete="tel" maxlength="20" placeholder="e.g. 071 234 5678"></div>
+<div class="account-field"><label for="profile-email">Email address</label><input id="profile-email" type="email" readonly></div>
+<button class="account-primary" data-auth-submit data-idle-text="Save profile" data-busy-text="Saving…" type="submit">Save profile</button>
+<p class="account-message" id="profile-message" role="status"></p>
+</form>
+<div class="account-actions"><button class="account-secondary" id="customer-signout" type="button">Sign out</button></div>
+</section>
+<section class="account-card" id="bookings">
+<h2>My bookings & history</h2><p class="account-muted">Bookings made while signed in appear here automatically. You can also link an earlier guest booking.</p>
+<div id="customer-booking-list" aria-live="polite"><div class="account-empty">Your bookings will appear here.</div></div>
+</section>
+<section class="account-card">
+<h2>Link an earlier guest booking</h2><p class="account-muted">Enter the booking reference and the same phone number used when booking. Only a matching booking can be linked.</p>
+<form id="customer-claim-form">
+<div class="account-field"><label for="claim-ref">Booking reference</label><input id="claim-ref" autocomplete="off" maxlength="32" required placeholder="BN-XXXXXX"></div>
+<div class="account-field"><label for="claim-phone">Phone number used for booking</label><input id="claim-phone" type="tel" autocomplete="tel" maxlength="20" required placeholder="071 234 5678"></div>
+<button class="account-primary" data-auth-submit data-idle-text="Link booking" data-busy-text="Checking…" type="submit">Link booking</button>
+<p class="account-message" id="claim-message" role="status"></p>
+</form>
+</section>
+</div>
+</main>
+<footer style="padding:20px;text-align:center;color:#64748b;font-size:11px"><a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Use</a> · <a href="index.html">BOOK.NOW home</a></footer>
+</body></html>
