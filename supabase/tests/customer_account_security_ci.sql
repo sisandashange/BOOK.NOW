@@ -44,17 +44,34 @@ CREATE TABLE public.bookings (
   party_size integer NOT NULL DEFAULT 1,
   status text,
   payment_status text,
+  payment_method text,
   booked_price numeric,
+  queue_number integer,
+  duration_minutes integer NOT NULL DEFAULT 30,
+  appointment_at timestamptz,
+  comment text,
+  staff_id uuid,
   is_takeaway boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now()
 );
-CREATE TABLE public.stores (id uuid PRIMARY KEY, store_name text);
+CREATE TABLE public.stores (id uuid PRIMARY KEY, store_name text, phone_number text, address text);
 CREATE TABLE public.service_items (id uuid PRIMARY KEY, title text);
+CREATE TABLE public.staff_members (id uuid PRIMARY KEY, store_id uuid, full_name text, job_title text);
+CREATE TABLE public.booking_items (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  booking_id uuid NOT NULL,
+  item_title text NOT NULL,
+  quantity integer NOT NULL,
+  unit_price numeric NOT NULL,
+  line_total numeric GENERATED ALWAYS AS (unit_price * quantity) STORED,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT INSERT, UPDATE, SELECT ON public.bookings TO authenticated;
 
 -- Apply the exact customer account migration under test.
 \i supabase/migrations/20261124003016_optional_customer_accounts.sql
+\i supabase/migrations/20261124100000_customer_booking_receipts.sql
 
 INSERT INTO auth.users(id, raw_user_meta_data) VALUES
  ('00000000-0000-4000-8000-000000000001', '{"full_name":"Customer One"}'),
@@ -84,6 +101,33 @@ BEGIN
     RAISE EXCEPTION 'Claim RPC did not attach booking to authenticated customer';
   END IF;
 
+  -- The receipt RPC returns item snapshots only for the signed-in owner.
+  INSERT INTO public.stores(id,store_name,phone_number,address)
+  VALUES ('20000000-0000-4000-8000-000000000001','Test Shop','0710000000','Folweni');
+  INSERT INTO public.service_items(id,title)
+  VALUES ('30000000-0000-4000-8000-000000000001','Haircut');
+  UPDATE public.bookings SET store_id='20000000-0000-4000-8000-000000000001',
+    service_id='30000000-0000-4000-8000-000000000001', booked_price=150,
+    payment_method='EFT', payment_status='PAID', queue_number=4,
+    comment='Please call when ready'
+  WHERE id='10000000-0000-4000-8000-000000000001';
+  INSERT INTO public.booking_items(booking_id,item_title,quantity,unit_price)
+  VALUES ('10000000-0000-4000-8000-000000000001','Chicken platter',2,75);
+  PERFORM set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000001',true);
+  v_result := public.list_my_customer_booking_receipts();
+  IF jsonb_array_length(v_result) <> 1
+     OR v_result->0->>'receipt_active' <> 'true'
+     OR jsonb_array_length(v_result->0->'items') <> 1
+     OR v_result->0->'items'->0->>'title' <> 'Chicken platter' THEN
+    RAISE EXCEPTION 'Customer receipt is missing its active state or item snapshot: %', v_result;
+  END IF;
+  UPDATE public.bookings SET status='completed'
+  WHERE id='10000000-0000-4000-8000-000000000001';
+  v_result := public.list_my_customer_booking_receipts();
+  IF jsonb_array_length(v_result) <> 1 OR v_result->0->>'receipt_active' <> 'false' THEN
+    RAISE EXCEPTION 'Completed booking must retain history but close its receipt: %', v_result;
+  END IF;
+
   -- A different account cannot claim the same booking.
   PERFORM set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000002',true);
   v_result := public.claim_customer_booking('BN-CLAIM1','0712345678');
@@ -106,6 +150,9 @@ BEGIN
   END IF;
   IF has_function_privilege('anon','public.list_my_customer_bookings()','EXECUTE') THEN
     RAISE EXCEPTION 'Anonymous role can execute the customer history RPC';
+  END IF;
+  IF has_function_privilege('anon','public.list_my_customer_booking_receipts()','EXECUTE') THEN
+    RAISE EXCEPTION 'Anonymous role can execute the customer receipt RPC';
   END IF;
 END
 $test$;
