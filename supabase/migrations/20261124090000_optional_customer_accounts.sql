@@ -68,8 +68,10 @@ AS $function$
 BEGIN
   IF TG_OP = 'INSERT' THEN
     NEW.customer_user_id := auth.uid();
-  ELSE
-    -- Never permit a client-side update to transfer or remove account ownership.
+  ELSIF current_user <> 'postgres' THEN
+    -- Normal API clients cannot transfer or remove account ownership.
+    -- The authenticated claim RPC runs SECURITY DEFINER as the database owner
+    -- and is the only intended path that may attach an existing guest booking.
     NEW.customer_user_id := OLD.customer_user_id;
   END IF;
   RETURN NEW;
