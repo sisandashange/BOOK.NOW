@@ -1,13 +1,14 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const assert = require("node:assert/strict");
 const read = file => fs.readFileSync(path.join(__dirname, "..", file), "utf8");
 const nav = read("customer-account.js");
 const account = read("account.html");
 const migration = read("supabase/migrations/20261124090000_optional_customer_accounts.sql");
 const store = read("store.html");
 const index = read("index.html");
-assert = require("assert");
+
 assert.ok(nav.includes("touchstart") && nav.includes("touchend"), "Drawer must support edge swipe gestures");
 assert.ok(nav.includes("aria-expanded") && nav.includes("Escape"), "Drawer must expose accessible state and keyboard close");
 assert.ok(nav.includes("list_my_customer_bookings"), "Account page must load private booking history through RPC");
