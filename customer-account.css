@@ -62,3 +62,33 @@ html.booknow-desktop-view body { width:100% !important; min-width:0 !important; 
 .customer-view-mode .booknow-view-mode-state{margin-left:auto;color:#64748b;font-size:11px;font-weight:800}
 .customer-view-mode[aria-pressed="true"]{background:#eff6ff;color:#1d4ed8}
 .customer-view-mode[aria-pressed="true"] .booknow-view-mode-state{color:#1d4ed8}
+
+/* Desktop view: responsive tablet/PC-style layout using the actual screen width. */
+html.booknow-desktop-view { overflow-x:hidden !important; }
+html.booknow-desktop-view body { width:100% !important; min-width:0 !important; max-width:none !important; }
+html.booknow-desktop-view .container { width:100% !important; max-width:1440px !important; margin:0 auto !important; padding:clamp(20px,3vw,42px) clamp(16px,3vw,48px) !important; }
+html.booknow-desktop-view .hero h1 { font-size:clamp(27px,3vw,38px) !important; }
+html.booknow-desktop-view .hero p { font-size:clamp(14px,1.35vw,17px) !important; }
+html.booknow-desktop-view .search-input { min-height:48px; font-size:15px; }
+html.booknow-desktop-view .filter-bar { flex-wrap:wrap; overflow:visible; }
+html.booknow-desktop-view .filter-chip, html.booknow-desktop-view .filter-select, html.booknow-desktop-view .open-chip { min-height:40px; font-size:13px; }
+html.booknow-desktop-view .store-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:18px !important; }
+html.booknow-desktop-view .store-card { min-width:0; padding:20px; }
+html.booknow-desktop-view .store-avatar { width:88px; height:88px; }
+html.booknow-desktop-view .store-title { font-size:17px; }
+html.booknow-desktop-view .store-category { font-size:10px; }
+html.booknow-desktop-view .store-meta { font-size:12px; }
+html.booknow-desktop-view .btn-visit { min-height:42px; font-size:13px; }
+html.booknow-desktop-view .list-cta { padding:clamp(22px,3vw,34px); }
+html.booknow-desktop-view .list-cta h2 { font-size:clamp(18px,1.8vw,23px); }
+html.booknow-desktop-view .list-cta p { font-size:14px; }
+html.booknow-desktop-view .btn-list { min-height:44px; display:inline-flex; align-items:center; justify-content:center; }
+html.booknow-desktop-view .legal-foot { font-size:13px; }
+@media (min-width:700px) {
+  html.booknow-desktop-view .store-grid { grid-template-columns:repeat(3,minmax(0,1fr)) !important; gap:22px !important; }
+  html.booknow-desktop-view .container { padding-left:clamp(28px,4vw,60px) !important; padding-right:clamp(28px,4vw,60px) !important; }
+}
+@media (min-width:1100px) {
+  html.booknow-desktop-view .store-grid { grid-template-columns:repeat(4,minmax(0,1fr)) !important; gap:24px !important; }
+  html.booknow-desktop-view .container { padding-left:48px !important; padding-right:48px !important; }
+}
