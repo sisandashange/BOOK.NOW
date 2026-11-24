@@ -157,6 +157,19 @@
       }catch(error){setMessage(error.message||"We couldn't complete that request. Please try again.","error");}
       finally{setBusy(false);}
     });
+    const recoveryForm = $("customer-password-reset-form");
+    if (recoveryForm) recoveryForm.addEventListener("submit",async event=>{
+      event.preventDefault();
+      const password=$("reset-new-password").value;
+      if(password.length<8){$("reset-message").textContent="Use a password with at least 8 characters.";return;}
+      setBusy(true);
+      try{const {error}=await db.auth.updateUser({password});if(error)throw error;recoveryForm.hidden=true;$("reset-message").textContent="Your password has been updated. You can continue using BOOK.NOW.";setMessage("Password updated.","success");}
+      catch(error){$("reset-message").textContent=error.message||"Password could not be updated.";}
+      finally{setBusy(false);}
+    });
+    db.auth.onAuthStateChange(event=>{
+      if(event==="PASSWORD_RECOVERY" && recoveryForm){recoveryForm.hidden=false;$("customer-auth-card").hidden=false;$("customer-account-content").hidden=true;$("reset-new-password").focus();}
+    });
     $("auth-forgot").addEventListener("click",async()=>{
       const email=$("auth-email").value.trim().toLowerCase();
       if(!email){setMessage("Enter your email address first.");return;}
