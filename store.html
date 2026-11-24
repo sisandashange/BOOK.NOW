@@ -1572,6 +1572,16 @@
     }
   })();
   </script>
+  <script>
+  window.addEventListener("booknow:customer-ready", event => {
+    const profile = event.detail && event.detail.profile;
+    if (!profile) return;
+    const name = document.getElementById("customer-name");
+    const phone = document.getElementById("customer-phone");
+    if (name && !name.value.trim() && profile.full_name) name.value = profile.full_name;
+    if (phone && !phone.value.trim() && profile.phone) phone.value = profile.phone;
+  });
+  </script>
   <script src="customer-account.js" defer></script>
 </body>
 </html>
