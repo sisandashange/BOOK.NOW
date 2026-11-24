@@ -18,22 +18,13 @@
   function mountDrawer() {
     const nav = document.querySelector(".top-nav");
     if (!nav || $("customer-drawer-backdrop")) return;
-    const trigger = document.createElement("button");
-    trigger.type = "button";
-    trigger.className = "customer-menu-trigger";
-    trigger.setAttribute("aria-label", "Open customer menu");
-    trigger.setAttribute("aria-controls", "customer-drawer");
-    trigger.setAttribute("aria-expanded", "false");
-    trigger.innerHTML = '<i class="ph ph-list" aria-hidden="true"></i>';
-    nav.insertBefore(trigger, nav.firstChild);
     const backdrop = document.createElement("div");
     backdrop.className = "customer-drawer-backdrop";
     backdrop.id = "customer-drawer-backdrop";
     backdrop.setAttribute("aria-hidden","true");
-    backdrop.innerHTML = '<nav class="customer-drawer" id="customer-drawer" aria-label="Customer navigation" aria-modal="true" role="dialog"><div class="customer-drawer-head"><div class="customer-drawer-brand">BOOK.NOW</div><button type="button" class="customer-drawer-close" aria-label="Close menu">&times;</button></div><a class="customer-drawer-account" href="account.html"><span class="customer-drawer-avatar" id="customer-drawer-avatar">B</span><span><strong id="customer-drawer-name">Sign in or create an account</strong><small id="customer-drawer-subtitle">Your bookings, all in one place</small></span></a><section><p class="customer-drawer-label">Discover</p><div class="customer-drawer-links"><a class="customer-drawer-link" href="index.html"><i class="ph ph-house"></i>Home</a><a class="customer-drawer-link" href="index.html#store-grid"><i class="ph ph-storefront"></i>Find a shop</a></div></section><section><p class="customer-drawer-label">Your account</p><div class="customer-drawer-links"><a class="customer-drawer-link" href="account.html#bookings"><i class="ph ph-calendar-check"></i>My bookings & history</a><a class="customer-drawer-link" href="account.html#profile"><i class="ph ph-user-circle"></i>My profile</a><a class="customer-drawer-link" href="manage.html"><i class="ph ph-magnifying-glass"></i>Manage a guest booking</a></div></section><section><p class="customer-drawer-label">More</p><div class="customer-drawer-links"><a class="customer-drawer-link" href="privacy.html"><i class="ph ph-shield-check"></i>Privacy policy</a><a class="customer-drawer-link" href="terms.html"><i class="ph ph-file-text"></i>Terms of use</a><a class="customer-drawer-link" href="vendor.html"><i class="ph ph-storefront"></i>Partner portal</a></div></section><div class="customer-drawer-footer">BOOK.NOW · Your bookings, made easier</div></nav>';
+    backdrop.innerHTML = '<nav class="customer-drawer" id="customer-drawer" aria-label="Customer navigation" aria-modal="true" role="dialog"><div class="customer-drawer-head"><div class="customer-drawer-brand">BOOK.NOW</div><button type="button" class="customer-drawer-close" aria-label="Close menu">&times;</button></div><a class="customer-drawer-account" href="account.html"><span class="customer-drawer-avatar" id="customer-drawer-avatar">B</span><span><strong id="customer-drawer-name">Sign in or create an account</strong><small id="customer-drawer-subtitle">Your bookings, all in one place</small></span></a><section><p class="customer-drawer-label">Discover</p><div class="customer-drawer-links"><a class="customer-drawer-link" href="index.html"><i class="ph ph-house"></i>Home</a><a class="customer-drawer-link" href="index.html#store-grid"><i class="ph ph-storefront"></i>Find a shop</a></div></section><section><p class="customer-drawer-label">Your account</p><div class="customer-drawer-links"><a class="customer-drawer-link" href="account.html#bookings"><i class="ph ph-calendar-check"></i>My bookings & history</a><a class="customer-drawer-link" href="account.html#profile"><i class="ph ph-user-circle"></i>My profile</a><a class="customer-drawer-link" href="manage.html"><i class="ph ph-magnifying-glass"></i>Manage a guest booking</a></div></section><section><p class="customer-drawer-label">More</p><div class="customer-drawer-links"><a class="customer-drawer-link" href="privacy.html"><i class="ph ph-shield-check"></i>Privacy policy</a><a class="customer-drawer-link" href="terms.html"><i class="ph ph-file-text"></i>Terms of use</a><a class="customer-drawer-link" href="vendor.html"><i class="ph ph-storefront"></i>Partner portal</a><a class="customer-drawer-link" href="apps.html"><i class="ph ph-download-simple"></i>Get the app</a></div></section><div class="customer-drawer-footer">BOOK.NOW · Your bookings, made easier</div></nav>';
     document.body.appendChild(backdrop);
     const close = () => setDrawer(false);
-    trigger.addEventListener("click", () => setDrawer(true));
     backdrop.addEventListener("click", event => { if (event.target === backdrop || event.target.closest(".customer-drawer-close")) close(); });
     backdrop.querySelectorAll("a").forEach(a => a.addEventListener("click", close));
     document.addEventListener("keydown", event => {
@@ -57,7 +48,7 @@
       const dx = event.changedTouches[0].clientX - touchStart.x;
       const dy = event.changedTouches[0].clientY - touchStart.y;
       if (Math.abs(dx) > 75 && Math.abs(dx) > Math.abs(dy) * 1.25) {
-        if (!touchStart.open && touchStart.x <= 26 && dx > 0) setDrawer(true);
+        if (!touchStart.open && dx > 0) setDrawer(true);
         else if (touchStart.open && dx < 0) setDrawer(false);
       }
       touchStart = null;
@@ -71,10 +62,7 @@
     backdrop.classList.toggle("open", drawerOpen);
     backdrop.setAttribute("aria-hidden", String(!drawerOpen));
     document.body.classList.toggle("customer-drawer-open", drawerOpen);
-    const trigger = document.querySelector(".customer-menu-trigger");
-    if (trigger) trigger.setAttribute("aria-expanded", String(drawerOpen));
     if (drawerOpen) backdrop.querySelector(".customer-drawer-close").focus();
-    else if (trigger) trigger.focus();
   }
 
   function updateDrawer(session, profile) {
