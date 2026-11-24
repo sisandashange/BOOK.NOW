@@ -138,14 +138,6 @@
   <script>
   (() => {
     "use strict";
-    const ua = navigator.userAgent || "";
-    const inStandalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
-    const inAndroidWebView = /;\s*wv\)/i.test(ua);
-    const inAppContext = inStandalone || inAndroidWebView || new URLSearchParams(window.location.search).get("inapp") === "1";
-    if (inAppContext) {
-      window.location.replace("index.html");
-      return;
-    }
     document.querySelectorAll("[data-app-download]").forEach(link => {
       link.addEventListener("click", () => {
         try { localStorage.setItem("booknow_app_download_started_at", String(Date.now())); } catch (_) {}
