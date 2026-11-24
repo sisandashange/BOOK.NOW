@@ -2,6 +2,7 @@
   "use strict";
   const URL = "https://pvplhsiafklaoqrpdhpd.supabase.co";
   const KEY = "sb_publishable_VKlDPkR9JvJr6E4bcz1HSg_OG5_xy5r";
+  const ACCOUNT_REDIRECT_URL = "https://getbooknow.co.za/account.html";
   if (!window.supabase || !window.supabase.createClient) return;
   const db = window.supabase.createClient(URL, KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
   window.BOOKNOW_CUSTOMER_AUTH = db;
@@ -154,7 +155,7 @@
           const fullName=$("auth-full-name").value.trim();
           if(fullName.length<2)throw new Error("Enter your name so your profile can be created.");
           if(password.length<8)throw new Error("Use a password with at least 8 characters.");
-          const {data,error}=await db.auth.signUp({email,password,options:{emailRedirectTo:location.origin+"/account.html",data:{full_name:fullName}}});
+          const {data,error}=await db.auth.signUp({email,password,options:{emailRedirectTo:ACCOUNT_REDIRECT_URL,data:{full_name:fullName}}});
           if(error)throw error;
           if(data.session){await showSignedIn(data.session);setMessage("Your account is ready.","success");}
           else setMessage("Check your email for the confirmation link. You can keep booking as a guest while you wait.","success");
@@ -189,7 +190,7 @@
       const email=$("auth-email").value.trim().toLowerCase();
       if(!email){setMessage("Enter your email address first.");return;}
       setBusy(true);
-      try{const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});if(error)throw error;setMessage("If that email belongs to an account, a password reset link has been sent.","success");}
+      try{const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:ACCOUNT_REDIRECT_URL});if(error)throw error;setMessage("If that email belongs to an account, a password reset link has been sent.","success");}
       catch(error){setMessage(error.message||"We couldn't send the reset email.","error");}
       finally{setBusy(false);}
     });
