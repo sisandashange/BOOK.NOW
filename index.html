@@ -428,7 +428,13 @@
           service_items: s.service_items || []
         }));
 
-        allStores = append ? allStores.concat(page) : page;
+        if (append) {
+          allStores = allStores.concat(page);
+        } else {
+          const pageIds = new Set(page.map(store => store.id));
+          const savedExtras = allStores.filter(store => favoriteStoreIds.has(store.id) && !pageIds.has(store.id));
+          allStores = page.concat(savedExtras);
+        }
         hasMoreStores = fetched.length > (append ? PAGE_SIZE : targetCount);
         const areas = [...new Set(allStores.map(s => (s.area || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
         const areaSelect = $("area-select");
