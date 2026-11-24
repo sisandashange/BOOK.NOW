@@ -35,7 +35,17 @@
     trigger.addEventListener("click", () => setDrawer(true));
     backdrop.addEventListener("click", event => { if (event.target === backdrop || event.target.closest(".customer-drawer-close")) close(); });
     backdrop.querySelectorAll("a").forEach(a => a.addEventListener("click", close));
-    document.addEventListener("keydown", event => { if (event.key === "Escape" && drawerOpen) close(); });
+    document.addEventListener("keydown", event => {
+      if (!drawerOpen) return;
+      if (event.key === "Escape") { close(); return; }
+      if (event.key === "Tab") {
+        const focusable = Array.from(backdrop.querySelectorAll('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+        if (!focusable.length) return;
+        const first = focusable[0], last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }
+    });
     document.addEventListener("touchstart", event => {
       if (event.touches.length !== 1) return;
       const x = event.touches[0].clientX;
