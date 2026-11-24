@@ -154,7 +154,7 @@
           const fullName=$("auth-full-name").value.trim();
           if(fullName.length<2)throw new Error("Enter your name so your profile can be created.");
           if(password.length<8)throw new Error("Use a password with at least 8 characters.");
-          const {data,error}=await db.auth.signUp({email,password,options:{data:{full_name:fullName}}});
+          const {data,error}=await db.auth.signUp({email,password,options:{emailRedirectTo:location.origin+"/account.html",data:{full_name:fullName}}});
           if(error)throw error;
           if(data.session){await showSignedIn(data.session);setMessage("Your account is ready.","success");}
           else setMessage("Check your email for the confirmation link. You can keep booking as a guest while you wait.","success");
