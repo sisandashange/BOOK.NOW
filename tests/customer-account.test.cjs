@@ -50,6 +50,6 @@ assert.ok(read("terms.html").includes("Creating a BOOK.NOW customer account is o
 console.log("Customer account and drawer regression checks passed.");
 
 assert.ok(nav.includes("VIEW_MODE_KEY") && nav.includes("booknow_view_mode_v1"), "Customer view preference must persist on the device");
-assert.ok(nav.includes('width=1280, initial-scale=1.0') && nav.includes("booknow-desktop-view"), "Desktop view must activate a wide layout viewport");
+assert.ok(nav.includes('width=980, initial-scale=1.0') && nav.includes("booknow-desktop-view"), "Desktop view must activate a wide layout viewport");
 assert.ok(nav.includes("applyViewMode(desktopView ? \"mobile\" : \"desktop\", true)"), "Customers must be able to switch between desktop and mobile view");
 assert.ok(nav.includes('href="index.html#saved-shops"'), "Existing saved shops drawer link must remain available");
