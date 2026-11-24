@@ -48,3 +48,9 @@ body.customer-drawer-open{overflow:hidden}
 .account-empty{padding:18px 12px;text-align:center;border:1px dashed #cbd5e1;border-radius:13px;color:#64748b;font-size:13px;line-height:1.6}
 @media(min-width:700px){.account-page{padding-top:32px}.customer-drawer{width:320px}}
 @media(prefers-reduced-motion:reduce){.customer-drawer,.customer-drawer-backdrop{transition:none}}
+
+.account-section-nav{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}
+.account-section-nav a{display:inline-flex;align-items:center;min-height:38px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#475569;text-decoration:none;font-size:12px;font-weight:800}
+.account-section-nav a.active{border-color:#2563eb;background:#eff6ff;color:#1d4ed8}
+.account-section-message{margin:0 0 12px;color:#64748b;font-size:12px}
+[data-account-section][hidden]{display:none!important}

@@ -17,6 +17,11 @@ assert.ok(nav.includes("signUp") && nav.includes("signInWithPassword"), "Optiona
 assert.ok(nav.includes("emailRedirectTo:ACCOUNT_REDIRECT_URL") && nav.includes("redirectTo:ACCOUNT_REDIRECT_URL"), "Email confirmation must return to the customer account page");
 assert.ok(account.includes("An account is optional"), "Account page must clearly say registration is optional");
 assert.ok(account.includes("Link an earlier guest booking"), "Account page must explain legacy booking linking");
+assert.ok(account.includes('data-account-section="profile" hidden') && account.includes('data-account-section="bookings" hidden') && account.includes('data-account-section="link-booking" hidden'), "Profile, booking history and guest-link form must start as separate hidden sections");
+assert.ok(account.includes('data-account-nav="bookings"') && account.includes('data-account-nav="profile"') && account.includes('data-account-nav="link-booking"'), "Customer account must provide navigation between individual sections");
+assert.ok(nav.includes("showAccountSection") && nav.includes("syncAccountSection") && nav.includes("hashchange"), "Account navigation must show only the selected section and support direct drawer links");
+assert.ok(nav.includes('showAccountSection(location.hash.slice(1) || "bookings", false)'), "Opening the account without a section link must default to booking history");
+
 assert.ok(migration.includes("customer_user_id uuid") && migration.includes("REFERENCES auth.users"), "Bookings must support nullable auth ownership");
 assert.ok(migration.includes("NEW.customer_user_id := auth.uid()"), "Database must derive booking owner from authenticated session");
 assert.ok(migration.includes("customer_user_id = auth.uid()"), "History RPC must restrict records to the signed-in owner");

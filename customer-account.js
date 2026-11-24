@@ -101,6 +101,32 @@
       $("customer-auth-card").hidden=false; $("customer-account-content").hidden=true;
       updateDrawer(null,null);
     };
+    function showAccountSection(section, updateHash=true) {
+      const allowed = ["bookings", "profile", "link-booking"];
+      const selected = allowed.includes(section) ? section : "bookings";
+      document.querySelectorAll("[data-account-section]").forEach(el => {
+        el.hidden = el.dataset.accountSection !== selected;
+      });
+      document.querySelectorAll("[data-account-nav]").forEach(link => {
+        const active = link.dataset.accountNav === selected;
+        link.classList.toggle("active", active);
+        if (active) link.setAttribute("aria-current", "page");
+        else link.removeAttribute("aria-current");
+      });
+      const message = $("account-section-message");
+      if (message) message.textContent = selected === "bookings" ? "Your booking history" : selected === "profile" ? "Your personal account details" : "Connect a previous guest booking to your account";
+      if (updateHash && location.hash !== "#" + selected) history.replaceState(null, "", "#" + selected);
+    }
+    function syncAccountSection() {
+      showAccountSection(location.hash.slice(1) || "bookings", false);
+    }
+    document.querySelectorAll("[data-account-nav]").forEach(link => {
+      link.addEventListener("click", event => {
+        event.preventDefault();
+        showAccountSection(link.dataset.accountNav, true);
+      });
+    });
+    window.addEventListener("hashchange", syncAccountSection);
     async function renderBookings() {
       const list=$("customer-booking-list");
       list.innerHTML='<div class="account-empty">Loading your bookings…</div>';
@@ -122,6 +148,7 @@
     async function showSignedIn(session) {
       currentSession=session;
       $("customer-auth-card").hidden=true; $("customer-account-content").hidden=false;
+      syncAccountSection();
       const user=session.user;
       let profile=await getProfile(user.id);
       if(!profile){
