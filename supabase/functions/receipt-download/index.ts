@@ -5,7 +5,7 @@ const ALLOWED_ORIGINS = new Set([
   "https://www.getbooknow.co.za",
 ]);
 
-function corsHeaders(origin: string | null) {
+function corsHeaders(origin) {
   const allowed = origin && ALLOWED_ORIGINS.has(origin)
     ? origin
     : "https://getbooknow.co.za";
@@ -18,7 +18,7 @@ function corsHeaders(origin: string | null) {
   };
 }
 
-Deno.serve((req: Request) => {
+Deno.serve((req) => {
   const origin = req.headers.get("origin");
   const headers = corsHeaders(origin);
 
