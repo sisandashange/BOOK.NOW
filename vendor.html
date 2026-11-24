@@ -1585,14 +1585,19 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     try {
       const { data: booking, error } = await db.from("bookings").select("*").eq("id", bookingId).eq("store_id", activeVendor.id).maybeSingle();
       if (error || !booking) { status.textContent = "Invalid receipt or booking."; status.style.color = "var(--danger)"; return; }
-      const [{ data: orderItems, error: itemsError }, serviceResult] = await Promise.all([
+      const [{ data: orderItems, error: itemsError }, serviceResult, staffResult] = await Promise.all([
         db.from("booking_items").select("item_title,quantity,unit_price,line_total").eq("booking_id", bookingId).order("created_at", { ascending: true }),
-        booking.service_id ? db.from("service_items").select("title").eq("id", booking.service_id).eq("store_id", activeVendor.id).maybeSingle() : Promise.resolve({ data: null, error: null })
+        booking.service_id ? db.from("service_items").select("title").eq("id", booking.service_id).eq("store_id", activeVendor.id).maybeSingle() : Promise.resolve({ data: null, error: null }),
+        booking.staff_id ? db.from("staff_members").select("full_name,job_title").eq("id", booking.staff_id).eq("store_id", activeVendor.id).maybeSingle() : Promise.resolve({ data: null, error: null })
       ]);
       if (itemsError) throw itemsError;
       if (serviceResult.error) throw serviceResult.error;
+      if (staffResult.error) throw staffResult.error;
       const items = Array.isArray(orderItems) ? orderItems : [];
       const serviceTitle = serviceResult.data?.title || (booking.is_takeaway ? "Takeaway order" : "Booking");
+      const staffLabel = staffResult.data?.full_name
+        ? staffResult.data.full_name + (staffResult.data.job_title ? " · " + staffResult.data.job_title : "")
+        : (booking.staff_id ? "Assigned staff member" : "Not assigned");
       const bookingCompleted = String(booking.status || "").toLowerCase() === "completed";
       const bookingPaid = String(booking.payment_status || "").toUpperCase() === "PAID";
 
@@ -1618,11 +1623,14 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         detail("Customer", booking.customer_name || "N/A"),
         detail("Customer phone", booking.customer_phone || "N/A"),
         detail("Service / order", serviceTitle),
+        booking.is_takeaway ? detail("Order type", "Takeaway") : null,
         ...itemRows,
         booking.comment ? detail("Customer note", booking.comment) : null,
         Number(booking.party_size) > 1 ? detail("Guests", String(booking.party_size)) : null,
+        detail("Staff member", staffLabel),
         booking.queue_number ? detail("Queue number", "#" + booking.queue_number) : null,
         detail("Appointment", booking.booking_date ? fmtAppt(booking) : (ahead === 0 ? "Next in line" : ahead + " customer(s) ahead")),
+        booking.duration_minutes ? detail("Duration", booking.duration_minutes + " minutes") : null,
         detail("Total", money(booking.booked_price)),
         detail("Payment method", String(booking.payment_method || "EFT")),
         detail("Payment reference", booking.payment_ref || "N/A"),
