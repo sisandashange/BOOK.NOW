@@ -37,6 +37,8 @@ jobs:
           node-version: 22
       - name: Run application regression and utility tests
         run: node tests/js-smoke.test.cjs
+      - name: Run optional customer account regression tests
+        run: node tests/customer-account.test.cjs
       - name: Parse changed Edge Function TypeScript
         run: |
           npx --yes esbuild@0.25.0 supabase/functions/receipt-download/index.ts --bundle --format=esm --external:jsr:* --external:npm:* --outfile=/tmp/receipt-download.js

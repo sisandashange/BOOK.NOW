@@ -114,6 +114,7 @@
   </style>
 <script src="booking-utils.js"></script>
 <script src="i18n.js"></script>
+  <link rel="stylesheet" href="customer-account.css">
 </head>
 <body>
 
@@ -1521,7 +1522,7 @@
     }
 
     function init() {
-      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      db = window.BOOKNOW_CUSTOMER_AUTH || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(err => console.warn("Service worker registration failed:", err));
 
       $("close-modal-btn").addEventListener("click", closeModals);
@@ -1571,5 +1572,16 @@
     }
   })();
   </script>
+  <script>
+  window.addEventListener("booknow:customer-ready", event => {
+    const profile = event.detail && event.detail.profile;
+    if (!profile) return;
+    const name = document.getElementById("customer-name");
+    const phone = document.getElementById("customer-phone");
+    if (name && !name.value.trim() && profile.full_name) name.value = profile.full_name;
+    if (phone && !phone.value.trim() && profile.phone) phone.value = profile.phone;
+  });
+  </script>
+  <script src="customer-account.js" defer></script>
 </body>
 </html>
