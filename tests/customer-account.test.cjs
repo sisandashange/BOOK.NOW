@@ -53,3 +53,6 @@ assert.ok(nav.includes("VIEW_MODE_KEY") && nav.includes("booknow_view_mode_v1"),
 assert.ok(nav.includes('width=') && nav.includes("booknow-desktop-view"), "Desktop view must request a wide desktop viewport and Median WebView zoom");
 assert.ok(nav.includes("applyViewMode(desktopView ? \"mobile\" : \"desktop\", true)"), "Customers must be able to switch between desktop and mobile view");
 assert.ok(nav.includes('href="index.html#saved-shops"'), "Existing saved shops drawer link must remain available");
+
+assert.ok(nav.includes("median.webview.setZoom") && nav.includes("median_library_ready"), "Desktop mode must use Median native WebView zoom when the bridge is ready");
+assert.ok(nav.includes("Math.min(1, screenWidth / desktopViewportWidth)"), "Desktop zoom must fit the wide page to the device screen");
