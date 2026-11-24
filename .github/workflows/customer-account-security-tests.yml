@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "supabase/migrations/20261124090000_optional_customer_accounts.sql"
+      - "supabase/migrations/20261124003016_optional_customer_accounts.sql"
       - "supabase/tests/customer_account_security_ci.sql"
       - ".github/workflows/customer-account-security-tests.yml"
 
