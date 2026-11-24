@@ -5,7 +5,7 @@ const assert = require("node:assert/strict");
 const read = file => fs.readFileSync(path.join(__dirname, "..", file), "utf8");
 const nav = read("customer-account.js");
 const account = read("account.html");
-const migration = read("supabase/migrations/20261124090000_optional_customer_accounts.sql");
+const migration = read("supabase/migrations/20261124003016_optional_customer_accounts.sql");
 const store = read("store.html");
 const index = read("index.html");
 
