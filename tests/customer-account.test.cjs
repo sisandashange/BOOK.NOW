@@ -50,6 +50,9 @@ assert.ok(read("terms.html").includes("Creating a BOOK.NOW customer account is o
 console.log("Customer account and drawer regression checks passed.");
 
 assert.ok(nav.includes("VIEW_MODE_KEY") && nav.includes("booknow_view_mode_v1"), "Customer view preference must persist on the device");
-assert.ok(nav.includes('width=device-width, initial-scale=1.0') && nav.includes("booknow-desktop-view"), "Desktop view must activate a real device viewport without shrinking the page");
+assert.ok(nav.includes('width=') && nav.includes("booknow-desktop-view"), "Desktop view must request a wide desktop viewport and Median WebView zoom");
 assert.ok(nav.includes("applyViewMode(desktopView ? \"mobile\" : \"desktop\", true)"), "Customers must be able to switch between desktop and mobile view");
 assert.ok(nav.includes('href="index.html#saved-shops"'), "Existing saved shops drawer link must remain available");
+
+assert.ok(nav.includes("median.webview.setZoom") && nav.includes("median_library_ready"), "Desktop mode must use Median native WebView zoom when the bridge is ready");
+assert.ok(nav.includes("Math.min(1, screenWidth / desktopViewportWidth)"), "Desktop zoom must fit the wide page to the device screen");

@@ -23,7 +23,24 @@
     let viewport = document.querySelector('meta[name="viewport"]');
     if (!viewport) { viewport = document.createElement("meta"); viewport.name = "viewport"; document.head.appendChild(viewport); }
     if (!viewport.dataset.booknowMobileContent) viewport.dataset.booknowMobileContent = viewport.content || "width=device-width, initial-scale=1.0";
-    viewport.content = desktopView ? "width=device-width, initial-scale=1.0" : viewport.dataset.booknowMobileContent;
+    // Chrome-style desktop site: request a wide layout viewport, then use Median's
+    // native WebView zoom so the full desktop page fits the phone screen.
+    const screenWidth = Math.max(320, Number(window.screen && window.screen.width) || window.innerWidth || 393);
+    const desktopViewportWidth = Math.max(980, screenWidth);
+    viewport.content = desktopView
+      ? "width=" + desktopViewportWidth + ", initial-scale=1.0, maximum-scale=5.0, user-scalable=yes"
+      : viewport.dataset.booknowMobileContent;
+    const applyNativeZoom = () => {
+      if (!window.median || !window.median.webview || typeof window.median.webview.setZoom !== "function") return;
+      const zoom = desktopView ? Math.min(1, screenWidth / desktopViewportWidth) : 1;
+      try { window.median.webview.setZoom(zoom); } catch (error) { console.warn("BOOK.NOW WebView zoom unavailable", error); }
+    };
+    // Median invokes this callback after its native bridge becomes available.
+    window.median_library_ready = function () {
+      applyNativeZoom();
+    };
+    applyNativeZoom();
+    if (desktopView) window.setTimeout(applyNativeZoom, 250);
     const button = document.getElementById("booknow-view-mode-toggle");
     if (button) {
       button.innerHTML = desktopView ? '<i class="ph ph-device-mobile"></i> Mobile view <span class="booknow-view-mode-state">On</span>' : '<i class="ph ph-monitor"></i> Desktop view <span class="booknow-view-mode-state">Off</span>';
