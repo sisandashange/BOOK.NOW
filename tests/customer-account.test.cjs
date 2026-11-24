@@ -7,6 +7,7 @@ const nav = read("customer-account.js");
 const account = read("account.html");
 const migration = read("supabase/migrations/20261124003016_optional_customer_accounts.sql");
 const favoritesMigration = read("supabase/migrations/20261124010959_customer_favorite_stores.sql");
+const receiptMigration = read("supabase/migrations/20261124100000_customer_booking_receipts.sql");
 const store = read("store.html");
 const index = read("index.html");
 
@@ -25,6 +26,9 @@ assert.ok(favoritesMigration.includes("enable row level security") && favoritesM
 assert.ok(!favoritesMigration.includes("to anon"), "Guests must not be able to access the private favourites table directly");
 assert.ok(nav.includes("list_my_customer_booking_receipts"), "Account page must load private in-app booking receipts through RPC");
 assert.ok(account.includes('src="qr.js" defer'), "Account page must render the booking QR code locally");
+assert.ok(receiptMigration.includes("WHERE b.customer_user_id = auth.uid()"), "Receipt RPC must return only the signed-in customer’s bookings");
+assert.ok(receiptMigration.includes("REVOKE ALL ON FUNCTION public.list_my_customer_booking_receipts() FROM PUBLIC, anon"), "Receipt RPC must not be publicly callable");
+assert.ok(receiptMigration.includes("booking_items") && receiptMigration.includes("receipt_active"), "Receipt RPC must include saved order lines and active receipt state");
 assert.ok(nav.includes("claim_customer_booking"), "Account page must support linking earlier guest bookings");
 assert.ok(nav.includes("signUp") && nav.includes("signInWithPassword"), "Optional email/password account registration and login must work");
 assert.ok(nav.includes("emailRedirectTo:ACCOUNT_REDIRECT_URL") && nav.includes("redirectTo:ACCOUNT_REDIRECT_URL"), "Email confirmation must return to the customer account page");
