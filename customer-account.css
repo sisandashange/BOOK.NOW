@@ -57,7 +57,7 @@ body.customer-drawer-open{overflow:hidden}
 
 /* Optional desktop-width layout for the Median APK and mobile browsers. */
 html.booknow-desktop-view { overflow-x:auto !important; }
-html.booknow-desktop-view body { width:1280px !important; min-width:1280px !important; max-width:none !important; }
+html.booknow-desktop-view body { width:100% !important; min-width:0 !important; max-width:none !important; }
 .customer-drawer-link.customer-view-mode{width:100%;border:0;background:transparent;text-align:left;font:inherit;cursor:pointer}
 .customer-view-mode .booknow-view-mode-state{margin-left:auto;color:#64748b;font-size:11px;font-weight:800}
 .customer-view-mode[aria-pressed="true"]{background:#eff6ff;color:#1d4ed8}
