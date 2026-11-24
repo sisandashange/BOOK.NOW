@@ -35,10 +35,12 @@
       const zoom = desktopView ? Math.min(1, screenWidth / desktopViewportWidth) : 1;
       try { window.median.webview.setZoom(zoom); } catch (error) { console.warn("BOOK.NOW WebView zoom unavailable", error); }
     };
+    // Median invokes this callback after its native bridge becomes available.
+    window.median_library_ready = function () {
+      applyNativeZoom();
+    };
     applyNativeZoom();
-    if (desktopView && window.median) {
-      window.setTimeout(applyNativeZoom, 250);
-    }
+    if (desktopView) window.setTimeout(applyNativeZoom, 250);
     const button = document.getElementById("booknow-view-mode-toggle");
     if (button) {
       button.innerHTML = desktopView ? '<i class="ph ph-device-mobile"></i> Mobile view <span class="booknow-view-mode-state">On</span>' : '<i class="ph ph-monitor"></i> Desktop view <span class="booknow-view-mode-state">Off</span>';
