@@ -26,7 +26,7 @@ assert.ok(favoritesMigration.includes("enable row level security") && favoritesM
 assert.ok(!favoritesMigration.includes("to anon"), "Guests must not be able to access the private favourites table directly");
 assert.ok(nav.includes("list_my_customer_booking_receipts"), "Account page must load private in-app booking receipts through RPC");
 assert.ok(account.includes('src="qr.js" defer'), "Account page must render the booking QR code locally");
-assert.ok(receiptMigration.includes("WHERE b.customer_user_id = auth.uid()"), "Receipt RPC must return only the signed-in customer’s bookings");
+assert.ok(/FROM public\.bookings\s+WHERE customer_user_id = auth\.uid\(\)/.test(receiptMigration), "Receipt RPC must return only the signed-in customer’s bookings");
 assert.ok(receiptMigration.includes("REVOKE ALL ON FUNCTION public.list_my_customer_booking_receipts() FROM PUBLIC, anon"), "Receipt RPC must not be publicly callable");
 assert.ok(receiptMigration.includes("booking_items") && receiptMigration.includes("receipt_active"), "Receipt RPC must include saved order lines and active receipt state");
 assert.ok(nav.includes("claim_customer_booking"), "Account page must support linking earlier guest bookings");
