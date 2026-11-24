@@ -564,7 +564,7 @@
   const prompt = document.getElementById("app-install-prompt");
   if (!prompt) return;
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
-  const isAndroidWebView = /;\\s*wv\\)/i.test(navigator.userAgent);
+  const isAndroidWebView = /;\s*wv\)/i.test(navigator.userAgent);
   const inInstalledApp = isStandalone || isAndroidWebView;
   const storage = {
     get(key) { try { return localStorage.getItem(key); } catch (_) { return null; } },
