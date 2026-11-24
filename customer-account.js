@@ -168,6 +168,13 @@
       finally{setBusy(false);}
     });
     const recoveryForm = $("customer-password-reset-form");
+    const recoveryPending = /(?:^|[&#])type=recovery(?:&|$)/.test(location.hash);
+    if (recoveryPending && recoveryForm) {
+      recoveryForm.hidden=false;
+      $("customer-auth-card").hidden=false;
+      $("customer-account-content").hidden=true;
+      setMessage("Choose a new password to finish resetting your account.","success");
+    }
     if (recoveryForm) recoveryForm.addEventListener("submit",async event=>{
       event.preventDefault();
       const password=$("reset-new-password").value;
@@ -223,7 +230,7 @@
     const {data:{session},error}=await db.auth.getSession();
     if(error)throw error;
     currentSession=session;
-    if(session){await showSignedIn(session);}else showSignedOut();
+    if(session && !recoveryPending){await showSignedIn(session);}else if(!recoveryPending)showSignedOut();
     db.auth.onAuthStateChange((event,session)=>{
       currentSession=session;
       if(event==="PASSWORD_RECOVERY" && recoveryForm){
