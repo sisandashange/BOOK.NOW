@@ -59,6 +59,7 @@ assert.ok(index.indexOf('id="marketplace-status"') < index.indexOf('id="load-mor
 assert.ok(index.includes('href="apps.html" class="get-app-link"'), "Homepage must link to the separate apps page");
 assert.ok(index.includes('id="app-install-prompt"'), "Homepage must contain the app discovery prompt");
 assert.ok(index.includes("booknow_app_download_started_at"), "Dismissed download prompts must stay suppressed after a download starts");
+assert.ok(index.includes('new URLSearchParams(window.location.search).get("inapp") === "1"'), "The native wrapper can explicitly mark its in-app context");
 assert.ok(!index.includes('class="app-downloads container"'), "Full APK cards must not remain on the homepage");
 const apps = read("apps.html");
 assert.ok(apps.includes("BOOK.NOW for Android"));
@@ -68,6 +69,7 @@ assert.ok(apps.includes("BOOK.NOW.apk?download=BOOK.NOW.apk"), "Customer APK dow
 assert.ok(apps.includes("BOOK.NOW%20PARTNER.apk?download=BOOK.NOW%20PARTNER.apk"), "Business APK download must remain available");
 assert.ok(apps.includes("booknow_app_download_started_at"), "Starting an APK download must suppress later app prompts");
 assert.ok(apps.includes("window.location.replace(\"index.html\")"), "Apps download page must redirect away inside the installed app");
+assert.ok(apps.includes('new URLSearchParams(window.location.search).get("inapp") === "1"'), "Apps page must stay hidden when the wrapper marks its in-app context");
 assert.ok(index.includes("MIN_REFRESH_GAP_MS"));
 assert.match(index, /\.order\("created_at", \{ ascending: false \}\)\s*\.order\("id", \{ ascending: true \}\)/,
   "Marketplace pagination must use a stable unique tie-breaker");
