@@ -51,7 +51,7 @@ CREATE TABLE public.bookings (
 CREATE TABLE public.stores (id uuid PRIMARY KEY, store_name text);
 CREATE TABLE public.service_items (id uuid PRIMARY KEY, title text);
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
-GRANT INSERT, UPDATE ON public.bookings TO authenticated;
+GRANT INSERT, UPDATE, SELECT ON public.bookings TO authenticated;
 
 -- Apply the exact customer account migration under test.
 \i supabase/migrations/20261124090000_optional_customer_accounts.sql
