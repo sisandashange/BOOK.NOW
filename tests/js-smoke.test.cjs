@@ -89,9 +89,9 @@ assert.ok(!store.includes("Save receipt as image") && !store.includes("receipt-d
 assert.ok(!manage.includes("Save receipt as image") && !manage.includes("receipt-download"), "Guest booking management must not export receipt images");
 assert.ok(read("customer-account.js").includes('db.rpc("list_my_customer_booking_receipts")'), "Customer account must load in-app booking receipts");
 assert.ok(read("account.html").includes('src="qr.js" defer'), "Customer account must load the QR renderer");
-assert.ok(vendor.includes('db.from("booking_items").select("item_title,quantity,unit_price,line_total")'), "Owner scanner must load itemised orders");
 
 const vendor = read("vendor.html");
+assert.ok(vendor.includes('db.from("booking_items").select("item_title,quantity,unit_price,line_total")'), "Owner scanner must load itemised orders");
 assert.ok(vendor.includes('db.from("store_bank_details")'));
 assert.ok(!vendor.includes('db.from("stores").update({\n          bank_name'));
 assert.ok(vendor.includes("Reserved for you · Accept to confirm the assignment"));
