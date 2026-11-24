@@ -23,4 +23,10 @@ assert.ok(migration.includes("v_owner <> auth.uid()"), "Claiming must not steal 
 assert.ok(migration.includes("GRANT EXECUTE ON FUNCTION public.claim_customer_booking(text, text) TO authenticated"), "Claim RPC must not be available to guests");
 assert.ok(!migration.includes("GRANT SELECT ON TABLE public.bookings TO authenticated"), "Customer accounts must not gain broad direct booking table access");
 assert.ok(store.includes("customer-account.js") && index.includes("customer-account.js"), "Drawer must load on both marketplace and shop booking pages");
+assert.ok(account.includes("customer-password-reset-form"), "Password recovery must provide a form to set a new password");
+assert.ok(nav.includes("PASSWORD_RECOVERY") && nav.includes("updateUser({password})"), "Password recovery must update the authenticated user's password");
+assert.ok(store.includes('id="customer-name"') && store.includes('id="customer-phone"'), "Guest booking contact fields must remain available");
+assert.ok(store.includes('required') && store.includes('Confirm Appointment'), "The existing guest booking form must remain usable without account registration");
+assert.ok(read("privacy.html").includes("optional customer account"), "Privacy policy must disclose optional account data");
+assert.ok(read("terms.html").includes("Creating a BOOK.NOW customer account is optional"), "Terms must preserve guest checkout as an explicit option");
 console.log("Customer account and drawer regression checks passed.");
