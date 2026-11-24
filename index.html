@@ -565,7 +565,7 @@
   if (!prompt) return;
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
   const isAndroidWebView = /;\s*wv\)/i.test(navigator.userAgent);
-  const inInstalledApp = isStandalone || isAndroidWebView;
+  const inInstalledApp = isStandalone || isAndroidWebView || new URLSearchParams(window.location.search).get("inapp") === "1";
   const storage = {
     get(key) { try { return localStorage.getItem(key); } catch (_) { return null; } },
     set(key, value) { try { localStorage.setItem(key, value); } catch (_) {} }
@@ -584,6 +584,7 @@
   };
   document.getElementById("app-install-close").addEventListener("click", close);
   document.getElementById("app-install-dismiss").addEventListener("click", close);
+  document.querySelector(".app-install-primary").addEventListener("click", () => storage.set("booknow_app_prompt_dismissed_at", String(Date.now())));
   prompt.addEventListener("click", event => { if (event.target === prompt) close(); });
   window.setTimeout(() => {
     if (document.hidden || inInstalledApp) return;
