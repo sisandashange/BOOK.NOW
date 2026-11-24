@@ -23,7 +23,8 @@ assert.ok(index.includes("booknow:customer-ready") && index.includes("loadSavedS
 assert.ok(favoritesMigration.includes("references auth.users(id) on delete cascade") && favoritesMigration.includes("references public.stores(id) on delete cascade"), "Saved shops must be tied to valid customers and shops");
 assert.ok(favoritesMigration.includes("enable row level security") && favoritesMigration.includes("auth.uid()") && favoritesMigration.includes("for select") && favoritesMigration.includes("for insert") && favoritesMigration.includes("for delete"), "Saved shop rows must be protected by owner-only RLS");
 assert.ok(!favoritesMigration.includes("to anon"), "Guests must not be able to access the private favourites table directly");
-assert.ok(nav.includes("list_my_customer_bookings"), "Account page must load private booking history through RPC");
+assert.ok(nav.includes("list_my_customer_booking_receipts"), "Account page must load private in-app booking receipts through RPC");
+assert.ok(account.includes('src="qr.js" defer'), "Account page must render the booking QR code locally");
 assert.ok(nav.includes("claim_customer_booking"), "Account page must support linking earlier guest bookings");
 assert.ok(nav.includes("signUp") && nav.includes("signInWithPassword"), "Optional email/password account registration and login must work");
 assert.ok(nav.includes("emailRedirectTo:ACCOUNT_REDIRECT_URL") && nav.includes("redirectTo:ACCOUNT_REDIRECT_URL"), "Email confirmation must return to the customer account page");
@@ -41,6 +42,7 @@ assert.ok(migration.includes("v_owner <> auth.uid()"), "Claiming must not steal 
 assert.ok(migration.includes("GRANT EXECUTE ON FUNCTION public.claim_customer_booking(text, text) TO authenticated"), "Claim RPC must not be available to guests");
 assert.ok(!migration.includes("GRANT SELECT ON TABLE public.bookings TO authenticated"), "Customer accounts must not gain broad direct booking table access");
 assert.ok(store.includes("customer-account.js") && index.includes("customer-account.js"), "Drawer must load on both marketplace and shop booking pages");
+assert.ok(!store.includes("Save receipt as image") && !store.includes("receipt-download"), "Booking confirmation must not save receipt images");
 assert.ok(account.includes("customer-password-reset-form"), "Password recovery must provide a form to set a new password");
 assert.ok(nav.includes("PASSWORD_RECOVERY") && nav.includes("updateUser({password})"), "Password recovery must update the authenticated user's password");
 assert.ok(store.includes('id="customer-name"') && store.includes('id="customer-phone"'), "Guest booking contact fields must remain available");
