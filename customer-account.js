@@ -160,7 +160,7 @@
     async function renderBookings() {
       const list=$("customer-booking-list");
       list.innerHTML='<div class="account-empty">Loading your bookings…</div>';
-      const {data,error}=await db.rpc("list_my_customer_bookings");
+      const {data,error}=await db.rpc("list_my_customer_booking_receipts");
       if(error) throw error;
       if(!Array.isArray(data)||!data.length){list.innerHTML='<div class="account-empty">No bookings are linked to this account yet.<br>You can still book as a guest, or link an earlier booking below.</div>';return;}
       list.replaceChildren();
@@ -170,9 +170,30 @@
         const title=document.createElement("h3"); title.textContent=b.store_name||"BOOK.NOW shop";
         const badge=document.createElement("span"); badge.className="account-status "+String(b.status||"").toLowerCase(); badge.textContent=b.status||"Pending";
         top.append(title,badge); item.append(top);
-        const line1=document.createElement("p"); line1.textContent=(b.service_title|| (b.is_takeaway?"Takeaway order":"Booking"))+" · "+(b.booking_date||"")+" · "+(b.booking_time||"");
-        const line2=document.createElement("p"); line2.textContent="Reference: "+(b.payment_ref||"")+" · "+(b.payment_status||"UNPAID")+" · R"+Number(b.booked_price||0).toFixed(2);
-        item.append(line1,line2); list.appendChild(item);
+        const addLine=(label,value)=>{ if(value===null||value===undefined||value==="") return; const p=document.createElement("p"); p.textContent=label+": "+value; item.appendChild(p); };
+        addLine("Service / order",b.service_title||(b.is_takeaway?"Takeaway order":"Booking"));
+        addLine("Appointment",(b.booking_date||"")+(b.booking_time?" · "+b.booking_time:""));
+        addLine("Customer",b.customer_name); addLine("Phone",b.customer_phone);
+        addLine("Guests",Number(b.party_size)>1?String(b.party_size):"");
+        addLine("Staff",b.staff_name?b.staff_name+(b.staff_job_title?" · "+b.staff_job_title:""):"");
+        addLine("Queue number",b.queue_number?"#"+b.queue_number:"");
+        addLine("Payment",String(b.payment_method||"EFT")+" · "+String(b.payment_status||"UNPAID"));
+        addLine("Total","R"+Number(b.booked_price||0).toFixed(2)); addLine("Reference",b.payment_ref);
+        addLine("Shop address",b.store_address); addLine("Shop phone",b.store_phone);
+        if(b.comment) addLine("Your note",b.comment);
+        const items=Array.isArray(b.items)?b.items:[];
+        if(items.length){
+          const order=document.createElement("div"); order.className="account-order-items";
+          const heading=document.createElement("strong"); heading.textContent="Itemised order"; order.appendChild(heading);
+          items.forEach(row=>{ const p=document.createElement("p"); p.textContent=Number(row.quantity||1)+" × "+String(row.title||"Item")+" — R"+Number(row.line_total||0).toFixed(2); order.appendChild(p); });
+          item.appendChild(order);
+        }
+        const note=document.createElement("p"); note.className="account-receipt-note";
+        if(b.receipt_active && b.booking_id && window.BNQR){
+          const qr=document.createElement("div"); qr.className="account-receipt-qr"; qr.innerHTML=window.BNQR.svg(b.booking_id,{margin:2}); item.appendChild(qr);
+          note.textContent="Show this QR code to the shop. It stays active until the booking is completed or cancelled.";
+        }else{ note.textContent="This receipt has been closed. Your booking remains in your history."; }
+        item.appendChild(note); list.appendChild(item);
       });
     }
     async function showSignedIn(session) {
