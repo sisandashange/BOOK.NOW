@@ -53,4 +53,12 @@ body.customer-drawer-open{overflow:hidden}
 .account-section-nav a.active{border-color:#2563eb;background:#eff6ff;color:#1d4ed8}
 .account-section-message{margin:0 0 12px;color:#64748b;font-size:12px}
 [data-account-section][hidden]{display:none!important}
-\n\n/* Optional desktop-width layout for the Median APK and mobile browsers. */\nhtml.booknow-desktop-view { overflow-x:auto !important; }\nhtml.booknow-desktop-view body { width:1280px !important; min-width:1280px !important; max-width:none !important; }\n.customer-drawer-link.customer-view-mode{width:100%;border:0;background:transparent;text-align:left;font:inherit;cursor:pointer}\n.customer-view-mode .booknow-view-mode-state{margin-left:auto;color:#64748b;font-size:11px;font-weight:800}\n.customer-view-mode[aria-pressed="true"]{background:#eff6ff;color:#1d4ed8}\n.customer-view-mode[aria-pressed="true"] .booknow-view-mode-state{color:#1d4ed8}\n
+
+
+/* Optional desktop-width layout for the Median APK and mobile browsers. */
+html.booknow-desktop-view { overflow-x:auto !important; }
+html.booknow-desktop-view body { width:1280px !important; min-width:1280px !important; max-width:none !important; }
+.customer-drawer-link.customer-view-mode{width:100%;border:0;background:transparent;text-align:left;font:inherit;cursor:pointer}
+.customer-view-mode .booknow-view-mode-state{margin-left:auto;color:#64748b;font-size:11px;font-weight:800}
+.customer-view-mode[aria-pressed="true"]{background:#eff6ff;color:#1d4ed8}
+.customer-view-mode[aria-pressed="true"] .booknow-view-mode-state{color:#1d4ed8}
