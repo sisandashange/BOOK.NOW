@@ -26,11 +26,11 @@ LANGUAGE sql IMMUTABLE
 AS $$ SELECT public.phone_digits(p_a) = public.phone_digits(p_b) $$;
 
 CREATE FUNCTION private.booking_reference_throttle(p_ref text) RETURNS void
-LANGUAGE plpgsql AS $ BEGIN RETURN; END $;
+LANGUAGE plpgsql AS $function$ BEGIN RETURN; END; $function$;
 CREATE FUNCTION private.booking_reference_record_failure(p_ref text) RETURNS void
-LANGUAGE plpgsql AS $ BEGIN RETURN; END $;
+LANGUAGE plpgsql AS $function$ BEGIN RETURN; END; $function$;
 CREATE FUNCTION private.booking_reference_clear(p_ref text) RETURNS void
-LANGUAGE plpgsql AS $ BEGIN RETURN; END $;
+LANGUAGE plpgsql AS $function$ BEGIN RETURN; END; $function$;
 
 CREATE TABLE public.bookings (
   id uuid PRIMARY KEY,
@@ -96,20 +96,6 @@ BEGIN
   SELECT count(*) INTO v_count FROM public.list_my_customer_bookings();
   IF v_count <> 1 THEN RAISE EXCEPTION 'Expected one owned booking, got %', v_count; END IF;
 
-  -- Client inserts derive ownership from auth.uid(), not a supplied value.
-  PERFORM set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000001',true);
-  SET LOCAL ROLE authenticated;
-  INSERT INTO public.bookings(id, customer_name, customer_phone, payment_ref, customer_user_id)
-  VALUES ('10000000-0000-4000-8000-000000000002','Signed In','0712345678','BN-AUTO02',
-          '00000000-0000-4000-8000-000000000002');
-  UPDATE public.bookings SET customer_user_id='00000000-0000-4000-8000-000000000002'
-  WHERE id='10000000-0000-4000-8000-000000000002';
-  RESET ROLE;
-  SELECT customer_user_id INTO v_owner FROM public.bookings WHERE id='10000000-0000-4000-8000-000000000002';
-  IF v_owner <> '00000000-0000-4000-8000-000000000001' THEN
-    RAISE EXCEPTION 'Client-supplied insert or update changed booking ownership';
-  END IF;
-
   IF has_function_privilege('anon','public.claim_customer_booking(text,text)','EXECUTE') THEN
     RAISE EXCEPTION 'Anonymous role can execute the booking claim RPC';
   END IF;
@@ -118,6 +104,25 @@ BEGIN
   END IF;
 END
 $test$;
+
+-- Run insert and ownership-update attempts as a real authenticated database role.
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000001',true);
+INSERT INTO public.bookings(id, customer_name, customer_phone, payment_ref, customer_user_id)
+VALUES ('10000000-0000-4000-8000-000000000002','Signed In','0712345678','BN-AUTO02',
+        '00000000-0000-4000-8000-000000000002');
+UPDATE public.bookings SET customer_user_id='00000000-0000-4000-8000-000000000002'
+WHERE id='10000000-0000-4000-8000-000000000002';
+RESET ROLE;
+DO $owner_check$
+DECLARE v_owner uuid;
+BEGIN
+  SELECT customer_user_id INTO v_owner FROM public.bookings WHERE id='10000000-0000-4000-8000-000000000002';
+  IF v_owner <> '00000000-0000-4000-8000-000000000001' THEN
+    RAISE EXCEPTION 'Client-supplied insert or update changed booking ownership';
+  END IF;
+END
+$owner_check$;
 
 -- Verify profile row isolation under the authenticated role.
 SET LOCAL ROLE authenticated;
