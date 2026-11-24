@@ -1420,7 +1420,7 @@
             </div>` : `
             <div class="info-box"><p>Pay cash at the shop. Show this screen and your reference <strong>${esc(paymentRef)}</strong>.</p></div>`}
 
-            <div style="background:#fff;border:2px dashed var(--border);padding:10px;border-radius:14px;margin-bottom:12px;display:inline-block;">
+            <div id="booking-receipt-qr" style="background:#fff;border:2px dashed var(--border);padding:10px;border-radius:14px;margin-bottom:12px;display:inline-block;">
               ${window.BNQR && bookingId
                 ? `<div role="img" aria-label="Booking QR code" style="width:130px;height:130px;margin:0 auto;">${BNQR.svg(bookingId, { margin: 1 })}</div>`
                 : `<div style="font-size:12px;color:var(--muted);padding:8px;">Show reference <strong>${esc(paymentRef)}</strong> at the shop.</div>`}
@@ -1438,6 +1438,27 @@
         $("booking-modal").querySelector(".modal-sheet").style.display = "none";
         confirmation.style.display = "block";
         $("done-btn").addEventListener("click", () => location.reload());
+        if (bookingId) {
+          let lastReceiptRefreshAt = 0;
+          const refreshReceiptState = async () => {
+            if (document.visibilityState === "hidden" || Date.now() - lastReceiptRefreshAt < 8000) return;
+            lastReceiptRefreshAt = Date.now();
+            try {
+              const { data, error } = await db.rpc("find_my_booking", { p_ref: paymentRef, p_phone: phone });
+              if (error) throw error;
+              const latest = Array.isArray(data) ? data[0] : data;
+              if (latest && ["completed", "cancelled"].includes(String(latest.status || "").toLowerCase())) {
+                const receiptQr = $("booking-receipt-qr");
+                if (receiptQr) receiptQr.textContent = "This receipt has been closed. Your booking remains in My bookings or Manage a guest booking.";
+                window.removeEventListener("focus", refreshReceiptState);
+              }
+            } catch (refreshError) {
+              console.warn("Could not refresh receipt status:", refreshError);
+            }
+          };
+          window.addEventListener("focus", refreshReceiptState);
+          document.addEventListener("visibilitychange", refreshReceiptState);
+        }
         if (bookingId) {
           $("alerts-btn").addEventListener("click", () => enableCustomerAlerts(bookingId, paymentRef, phone, $("alerts-btn"), $("alerts-note")));
         } else {
