@@ -230,8 +230,8 @@
     const {data:{session}}=await db.auth.getSession();
     currentSession=session;
     updateDrawer(session,null);
-    if(session){try{const profile=await getProfile(session.user.id);updateDrawer(session,profile);}catch(_){}}
-    db.auth.onAuthStateChange((_event,session)=>{currentSession=session;updateDrawer(session,null);if(session)getProfile(session.user.id).then(p=>updateDrawer(session,p)).catch(()=>{});});
+    if(session){try{const profile=await getProfile(session.user.id);window.BOOKNOW_CUSTOMER_PROFILE=profile;updateDrawer(session,profile);window.dispatchEvent(new CustomEvent("booknow:customer-ready",{detail:{session,profile}}));}catch(_){}}
+    db.auth.onAuthStateChange((_event,session)=>{currentSession=session;updateDrawer(session,null);if(session)getProfile(session.user.id).then(p=>{window.BOOKNOW_CUSTOMER_PROFILE=p;updateDrawer(session,p);window.dispatchEvent(new CustomEvent("booknow:customer-ready",{detail:{session,profile:p}}));}).catch(()=>{});else{window.BOOKNOW_CUSTOMER_PROFILE=null;window.dispatchEvent(new CustomEvent("booknow:customer-ready",{detail:{session:null,profile:null}}));}});
     if(isAccountPage)await accountPageInit();
   }
   init().catch(error=>{console.error("BOOK.NOW customer account init failed",error);const el=$("account-auth-message");if(el)el.textContent="Account services are temporarily unavailable. Guest booking is still available.";});
