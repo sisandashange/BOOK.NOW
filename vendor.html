@@ -746,6 +746,45 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         details.append(summary);
         const editor = h("div",{class:"staff-editor"});
         if (member.user_id) {
+          editor.append(h("div",{class:"staff-login-note",text:"Login linked · "+(member.invited_email || "Email linked")}));
+        } else {
+          const inviteEmail=h("input",{type:"email",placeholder:"Worker email address",autocomplete:"email",style:"width:100%;padding:10px;border:1px solid var(--border);border-radius:9px"});
+          const inviteBtn=h("button",{type:"button",class:"btn-action btn-confirm",text:"Create staff login & send invite",style:"margin-top:8px",onclick:()=>inviteStaffLogin(member.id,inviteEmail,inviteBtn)});
+          editor.append(h("div",{class:"form-field"},h("label",{text:"Staff login"}),inviteEmail,inviteBtn));
+        }
+        editor.append(h("div",{class:"staff-editor-heading",text:"Services"}));
+        editor.append(h("p",{class:"small-tip",style:"margin:0 0 10px",text:"Choose the services this worker can perform."}));
+        const serviceWrap=h("div",{class:"staff-service-grid"});
+        services.forEach(service=>{
+          const cb=h("input",{type:"checkbox",value:service.id});
+          cb.checked=links.some(link=>link.staff_id===member.id && link.service_id===service.id);
+          cb.addEventListener("change",()=>saveStaffService(member.id,service.id,cb.checked));
+          serviceWrap.append(h("label",{class:"staff-service-option"},cb,document.createTextNode(service.title)));
+        });
+        if (!services.length) serviceWrap.append(h("p",{class:"small-tip",text:"Add services to your shop before assigning them to staff."}));
+        editor.append(serviceWrap);
+        editor.append(h("div",{class:"staff-editor-heading",text:"Weekly working hours"}));
+        editor.append(h("p",{class:"small-tip",style:"margin:0 0 10px",text:"Set each worker's availability, then save the full weekly schedule once."}));
+        const hourRows = [];
+        const hourGrid=h("div",{class:"staff-hours-grid"});
+        STAFF_DAYS.forEach((day,index)=>{
+          const saved=hours.find(x=>x.staff_id===member.id && Number(x.day_of_week)===index);
+          const enabled=h("input",{type:"checkbox"});
+          enabled.checked=!!(saved && saved.is_working);
+          const start=h("input",{type:"time",value:saved?.start_time?String(saved.start_time).slice(0,5):"09:00","aria-label":day+" start time"});
+          const end=h("input",{type:"time",value:saved?.end_time?String(saved.end_time).slice(0,5):"17:00","aria-label":day+" finish time"});
+          start.disabled=end.disabled=!enabled.checked;
+          enabled.addEventListener("change",()=>{start.disabled=end.disabled=!enabled.checked;});
+          hourRows.push({day:index,enabled,start,end});
+          hourGrid.append(h("div",{class:"staff-hour-row"},
+            h("label",{class:"staff-day-toggle"},enabled,h("span",{text:day})),
+            h("span",{class:"staff-time-fields"},start,end)
+          ));
+        });
+        editor.append(hourGrid);
+        const saveHoursBtn=h("button",{type:"button",class:"btn-primary staff-save-hours",text:"Save weekly hours",onclick:()=>saveStaffWeek(member.id,hourRows,saveHoursBtn)});
+        editor.append(saveHoursBtn);
+        if (member.user_id) {
           editor.append(h("p",{class:"small-tip",text:"This worker has a linked login. Permanent removal ends their staff access to this shop; it does not delete their personal BOOK.NOW account."}));
         }
         editor.append(h("button",{type:"button",class:"btn-action btn-delete",style:"margin-top:14px",text:"Permanently remove staff member",onclick:event=>deleteStaff(member.id,member.full_name,event.currentTarget)}));
@@ -814,38 +853,6 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         : await db.from("staff_services").delete().eq("staff_id",staffId).eq("service_id",serviceId);
       if(result.error)throw result.error;
     } catch(err){alert("Could not save service assignment: "+err.message);await loadStaff();}
-  }
-  async function saveStaffWeek(staffId, rows, button) {
-    if (!activeVendor || !staffId || !Array.isArray(rows) || rows.length !== STAFF_DAYS.length) return;
-    const schedule = [];
-    for (const row of rows) {
-      const working = !!row.enabled.checked;
-      const start = row.start.value;
-      const end = row.end.value;
-      if (working && (!start || !end || start >= end)) {
-        alert("Choose valid start and finish times for every working day.");
-        return;
-      }
-      schedule.push({
-        staff_id: staffId,
-        day_of_week: row.day,
-        is_working: working,
-        start_time: working ? start : null,
-        end_time: working ? end : null
-      });
-    }
-    setBtn(button, true, "Saving schedule...");
-    try {
-      const { error } = await db.from("staff_working_hours")
-        .upsert(schedule, { onConflict: "staff_id,day_of_week" });
-      if (error) throw error;
-      alert("Weekly working hours saved.");
-      await loadStaff();
-    } catch (err) {
-      alert("Could not save weekly working hours: " + err.message);
-    } finally {
-      setBtn(button, false, "Save weekly hours");
-    }
   }
   async function saveStaffWeek(staffId, rows, button) {
     if (!activeVendor || !staffId || !Array.isArray(rows) || rows.length !== STAFF_DAYS.length) return;
