@@ -1995,7 +1995,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     const amount = 149;
     $("wallet-subscription-rate").textContent = money(149) + "/mo";
     $("subscription-heading").textContent = "Monthly Subscription Payment";
-    $("subscription-description").textContent = "Pay your R149 monthly subscription by EFT to activate or restore store access.";
+    $("subscription-description").textContent = first
+      ? "The standard subscription is R149 per 30 days. If BOOK.NOW has confirmed your place among the first five launch businesses, contact us before paying so we can apply your 30-day free period."
+      : "Pay your R149 monthly subscription by EFT to activate or restore store access.";
     $("subscription-reference").textContent = subRef(activeVendor);
     $("subscription-amount").textContent = money(amount);
 
@@ -2040,7 +2042,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       for (let offset = 0; ; offset += 500) {
         const { data: page, error } = await db.from("bookings")
           .select("booked_price, service_items(price, sale_price)")
-          .eq("store_id", requestStoreId).eq("status", "completed")
+          .eq("store_id", requestStoreId).eq("status", "completed").eq("payment_status", "PAID")
           .order("created_at", { ascending: false }).order("id", { ascending: false })
           .range(offset, offset + 499);
         if (error) throw error;
