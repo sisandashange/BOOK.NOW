@@ -746,49 +746,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         details.append(summary);
         const editor = h("div",{class:"staff-editor"});
         if (member.user_id) {
-          editor.append(h("div",{class:"staff-login-note",text:"Login linked · "+(member.invited_email || "Email linked")}));
-        } else {
-          const inviteEmail=h("input",{type:"email",placeholder:"Worker email address",autocomplete:"email",style:"width:100%;padding:10px;border:1px solid var(--border);border-radius:9px"});
-          const inviteBtn=h("button",{type:"button",class:"btn-action btn-confirm",text:"Create staff login & send invite",style:"margin-top:8px",onclick:()=>inviteStaffLogin(member.id,inviteEmail,inviteBtn)});
-          editor.append(h("div",{class:"form-field"},h("label",{text:"Staff login"}),inviteEmail,inviteBtn));
+          editor.append(h("p",{class:"small-tip",text:"This worker has a linked login. Permanent removal ends their staff access to this shop; it does not delete their personal BOOK.NOW account."}));
         }
-        editor.append(h("div",{class:"staff-editor-heading",text:"Services"}));
-        editor.append(h("p",{class:"small-tip",style:"margin:0 0 10px",text:"Choose the services this worker can perform."}));
-        const serviceWrap=h("div",{class:"staff-service-grid"});
-        services.forEach(service=>{
-          const cb=h("input",{type:"checkbox",value:service.id});
-          cb.checked=links.some(link=>link.staff_id===member.id && link.service_id===service.id);
-          cb.addEventListener("change",()=>saveStaffService(member.id,service.id,cb.checked));
-          serviceWrap.append(h("label",{class:"staff-service-option"},cb,document.createTextNode(service.title)));
-        });
-        if (!services.length) serviceWrap.append(h("p",{class:"small-tip",text:"Add services to your shop before assigning them to staff."}));
-        editor.append(serviceWrap);
-        editor.append(h("div",{class:"staff-editor-heading",text:"Weekly working hours"}));
-        editor.append(h("p",{class:"small-tip",style:"margin:0 0 10px",text:"Set each worker's availability, then save the full weekly schedule once."}));
-        const hourRows = [];
-        const hourGrid=h("div",{class:"staff-hours-grid"});
-        STAFF_DAYS.forEach((day,index)=>{
-          const saved=hours.find(x=>x.staff_id===member.id && Number(x.day_of_week)===index);
-          const enabled=h("input",{type:"checkbox"});
-          enabled.checked=!!(saved && saved.is_working);
-          const start=h("input",{type:"time",value:saved?.start_time?String(saved.start_time).slice(0,5):"09:00","aria-label":day+" start time"});
-          const end=h("input",{type:"time",value:saved?.end_time?String(saved.end_time).slice(0,5):"17:00","aria-label":day+" finish time"});
-          start.disabled=end.disabled=!enabled.checked;
-          enabled.addEventListener("change",()=>{start.disabled=end.disabled=!enabled.checked;});
-          hourRows.push({day:index,enabled,start,end});
-          hourGrid.append(h("div",{class:"staff-hour-row"},
-            h("label",{class:"staff-day-toggle"},enabled,h("span",{text:day})),
-            h("span",{class:"staff-time-fields"},start,end)
-          ));
-        });
-        editor.append(hourGrid);
-        const saveHoursBtn=h("button",{type:"button",class:"btn-primary staff-save-hours",text:"Save weekly hours",onclick:()=>saveStaffWeek(member.id,hourRows,saveHoursBtn)});
-        editor.append(saveHoursBtn);
-        if (member.user_id) {
-          editor.append(h("p",{class:"small-tip",text:"This worker has a linked login. Deactivate them to stop their booking access; their record and history will be kept."}));
-        } else {
-          editor.append(h("button",{type:"button",class:"btn-action btn-delete",style:"margin-top:14px",text:"Remove staff member",onclick:()=>deleteStaff(member.id,member.full_name)}));
-        }
+        editor.append(h("button",{type:"button",class:"btn-action btn-delete",style:"margin-top:14px",text:"Permanently remove staff member",onclick:event=>deleteStaff(member.id,member.full_name,event.currentTarget)}));
         details.append(editor);
         const actions=h("div",{class:"staff-card-actions"});
         actions.append(h("button",{type:"button",class:"btn-action "+(member.is_active?"btn-edit":"btn-confirm"),text:member.is_active?"Deactivate":"Activate",onclick:()=>toggleStaff(member.id,!member.is_active)}));
@@ -887,10 +847,27 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       setBtn(button, false, "Save weekly hours");
     }
   }
-  async function deleteStaff(id,name) {
-    if(!confirm("Remove "+name+" from this shop? Existing bookings will remain, but future staff assignments will no longer use this worker.")) return;
-    try { const {error}=await db.from("staff_members").delete().eq("id",id); if(error)throw error; await loadStaff(); }
-    catch(err){alert("Could not remove staff member: "+err.message);}
+  async function deleteStaff(id,name,button) {
+    if (!activeVendor || !id) return;
+    const storeId = activeVendor.id;
+    if (!confirm("Permanently remove " + name + " from this shop? Their staff access to this shop will end. Existing bookings and history will remain, with the staff assignment cleared.")) return;
+    setBtn(button,true,"Removing...");
+    try {
+      const { data, error } = await db.from("staff_members")
+        .delete().eq("id",id).eq("store_id",storeId).select("id");
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        const { data: stillThere, error: checkError } = await db.from("staff_members")
+          .select("id").eq("id",id).eq("store_id",storeId).maybeSingle();
+        if (checkError) throw checkError;
+        if (stillThere) throw new Error("The worker is still attached to this shop. Check that you are signed in as the shop owner, then try again.");
+      }
+      await loadStaff();
+      alert("Staff member permanently removed from this shop.");
+    } catch(err) {
+      alert("Could not permanently remove staff member: " + (err.message || "Please try again."));
+      setBtn(button,false,"Permanently remove staff member");
+    }
   }
 
   // ---------- Share link, QR poster ----------
@@ -2129,21 +2106,23 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
   async function deleteService(service, button) {
     if (!activeVendor || !service?.id) return;
+    const storeId = activeVendor.id;
     const name = service.title || "this service";
-    if (!confirm("Delete \"" + name + "\"? This cannot be undone. Existing bookings will remain, but their service link will be removed.")) return;
-
+    if (!confirm("Permanently delete \"" + name + "\"? Existing bookings and order history will be kept, but this service will no longer be available.")) return;
     const originalText = button?.textContent || "Delete Service";
     if (button) { button.disabled = true; button.textContent = "Deleting..."; }
     try {
       const { data, error } = await db.from("service_items")
-        .delete()
-        .eq("id", service.id)
-        .eq("store_id", activeVendor.id)
-        .select("id");
+        .delete().eq("id",service.id).eq("store_id",storeId).select("id");
       if (error) throw error;
-      if (!data || data.length === 0) throw new Error("The service was not deleted. Please check that you are signed in as its shop owner and try again.");
+      if (!data || data.length === 0) {
+        const { data: stillThere, error: checkError } = await db.from("service_items")
+          .select("id").eq("id",service.id).eq("store_id",storeId).maybeSingle();
+        if (checkError) throw checkError;
+        if (stillThere) throw new Error("The service is still attached to this shop. Check that you are signed in as the shop owner, then try again.");
+      }
       await loadServices();
-      alert("Service deleted.");
+      alert("Service permanently deleted. Existing booking history has been preserved.");
     } catch (err) {
       console.error("Delete service error:", err);
       alert("Could not delete service: " + (err.message || "Please try again."));
