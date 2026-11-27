@@ -138,6 +138,35 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 .subscription-message{padding:12px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;color:#92400e;font-size:13px;line-height:1.6;margin-bottom:16px}
 .subscription-card input[type="file"]{display:block;width:100%;margin:10px 0 16px;padding:12px;border:1px solid #e2e8f0;border-radius:10px}
 .subscription-logout{margin-top:12px;background:#f1f5f9;color:#0f172a}
+
+#staff-list{gap:10px}
+.staff-directory-card{padding:0;overflow:hidden}
+.staff-card-top{display:flex;align-items:stretch;gap:8px;padding:12px}
+.staff-details{flex:1;min-width:0}
+.staff-summary{display:flex;align-items:center;gap:10px;min-height:48px;cursor:pointer;list-style:none}
+.staff-summary::-webkit-details-marker{display:none}
+.staff-avatar{width:38px;height:38px;flex:0 0 38px;border-radius:12px;background:#eff6ff;color:#1d4ed8;display:grid;place-items:center;font-weight:800}
+.staff-summary-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+.staff-summary-copy .order-title,.staff-summary-copy .order-time{overflow-wrap:anywhere}
+.staff-status{font-size:10px;font-weight:800;padding:5px 8px;border-radius:20px;white-space:nowrap}
+.staff-status.is-active{background:#dcfce7;color:#166534}
+.staff-status.is-inactive{background:#f1f5f9;color:#64748b}
+.staff-chevron{font-size:19px;color:var(--muted);transition:transform .15s}
+.staff-details[open] .staff-chevron{transform:rotate(180deg)}
+.staff-card-actions{display:flex;align-items:center}
+.staff-editor{border-top:1px solid var(--border);padding:14px 12px 16px}
+.staff-login-note{font-size:12px;font-weight:700;color:#166534;background:#f0fdf4;padding:10px 12px;border-radius:9px;margin-bottom:14px;overflow-wrap:anywhere}
+.staff-editor-heading{font-size:13px;font-weight:800;margin:16px 0 7px}
+.staff-service-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}
+.staff-service-option{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--border);border-radius:9px;font-size:12px;min-width:0;overflow-wrap:anywhere}
+.staff-hours-grid{display:grid;grid-template-columns:1fr;gap:7px}
+.staff-hour-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 9px;background:#f8fafc;border:1px solid var(--border);border-radius:9px}
+.staff-day-toggle{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;min-width:95px}
+.staff-time-fields{display:flex;gap:6px;min-width:0}
+.staff-time-fields input{width:105px;max-width:calc((100vw - 190px)/2);padding:8px 5px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:12px}
+.staff-save-hours{margin-top:12px}
+@media(max-width:380px){.staff-card-top{padding:9px;gap:5px}.staff-avatar{width:32px;height:32px;flex-basis:32px}.staff-status{font-size:9px;padding:4px 6px}.staff-hour-row{gap:5px;padding:7px}.staff-day-toggle{min-width:82px}.staff-time-fields input{width:91px}}
+
 </style>
 </head>
 <body>
@@ -703,46 +732,67 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       if (hoursRes.error) throw hoursRes.error;
       const links = linksRes.data || [], hours = hoursRes.data || [];
       $("staff-list").replaceChildren(...staff.map(member => {
-        const card = h("div", {class:"order-card"});
-        const top = h("div",{style:"display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"},
-          h("div",{},h("div",{class:"order-title",text:member.full_name}),h("div",{class:"order-time",text:member.job_title})),
-          h("button",{type:"button",class:"btn-action "+(member.is_active?"btn-edit":"btn-confirm"),text:member.is_active?"Deactivate":"Activate",onclick:()=>toggleStaff(member.id,!member.is_active)}));
-        card.append(top);
+        const card = h("div", {class:"order-card staff-directory-card"});
+        const details = h("details", {class:"staff-details"});
+        const summary = h("summary", {class:"staff-summary"});
+        summary.append(
+          h("span",{class:"staff-avatar",text:String(member.full_name || "S").trim().charAt(0).toUpperCase()}),
+          h("span",{class:"staff-summary-copy"},
+            h("span",{class:"order-title",text:member.full_name}),
+            h("span",{class:"order-time",text:member.job_title || "Staff member"})),
+          h("span",{class:"staff-status "+(member.is_active?"is-active":"is-inactive"),text:member.is_active?"Active":"Inactive"}),
+          h("span",{class:"staff-chevron","aria-hidden":"true",text:"⌄"})
+        );
+        details.append(summary);
+        const editor = h("div",{class:"staff-editor"});
         if (member.user_id) {
-          card.append(h("div",{class:"order-time",style:"margin-top:10px;font-weight:700;color:#166534",text:"Staff login linked: "+(member.invited_email || "email")}));
+          editor.append(h("div",{class:"staff-login-note",text:"Login linked · "+(member.invited_email || "Email linked")}));
         } else {
-          const inviteEmail=h("input",{type:"email",placeholder:"Worker email address",autocomplete:"email",style:"width:100%;padding:10px;border:1px solid var(--border);border-radius:9px;margin-top:12px"});
+          const inviteEmail=h("input",{type:"email",placeholder:"Worker email address",autocomplete:"email",style:"width:100%;padding:10px;border:1px solid var(--border);border-radius:9px"});
           const inviteBtn=h("button",{type:"button",class:"btn-action btn-confirm",text:"Create staff login & send invite",style:"margin-top:8px",onclick:()=>inviteStaffLogin(member.id,inviteEmail,inviteBtn)});
-          card.append(inviteEmail,inviteBtn);
+          editor.append(h("div",{class:"form-field"},h("label",{text:"Staff login"}),inviteEmail,inviteBtn));
         }
-        card.append(h("div",{class:"form-field",style:"margin-top:14px"},h("label",{text:"Services this worker can perform"})));
-        const serviceWrap=h("div",{style:"display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px"});
+        editor.append(h("div",{class:"staff-editor-heading",text:"Services"}));
+        editor.append(h("p",{class:"small-tip",style:"margin:0 0 10px",text:"Choose the services this worker can perform."}));
+        const serviceWrap=h("div",{class:"staff-service-grid"});
         services.forEach(service=>{
           const cb=h("input",{type:"checkbox",value:service.id});
           cb.checked=links.some(link=>link.staff_id===member.id && link.service_id===service.id);
           cb.addEventListener("change",()=>saveStaffService(member.id,service.id,cb.checked));
-          serviceWrap.append(h("label",{style:"display:flex;gap:8px;align-items:center;font-size:14px"},cb,document.createTextNode(service.title)));
+          serviceWrap.append(h("label",{class:"staff-service-option"},cb,document.createTextNode(service.title)));
         });
-        card.append(serviceWrap);
-        card.append(h("h4",{text:"Weekly working hours",style:"margin:18px 0 8px"}));
-        const hourRows=STAFF_DAYS.map((day,index)=>{
+        if (!services.length) serviceWrap.append(h("p",{class:"small-tip",text:"Add services to your shop before assigning them to staff."}));
+        editor.append(serviceWrap);
+        editor.append(h("div",{class:"staff-editor-heading",text:"Weekly working hours"}));
+        editor.append(h("p",{class:"small-tip",style:"margin:0 0 10px",text:"Set each worker's availability, then save the full weekly schedule once."}));
+        const hourRows = [];
+        const hourGrid=h("div",{class:"staff-hours-grid"});
+        STAFF_DAYS.forEach((day,index)=>{
           const saved=hours.find(x=>x.staff_id===member.id && Number(x.day_of_week)===index);
           const enabled=h("input",{type:"checkbox"});
           enabled.checked=!!(saved && saved.is_working);
-          const start=h("input",{type:"time",value:saved?.start_time?String(saved.start_time).slice(0,5):"09:00",style:"max-width:115px"});
-          const end=h("input",{type:"time",value:saved?.end_time?String(saved.end_time).slice(0,5):"17:00",style:"max-width:115px"});
+          const start=h("input",{type:"time",value:saved?.start_time?String(saved.start_time).slice(0,5):"09:00","aria-label":day+" start time"});
+          const end=h("input",{type:"time",value:saved?.end_time?String(saved.end_time).slice(0,5):"17:00","aria-label":day+" finish time"});
           start.disabled=end.disabled=!enabled.checked;
           enabled.addEventListener("change",()=>{start.disabled=end.disabled=!enabled.checked;});
-          const save=h("button",{type:"button",class:"btn-action btn-edit",text:"Save",onclick:()=>saveStaffHours(member.id,index,enabled.checked,start.value,end.value)});
-          return h("div",{style:"display:grid;grid-template-columns:minmax(90px,1fr) auto auto auto;gap:7px;align-items:center;margin:8px 0"},
-            h("label",{style:"display:flex;gap:6px;align-items:center"},enabled,day),start,end,save);
+          hourRows.push({day:index,enabled,start,end});
+          hourGrid.append(h("div",{class:"staff-hour-row"},
+            h("label",{class:"staff-day-toggle"},enabled,h("span",{text:day})),
+            h("span",{class:"staff-time-fields"},start,end)
+          ));
         });
-        hourRows.forEach(r=>card.append(r));
-        if (!member.user_id) {
-          card.append(h("button",{type:"button",class:"btn-action",style:"margin-top:12px;color:#b91c1c",text:"Remove staff member",onclick:()=>deleteStaff(member.id,member.full_name)}));
+        editor.append(hourGrid);
+        const saveHoursBtn=h("button",{type:"button",class:"btn-primary staff-save-hours",text:"Save weekly hours",onclick:()=>saveStaffWeek(member.id,hourRows,saveHoursBtn)});
+        editor.append(saveHoursBtn);
+        if (member.user_id) {
+          editor.append(h("p",{class:"small-tip",text:"This worker has a linked login. Deactivate them to stop their booking access; their record and history will be kept."}));
         } else {
-          card.append(h("div",{class:"small-tip",text:"This staff login is linked. Deactivate the worker to stop their booking access; keep the record for accountability."}));
+          editor.append(h("button",{type:"button",class:"btn-action btn-delete",style:"margin-top:14px",text:"Remove staff member",onclick:()=>deleteStaff(member.id,member.full_name)}));
         }
+        details.append(editor);
+        const actions=h("div",{class:"staff-card-actions"});
+        actions.append(h("button",{type:"button",class:"btn-action "+(member.is_active?"btn-edit":"btn-confirm"),text:member.is_active?"Deactivate":"Activate",onclick:()=>toggleStaff(member.id,!member.is_active)}));
+        card.append(h("div",{class:"staff-card-top"},details,actions));
         return card;
       }));
     } catch(err) {
@@ -805,18 +855,37 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       if(result.error)throw result.error;
     } catch(err){alert("Could not save service assignment: "+err.message);await loadStaff();}
   }
-  async function saveStaffHours(staffId,day,working,start,end) {
-    try {
-      let result;
-      if(!working) result=await db.from("staff_working_hours").upsert({staff_id:staffId,day_of_week:day,is_working:false,start_time:null,end_time:null},{onConflict:"staff_id,day_of_week"});
-      else {
-        if(!start||!end||start>=end) return alert("Choose valid start and finish times.");
-        result=await db.from("staff_working_hours").upsert({staff_id:staffId,day_of_week:day,is_working:true,start_time:start,end_time:end},{onConflict:"staff_id,day_of_week"});
+  async function saveStaffWeek(staffId, rows, button) {
+    if (!activeVendor || !staffId || !Array.isArray(rows) || rows.length !== STAFF_DAYS.length) return;
+    const schedule = [];
+    for (const row of rows) {
+      const working = !!row.enabled.checked;
+      const start = row.start.value;
+      const end = row.end.value;
+      if (working && (!start || !end || start >= end)) {
+        alert("Choose valid start and finish times for every working day.");
+        return;
       }
-      if(result.error)throw result.error;
-      alert("Working hours saved.");
+      schedule.push({
+        staff_id: staffId,
+        day_of_week: row.day,
+        is_working: working,
+        start_time: working ? start : null,
+        end_time: working ? end : null
+      });
+    }
+    setBtn(button, true, "Saving schedule...");
+    try {
+      const { error } = await db.from("staff_working_hours")
+        .upsert(schedule, { onConflict: "staff_id,day_of_week" });
+      if (error) throw error;
+      alert("Weekly working hours saved.");
       await loadStaff();
-    } catch(err){alert("Could not save working hours: "+err.message);}
+    } catch (err) {
+      alert("Could not save weekly working hours: " + err.message);
+    } finally {
+      setBtn(button, false, "Save weekly hours");
+    }
   }
   async function deleteStaff(id,name) {
     if(!confirm("Remove "+name+" from this shop? Existing bookings will remain, but future staff assignments will no longer use this worker.")) return;

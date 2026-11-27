@@ -95,6 +95,14 @@ assert.ok(vendor.includes('.eq("status", "completed").eq("payment_status", "PAID
   "Money Store must include only completed and paid bookings");
 assert.ok(vendor.includes("confirmed your place among the first five launch businesses"),
   "First-five launch offer must be disclosed without granting it automatically");
+assert.ok(vendor.includes('class:"staff-details"') && vendor.includes('class:"staff-summary"'),
+  "Staff must be presented as a compact expandable directory");
+assert.ok(vendor.includes('text:"Save weekly hours"') && vendor.includes('async function saveStaffWeek'),
+  "Staff weekly hours must be saved together in one schedule action");
+assert.ok(vendor.includes('.upsert(schedule, { onConflict: "staff_id,day_of_week" })'),
+  "Weekly staff hours must retain the existing per-day upsert key");
+assert.ok(vendor.includes('text:member.is_active?"Active":"Inactive"'),
+  "Staff directory must show each worker's active status");
 const subscriptionIntegrityMigration = read("supabase/migrations/20261128090000_harden_subscription_payment_requests.sql");
 assert.ok(subscriptionIntegrityMigration.includes("guard_subscription_payment_request_insert"),
   "Subscription requests must be validated server-side");
