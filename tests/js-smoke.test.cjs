@@ -103,6 +103,12 @@ assert.ok(vendor.includes('.upsert(schedule, { onConflict: "staff_id,day_of_week
   "Weekly staff hours must retain the existing per-day upsert key");
 assert.ok(vendor.includes('text:member.is_active?"Active":"Inactive"'),
   "Staff directory must show each worker's active status");
+assert.ok(vendor.includes('text:"Permanently remove staff member"') && vendor.includes("async function deleteStaff(id,name,button)"),
+  "Every staff member, including linked-login workers, must have a permanent removal action");
+assert.ok(vendor.includes('.delete().eq("id",id).eq("store_id",storeId).select("id")'),
+  "Permanent staff removal must be scoped to the active shop and verify the deletion");
+assert.ok(vendor.includes("async function deleteService(service, button)") && vendor.includes("Service permanently deleted."),
+  "Service removal must confirm permanent deletion and preserve booking history");
 const subscriptionIntegrityMigration = read("supabase/migrations/20261128090000_harden_subscription_payment_requests.sql");
 assert.ok(subscriptionIntegrityMigration.includes("guard_subscription_payment_request_insert"),
   "Subscription requests must be validated server-side");
