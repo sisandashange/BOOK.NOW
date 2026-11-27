@@ -857,21 +857,23 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   }
   async function saveStaffWeek(staffId, rows, button) {
     if (!activeVendor || !staffId || !Array.isArray(rows) || rows.length !== STAFF_DAYS.length) return;
-    const schedule = rows.map(row => {
+    const schedule = [];
+    for (const row of rows) {
       const working = !!row.enabled.checked;
       const start = row.start.value;
       const end = row.end.value;
       if (working && (!start || !end || start >= end)) {
-        throw new Error("Choose valid start and finish times for every working day.");
+        alert("Choose valid start and finish times for every working day.");
+        return;
       }
-      return {
+      schedule.push({
         staff_id: staffId,
         day_of_week: row.day,
         is_working: working,
         start_time: working ? start : null,
         end_time: working ? end : null
-      };
-    });
+      });
+    }
     setBtn(button, true, "Saving schedule...");
     try {
       const { error } = await db.from("staff_working_hours")
