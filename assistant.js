@@ -20,7 +20,7 @@
     {q:"How do I contact BOOK.NOW support?", keys:["support","help","contact","problem","issue","complaint","talk","human"], a:"You can email mfanarhshange43@gmail.com, call 075 297 8917, or WhatsApp 081 370 5158. For a shop-specific service, price or refund question, contact the shop directly."}
   ];
   const QUICK = ["How do I make a booking?","How do I pay?","Cancel or change a booking","I need support"];
-  const normalize = value => String(value || "").toLowerCase().replace(/[^a-z0-9\\s]/g, " ").replace(/\\s+/g, " ").trim();
+  const normalize = value => String(value || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
   function findAnswer(message) {
     const text = normalize(message);
     if (!text) return null;
@@ -53,7 +53,7 @@
     function addBubble(text, who) { const node=document.createElement("div"); node.className="bn-help-bubble "+who; node.textContent=text; messages.insertBefore(node,quick); messages.scrollTop=messages.scrollHeight; }
     function answer(question) {
       addBubble(question,"user");
-      if (/\\b(support|human|person|someone)\\b/i.test(question)) {
+      if (/\b(support|human|person|someone)\b/i.test(question)) {
         addBubble("Of course. Email "+CONTACT.email+", call "+CONTACT.phone+", or contact support on WhatsApp. For a question about a specific shop’s service or refund, contact that shop directly.","bot");
       } else {
         const match=findAnswer(question);
