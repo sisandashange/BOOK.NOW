@@ -28,7 +28,7 @@
     {q:"Is BOOK.NOW responsible for the service I booked?",keys:["responsible","service quality","bad service","late","missed appointment","business owner"],a:"BOOK.NOW connects customers with independent businesses. The business provides the service and is responsible for its services, prices and handling refunds. Your booking is an arrangement between you and that business."}
   ];
   const QUICK = ["How do I make a booking?","How do I pay?","Cancel or change a booking","Where is my receipt?","I need support"];
-  const normalize = value => String(value || "").toLowerCase().replace(/[^a-z0-9\\s]/g, " ").replace(/\\s+/g, " ").trim();
+  const normalize = value => String(value || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
   function findAnswer(message) {
     const text = normalize(message);
     if (!text) return null;
