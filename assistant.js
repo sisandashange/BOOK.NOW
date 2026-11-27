@@ -1,4 +1,4 @@
-/* BOOK.NOW Help — local, curated FAQ assistant. No external AI/API calls. */
+/* BOOK.NOW Help — curated, product-specific answers. No external AI/API calls. */
 (() => {
   "use strict";
   const CONTACT = {
@@ -7,20 +7,28 @@
     whatsapp: "https://wa.me/27813705158"
   };
   const FAQ = [
-    {q:"Do I need to download an app or create an account?", keys:["app","download","account","sign up","register","guest","without account"], a:"No. You can browse shops and make a booking as a guest on the BOOK.NOW website. A customer account is optional."},
-    {q:"How do I find a shop?", keys:["find","search","shop","salon","barber","shisanyama","braai","near","area","location"], a:"Open the BOOK.NOW home page, search by shop name, service or category, and use the category and area filters when available. Select a shop to view its details and booking options."},
-    {q:"How do I make a booking?", keys:["book","booking","appointment","reserve","reservation","choose time","make"], a:"Find the shop you want, open its page, choose an available service or booking option, select an available date and time, then follow the booking steps. Enter a correct name and phone number so the shop can contact you."},
-    {q:"Can I see prices and opening hours?", keys:["price","cost","fee","opening","hours","open","close","service"], a:"Shop owners set their own services, prices and opening hours. Check the shop page for the latest details. Contact the shop directly if you need confirmation."},
-    {q:"How do I pay for my booking?", keys:["pay","payment","eft","cash","bank","reference","payfast","card"], a:"You pay the shop directly by EFT or cash, using the unique payment reference shown on your booking. BOOK.NOW does not receive or hold customer booking payments. Follow the payment instructions shown for that shop."},
-    {q:"How do I cancel or change a booking?", keys:["cancel","change","reschedule","edit","move","appointment"], a:"Use the “Manage my booking” link on the home page. You can cancel or change a booking until 2 hours before the appointment. If you already paid, agree any refund directly with the shop."},
-    {q:"Where is my booking receipt or reference?", keys:["receipt","reference","confirmation","booking number","proof","qr","ticket"], a:"Keep the booking confirmation and its unique payment reference. If you need to manage the booking, open “Manage my booking” from the home page and follow the verification steps."},
-    {q:"Who handles refunds?", keys:["refund","money back","paid already","repay"], a:"Refunds for money already paid are agreed directly between you and the shop. BOOK.NOW does not receive or hold your booking payment."},
-    {q:"Can I save my favourite shops?", keys:["favourite","favorite","save","heart","saved"], a:"Yes. You can save favourite shops on the same device without an account. If you sign in to your optional customer account, your saved shops can sync across devices."},
-    {q:"How do shisanyama bookings work?", keys:["shisanyama","seats","table","people","guests","braai"], a:"Shisanyama shops can offer bookings based on available seating and the number of people. Choose the option and guest count shown by that shop. Availability is controlled by the business."},
-    {q:"How do I contact BOOK.NOW support?", keys:["support","help","contact","problem","issue","complaint","talk","human"], a:"You can email mfanarhshange43@gmail.com, call 075 297 8917, or WhatsApp 081 370 5158. For a shop-specific service, price or refund question, contact the shop directly."}
+    {q:"Do I need an app or an account?",keys:["app","download","account","sign up","register","guest","without account"],a:"No. You can browse shops and make bookings as a guest on the BOOK.NOW website. A customer account is optional."},
+    {q:"How do I find a shop?",keys:["find","search","shop","salon","barber","shisanyama","braai","area","location","category","filter"],a:"On the home page, search by shop name, service or category. You can also filter by shop type and area, and sort the available results. Open a shop to see its services and booking options."},
+    {q:"How do I make a booking?",keys:["book","booking","appointment","reserve","reservation","choose time","make"],a:"Open the shop you want, choose a listed service or booking option, select an available date and time, enter your details and follow the confirmation steps. Use a phone number the shop can reach you on."},
+    {q:"Why can't I see a time or date?",keys:["no times","no time","not available","availability","fully booked","date unavailable","closed","no slots","time missing"],a:"The shop controls its opening hours, closure dates and booking capacity. A date may be closed or all its available slots may be full. Try another date or time, or contact the shop to ask."},
+    {q:"Where can I see prices and opening hours?",keys:["price","prices","cost","fee","opening","hours","open","close","service menu"],a:"Each business sets its own services, menu items, prices and opening hours. Open the shop page and check its details. Contact the shop directly if anything is unclear."},
+    {q:"How do I pay?",keys:["pay","payment","eft","cash","bank","reference","payfast","card","money"],a:"Choose one of the payment methods offered by the shop: EFT or cash. For EFT, use the shop's bank details and the unique payment reference shown on your booking. You pay the business directly; BOOK.NOW does not receive or hold customer booking payments."},
+    {q:"How do I cancel or change my booking?",keys:["cancel","change","reschedule","edit","move","appointment"],a:"Open the Manage booking page. Enter the payment reference from your booking receipt and the same phone number you used when booking. You can change the date or time, or cancel, until 2 hours before the appointment. After that, contact the shop."},
+    {q:"How do I manage a guest booking?",keys:["manage booking","guest booking","booking lookup","find my booking","booking reference","reference and phone"],a:"Open Manage booking from the BOOK.NOW menu. Enter the payment reference on your receipt and the phone number used for that booking. This verifies the booking so you can view its details and available actions."},
+    {q:"Where is my receipt and QR code?",keys:["receipt","qr","qr code","ticket","confirmation","proof of booking"],a:"Your receipt stays in BOOK.NOW. Open Manage booking using your payment reference and booking phone number to view it. Show the QR code on your phone when you arrive; the shop can scan it to find your booking. The QR closes automatically after the booking is completed or cancelled."},
+    {q:"What if I paid already and need a refund?",keys:["refund","money back","paid already","repay","return payment"],a:"BOOK.NOW does not receive or hold your booking payment. If you paid the shop directly, contact that shop to discuss a refund. The shop handles refunds for payments it received."},
+    {q:"How do customer accounts work?",keys:["create account","sign in","login","log in","password","my account","booking history","forgot password"],a:"A customer account is optional. You can create one with your name, email and password to see bookings made while signed in, manage your profile and link an earlier guest booking. To link a guest booking, use its reference and the phone number used when booking."},
+    {q:"How do saved or favourite shops work?",keys:["favourite","favorite","save shop","saved shop","heart","favourites"],a:"Tap the heart on a shop card to save it. If you are browsing as a guest, saved shops stay on that device. If you are signed in, your saved shops are linked to your account and can sync across devices."},
+    {q:"How do shisanyama bookings work?",keys:["shisanyama","seats","table","people","guests","dine in","dine-in"],a:"A shisanyama may let you reserve seating and choose the number of guests. The available seating depends on the shop's table and seat capacity. Follow the options shown on that shop's page."},
+    {q:"Can I order takeaway?",keys:["takeaway","take away","collection","collect","food order","menu items"],a:"Where a shisanyama offers takeaway, choose the takeaway option on its shop page, select the menu items and follow the checkout steps. Takeaway is for collection and does not reserve dine-in seating."},
+    {q:"Will I get a booking reminder?",keys:["reminder","notification","alert","message","confirmation message","sms","whatsapp notification"],a:"BOOK.NOW is set up to send a message when the shop confirms your booking and a reminder 2 hours before the appointment. Push alerts depend on your device and app notification permissions. Check your booking receipt for the latest status."},
+    {q:"Can I leave a review?",keys:["review","rating","stars","feedback","rate shop"],a:"After an eligible booking, the review option may appear in Manage booking. You can give a star rating and optionally write a comment. Your first name and last initial are shown with your review."},
+    {q:"How do I contact the shop?",keys:["contact shop","call shop","shop whatsapp","message shop","business number","shop phone"],a:"Open the shop page to view its contact details. If your booking is already made, Manage booking may also show an option to message the shop on WhatsApp."},
+    {q:"How do I contact BOOK.NOW support?",keys:["support","help","contact booknow","contact book now","complaint","problem","issue","human","person"],a:"You can email "+CONTACT.email+", call "+CONTACT.phone+", or WhatsApp BOOK.NOW support. For a shop's prices, service, opening hours or refund, contact that business directly."},
+    {q:"Is BOOK.NOW responsible for the service I booked?",keys:["responsible","service quality","bad service","late","missed appointment","business owner"],a:"BOOK.NOW connects customers with independent businesses. The business provides the service and is responsible for its services, prices and handling refunds. Your booking is an arrangement between you and that business."}
   ];
-  const QUICK = ["How do I make a booking?","How do I pay?","Cancel or change a booking","I need support"];
-  const normalize = value => String(value || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+  const QUICK = ["How do I make a booking?","How do I pay?","Cancel or change a booking","Where is my receipt?","I need support"];
+  const normalize = value => String(value || "").toLowerCase().replace(/[^a-z0-9\\s]/g, " ").replace(/\\s+/g, " ").trim();
   function findAnswer(message) {
     const text = normalize(message);
     if (!text) return null;
@@ -29,11 +37,10 @@
       let current = 0;
       for (const key of item.keys) {
         const term = normalize(key);
-        if (text.includes(term)) current += term.includes(" ") ? 3 : 2;
+        if (term && text.includes(term)) current += term.includes(" ") ? 4 : 2;
       }
-      for (const word of text.split(" ")) {
-        if (word.length > 3 && item.q.toLowerCase().includes(word)) current += 1;
-      }
+      const words = text.split(" ").filter(word => word.length > 3);
+      for (const word of words) if (normalize(item.q).split(" ").includes(word)) current += 1;
       if (current > score) { score = current; best = item; }
     }
     return score >= 2 ? best : null;
@@ -53,12 +60,8 @@
     function addBubble(text, who) { const node=document.createElement("div"); node.className="bn-help-bubble "+who; node.textContent=text; messages.insertBefore(node,quick); messages.scrollTop=messages.scrollHeight; }
     function answer(question) {
       addBubble(question,"user");
-      if (/\b(support|human|person|someone)\b/i.test(question)) {
-        addBubble("Of course. Email "+CONTACT.email+", call "+CONTACT.phone+", or contact support on WhatsApp. For a question about a specific shop’s service or refund, contact that shop directly.","bot");
-      } else {
-        const match=findAnswer(question);
-        addBubble(match ? match.a : "I’m not sure about that, and I don’t want to guess. Please try asking about finding a shop, making or managing a booking, payments, or contact BOOK.NOW support on WhatsApp.","bot");
-      }
+      const match=findAnswer(question);
+      addBubble(match ? match.a : "I’m not sure about that, and I don’t want to guess. Try asking about shops, bookings, payments, receipts, accounts or reviews. You can also contact BOOK.NOW support on WhatsApp.","bot");
       messages.scrollTop=messages.scrollHeight;
     }
     QUICK.forEach(label=>{const b=document.createElement("button");b.type="button";b.textContent=label;b.addEventListener("click",()=>answer(label));quick.append(b);});
