@@ -847,6 +847,38 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       setBtn(button, false, "Save weekly hours");
     }
   }
+  async function saveStaffWeek(staffId, rows, button) {
+    if (!activeVendor || !staffId || !Array.isArray(rows) || rows.length !== STAFF_DAYS.length) return;
+    const schedule = [];
+    for (const row of rows) {
+      const working = !!row.enabled.checked;
+      const start = row.start.value;
+      const end = row.end.value;
+      if (working && (!start || !end || start >= end)) {
+        alert("Choose valid start and finish times for every working day.");
+        return;
+      }
+      schedule.push({
+        staff_id: staffId,
+        day_of_week: row.day,
+        is_working: working,
+        start_time: working ? start : null,
+        end_time: working ? end : null
+      });
+    }
+    setBtn(button, true, "Saving schedule...");
+    try {
+      const { error } = await db.from("staff_working_hours")
+        .upsert(schedule, { onConflict: "staff_id,day_of_week" });
+      if (error) throw error;
+      alert("Weekly working hours saved.");
+      await loadStaff();
+    } catch (err) {
+      alert("Could not save weekly working hours: " + err.message);
+    } finally {
+      setBtn(button, false, "Save weekly hours");
+    }
+  }
   async function deleteStaff(id,name,button) {
     if (!activeVendor || !id) return;
     const storeId = activeVendor.id;
