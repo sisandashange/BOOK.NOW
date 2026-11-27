@@ -91,6 +91,19 @@ assert.ok(read("customer-account.js").includes('db.rpc("list_my_customer_booking
 assert.ok(read("account.html").includes('src="qr.js" defer'), "Customer account must load the QR renderer");
 
 const vendor = read("vendor.html");
+assert.ok(vendor.includes('.eq("status", "completed").eq("payment_status", "PAID")'),
+  "Money Store must include only completed and paid bookings");
+assert.ok(vendor.includes("confirmed your place among the first five launch businesses"),
+  "First-five launch offer must be disclosed without granting it automatically");
+const subscriptionIntegrityMigration = read("supabase/migrations/20261128090000_harden_subscription_payment_requests.sql");
+assert.ok(subscriptionIntegrityMigration.includes("guard_subscription_payment_request_insert"),
+  "Subscription requests must be validated server-side");
+assert.ok(subscriptionIntegrityMigration.includes("file_size_limit = 5242880"),
+  "Subscription proof uploads must have a server-side 5 MB limit");
+assert.ok(subscriptionIntegrityMigration.includes("allowed_mime_types"),
+  "Subscription proof uploads must have a server-side MIME allowlist");
+assert.ok(subscriptionIntegrityMigration.includes("Partners and founders can read platform settings"),
+  "Platform bank settings must be limited to partners and founders");
 assert.ok(vendor.includes('db.from("booking_items").select("item_title,quantity,unit_price,line_total")'), "Owner scanner must load itemised orders");
 assert.ok(vendor.includes('db.from("store_bank_details")'));
 assert.ok(!vendor.includes('db.from("stores").update({\n          bank_name'));
